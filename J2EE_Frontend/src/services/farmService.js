@@ -6,8 +6,27 @@ const getAuthHeader = () => {
     return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
-const getFarms = () => axios.get(`${API_BASE_URL}/api/farms`, { headers: getAuthHeader() });
-const getAllFarms = () => axios.get(`${API_BASE_URL}/api/farms`, { headers: getAuthHeader() }); // Alias for consistency
+// Updated to return response.data directly for consistency
+const getFarms = async () => {
+    try {
+        const response = await axios.get(`${API_BASE_URL}/api/farms`, { headers: getAuthHeader() });
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching farms:', error);
+        return [];
+    }
+};
+
+const getAllFarms = async () => {
+    try {
+        const response = await axios.get(`${API_BASE_URL}/api/farms`, { headers: getAuthHeader() });
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching all farms:', error);
+        return [];
+    }
+};
+
 const getFarmById = (id) => axios.get(`${API_BASE_URL}/api/farms/${id}`, { headers: getAuthHeader() });
 const createFarm = (data) => axios.post(`${API_BASE_URL}/api/farms`, data, { headers: getAuthHeader() });
 const updateFarm = (id, data) => axios.put(`${API_BASE_URL}/api/farms/${id}`, data, { headers: getAuthHeader() });

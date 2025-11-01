@@ -111,23 +111,33 @@ const Dashboard = () => {
       
       try {
         // 1. Lấy tất cả farms
-        const farmsResponse = await farmService.getFarms();
-        console.log('✅ Farms response:', farmsResponse);
+        const farmsResp = await farmService.getFarms();
+        console.log('✅ Farms response:', farmsResp);
         
-        // Safe extraction using helper
-        const farms = safeArray(farmsResponse);
+        // Multi-level defensive check for farms
+        const farms = Array.isArray(farmsResp) ? farmsResp
+                    : Array.isArray(farmsResp?.data) ? farmsResp.data
+                    : Array.isArray(farmsResp?.data?.data) ? farmsResp.data.data
+                    : [];
         
         if (farms.length === 0) {
           console.warn('⚠️ No farms found in database');
         }
         
-        // Safe mapping using helper
-        farmNamesArr = safeMap(farmsResponse, f => f.farmName);
+        // Safe mapping with defensive check
+        farmNamesArr = Array.isArray(farms) ? farms.map(f => f.farmName) : [];
         
         // 2. Lấy TẤT CẢ SENSORS 1 LẦN (thay vì từng field)
         try {
-          const allSensorsResponse = await sensorService.getSensorList();
-          totalSensors = Array.isArray(allSensorsResponse) ? allSensorsResponse.length : 0;
+          const sensorsResp = await sensorService.getSensorList();
+          
+          // Multi-level defensive check for sensors
+          const sensors = Array.isArray(sensorsResp) ? sensorsResp
+                        : Array.isArray(sensorsResp?.data) ? sensorsResp.data
+                        : Array.isArray(sensorsResp?.data?.data) ? sensorsResp.data.data
+                        : [];
+          
+          totalSensors = sensors.length;
           console.log('✅ Total sensors:', totalSensors);
         } catch (sensorError) {
           console.error('❌ Error fetching sensors:', sensorError);
@@ -138,8 +148,14 @@ const Dashboard = () => {
         if (Array.isArray(farms) && farms.length > 0) {
           await Promise.all(farms.map(async (farm) => {
           try {
-            const fieldsResponse = await fieldService.getFieldsByFarm(farm.id);
-            const fields = safeArray(fieldsResponse);
+            const fieldsResp = await fieldService.getFieldsByFarm(farm.id);
+            
+            // Multi-level defensive check for fields
+            const fields = Array.isArray(fieldsResp) ? fieldsResp
+                         : Array.isArray(fieldsResp?.data) ? fieldsResp.data
+                         : Array.isArray(fieldsResp?.data?.data) ? fieldsResp.data.data
+                         : [];
+            
             allFields = allFields.concat(fields);
           } catch (error) {
             console.error('Error fetching fields for farm', farm.id, error);

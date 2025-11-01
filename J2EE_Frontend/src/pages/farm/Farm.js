@@ -105,13 +105,24 @@ const Farm = () => {
     const loadFarms = async () => {
         setLoading(true);
         try {
-            const response = await farmService.getFarms();
-            const farms = Array.isArray(response.data) ? response.data : [];
+            const farmsResp = await farmService.getFarms();
+            
+            // Multi-level defensive check for farms
+            const farms = Array.isArray(farmsResp) ? farmsResp
+                        : Array.isArray(farmsResp?.data) ? farmsResp.data
+                        : Array.isArray(farmsResp?.data?.data) ? farmsResp.data.data
+                        : [];
+            
             const farmsWithStats = await Promise.all(farms.map(async (farm) => {
                 try {
                     // Lấy danh sách field của farm
-                    const fieldsResponse = await fieldService.getFieldsByFarm(farm.id);
-                    const fields = Array.isArray(fieldsResponse.data) ? fieldsResponse.data : [];
+                    const fieldsResp = await fieldService.getFieldsByFarm(farm.id);
+                    
+                    // Multi-level defensive check for fields
+                    const fields = Array.isArray(fieldsResp) ? fieldsResp
+                                 : Array.isArray(fieldsResp?.data) ? fieldsResp.data
+                                 : Array.isArray(fieldsResp?.data?.data) ? fieldsResp.data.data
+                                 : [];
 
                     let sensorCount = 0;
                     let alertCount = 0;
@@ -119,18 +130,30 @@ const Farm = () => {
                     // Lấy tổng số cảm biến và cảnh báo từ tất cả các field
                     await Promise.all(fields.map(async (field) => {
                         try {
-                            const sensorsResponse = await sensorService.getSensorsByField(field.id);
-                            const sensors = Array.isArray(sensorsResponse.data) ? sensorsResponse.data : [];
+                            const sensorsResp = await sensorService.getSensorsByField(field.id);
+                            
+                            // Multi-level defensive check for sensors
+                            const sensors = Array.isArray(sensorsResp) ? sensorsResp
+                                          : Array.isArray(sensorsResp?.data) ? sensorsResp.data
+                                          : Array.isArray(sensorsResp?.data?.data) ? sensorsResp.data.data
+                                          : [];
+                            
                             sensorCount += sensors.length;
                         } catch (e) {
-                 
+                            // Silent fail for individual field sensors
                         }
                         try {
-                            const alertsResponse = await alertService.getAlertsByField(field.id);
-                            const alerts = Array.isArray(alertsResponse.data) ? alertsResponse.data : [];
+                            const alertsResp = await alertService.getAlertsByField(field.id);
+                            
+                            // Multi-level defensive check for alerts
+                            const alerts = Array.isArray(alertsResp) ? alertsResp
+                                         : Array.isArray(alertsResp?.data) ? alertsResp.data
+                                         : Array.isArray(alertsResp?.data?.data) ? alertsResp.data.data
+                                         : [];
+                            
                             alertCount += alerts.length;
                         } catch (e) {
-                
+                            // Silent fail for individual field alerts
                         }
                     }));
 

@@ -239,9 +239,15 @@ const Field = () => {
 
     const loadFarmsList = async () => {
         try {
-            const response = await farmService.getFarms();
-            const farms = Array.isArray(response.data) ? response.data : [];
-            const sortedFarms = farms.sort((a, b) => a.id - b.id);
+            const farmsResp = await farmService.getFarms();
+            
+            // Multi-level defensive check for farms
+            const farms = Array.isArray(farmsResp) ? farmsResp
+                        : Array.isArray(farmsResp?.data) ? farmsResp.data
+                        : Array.isArray(farmsResp?.data?.data) ? farmsResp.data.data
+                        : [];
+            
+            const sortedFarms = Array.isArray(farms) ? farms.sort((a, b) => a.id - b.id) : [];
             setFarmsList(sortedFarms);
         } catch (error) {
             console.error("Error loading farms list:", error);
