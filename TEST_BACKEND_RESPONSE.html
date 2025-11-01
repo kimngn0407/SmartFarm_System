@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔍 Test Backend Response Structure</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2em;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 18px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            display: block;
+            margin: 20px auto;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+        .result {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+        .result h3 {
+            color: #495057;
+            margin-bottom: 10px;
+        }
+        pre {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .status {
+            padding: 10px 20px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .status.success { background: #d1e7dd; color: #0f5132; }
+        .status.error { background: #f8d7da; color: #842029; }
+        .status.warning { background: #fff3cd; color: #664d03; }
+        .analysis {
+            background: #e7f3ff;
+            border-left: 4px solid #0066cc;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        .analysis h3 {
+            color: #0066cc;
+            margin-bottom: 10px;
+        }
+        .fix-code {
+            background: #fff3cd;
+            border-left: 4px solid #ff9800;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        .fix-code h3 {
+            color: #ff9800;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Kiểm Tra Backend Response Structure</h1>
+        
+        <button onclick="testAllEndpoints()">🚀 Kiểm Tra Tất Cả APIs</button>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://hackathonpionedream-production.up.railway.app';
+        let token = null;
+
+        async function testAllEndpoints() {
+            document.getElementById('results').innerHTML = '<h2>🔄 Đang kiểm tra...</h2>';
+            
+            // Step 1: Login
+            await testLogin();
+            
+            if (!token) {
+                document.getElementById('results').innerHTML += '<div class="status error">❌ Không thể login! Dừng kiểm tra.</div>';
+                return;
+            }
+
+            // Step 2: Test endpoints
+            await testEndpoint('FARMS', '/api/farms');
+            await testEndpoint('FIELDS', '/api/fields');
+            await testEndpoint('SENSORS', '/api/sensors');
+            await testEndpoint('PLANTS', '/api/plants');
+        }
+
+        async function testLogin() {
+            addResult('🔐 Đang login...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'admin@smartfarm.com',
+                        password: '123456'
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok && data.success && data.token) {
+                    token = data.token;
+                    addResult('✅ Login thành công!', 'success');
+                } else {
+                    // Try alternative account
+                    const response2 = await fetch(`${API_BASE}/api/auth/login`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            email: 'admin@smartfarm.com',
+                            password: '123456'
+                        })
+                    });
+
+                    const data2 = await response2.json();
+                    if (response2.ok && data2.success && data2.token) {
+                        token = data2.token;
+                        addResult('✅ Login thành công với account 2!', 'success');
+                    }
+                }
+            } catch (error) {
+                addResult('❌ Login error: ' + error.message, 'error');
+            }
+        }
+
+        async function testEndpoint(name, endpoint) {
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'result';
+            
+            let html = `<h3>📡 Testing: ${name} (${endpoint})</h3>`;
+            
+            try {
+                const response = await fetch(`${API_BASE}${endpoint}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                html += `<div class="status ${response.ok ? 'success' : 'error'}">Status: ${response.status} ${response.statusText}</div>`;
+
+                const data = await response.json();
+                
+                // Analyze response structure
+                html += analyzeResponse(data, name);
+                
+                // Show raw response
+                html += '<h4>📋 Raw Response:</h4>';
+                html += '<pre>' + JSON.stringify(data, null, 2).substring(0, 2000) + (JSON.stringify(data).length > 2000 ? '\n... (truncated)' : '') + '</pre>';
+
+            } catch (error) {
+                html += `<div class="status error">❌ Error: ${error.message}</div>`;
+            }
+
+            resultDiv.innerHTML = html;
+            document.getElementById('results').appendChild(resultDiv);
+        }
+
+        function analyzeResponse(data, name) {
+            let html = '<div class="analysis">';
+            html += '<h3>🔍 Phân Tích Response:</h3>';
+
+            // Check type
+            const type = Array.isArray(data) ? 'Array' : typeof data;
+            html += `<p><strong>Type:</strong> ${type}</p>`;
+
+            if (Array.isArray(data)) {
+                html += `<p><strong>✅ Đúng format!</strong> Backend trả về Array</p>`;
+                html += `<p><strong>Length:</strong> ${data.length} items</p>`;
+                
+                if (data.length > 0) {
+                    html += `<p><strong>Sample item keys:</strong> ${Object.keys(data[0]).join(', ')}</p>`;
+                } else {
+                    html += `<p><strong>⚠️ Array trống!</strong> Không có data trong database.</p>`;
+                }
+            } else if (type === 'object' && data !== null) {
+                html += `<p><strong>❌ SAI FORMAT!</strong> Backend trả về Object thay vì Array</p>`;
+                html += `<p><strong>Object keys:</strong> ${Object.keys(data).join(', ')}</p>`;
+                
+                // Check if data is nested
+                if (data.data !== undefined) {
+                    html += `<p><strong>⚠️ Data nested!</strong> Response có key "data"</p>`;
+                    html += `<p><strong>data type:</strong> ${Array.isArray(data.data) ? 'Array' : typeof data.data}</p>`;
+                    
+                    if (Array.isArray(data.data)) {
+                        html += `<p><strong>data length:</strong> ${data.data.length}</p>`;
+                    }
+                }
+
+                html += '</div>';
+                
+                // Suggest fix
+                html += '<div class="fix-code">';
+                html += '<h3>💡 Cách Fix Frontend:</h3>';
+                
+                if (data.data !== undefined && Array.isArray(data.data)) {
+                    html += '<p>Backend trả về nested structure. Frontend cần access <code>response.data.data</code></p>';
+                    html += '<pre>// Fix:\n';
+                    html += `const ${name.toLowerCase()} = Array.isArray(response.data.data) ? response.data.data : [];\n`;
+                    html += '// Thay vì:\n';
+                    html += `// const ${name.toLowerCase()} = Array.isArray(response.data) ? response.data : [];`;
+                    html += '</pre>';
+                } else {
+                    html += '<p>Backend trả về object. Cần check structure và access đúng key.</p>';
+                }
+                html += '</div>';
+                
+                return html;
+            } else {
+                html += `<p><strong>❌ INVALID!</strong> Backend trả về ${type}</p>`;
+            }
+
+            html += '</div>';
+            return html;
+        }
+
+        function addResult(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `status ${type}`;
+            div.textContent = message;
+            document.getElementById('results').appendChild(div);
+        }
+    </script>
+</body>
+</html>
+
+

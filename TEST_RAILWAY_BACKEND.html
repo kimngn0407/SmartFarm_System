@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Railway Backend</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1e1e1e;
+            color: #00ff00;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 10px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #2e2e2e;
+            border: 1px solid #00ff00;
+            white-space: pre-wrap;
+        }
+        .error { color: #ff4444; }
+        .success { color: #00ff00; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Test Railway Backend</h1>
+    
+    <button onclick="testHealth()">Test Health Endpoint</button>
+    <button onclick="testAuth()">Test Auth Endpoint</button>
+    <button onclick="testCORS()">Test CORS</button>
+    
+    <div id="result"></div>
+    
+    <script>
+        const API_BASE = 'https://hackathonpionedream-production.up.railway.app';
+        const result = document.getElementById('result');
+        
+        function log(msg, type = 'info') {
+            const span = document.createElement('div');
+            span.className = type;
+            span.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            result.appendChild(span);
+        }
+        
+        async function testHealth() {
+            result.innerHTML = '';
+            log('🔄 Testing health endpoint...', 'info');
+            log(`URL: ${API_BASE}/actuator/health`, 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/actuator/health`, {
+                    method: 'GET',
+                    mode: 'cors'
+                });
+                
+                log(`Status: ${response.status}`, response.ok ? 'success' : 'error');
+                
+                const data = await response.text();
+                log(`Response: ${data}`, 'success');
+                
+                if (response.ok) {
+                    log('✅ Backend is RUNNING!', 'success');
+                } else {
+                    log('❌ Backend returned error!', 'error');
+                }
+            } catch (error) {
+                log(`❌ FAILED: ${error.message}`, 'error');
+                log('', 'error');
+                log('Possible reasons:', 'error');
+                log('1. Backend is DOWN', 'error');
+                log('2. Network/DNS issue', 'error');
+                log('3. CORS blocking', 'error');
+            }
+        }
+        
+        async function testAuth() {
+            result.innerHTML = '';
+            log('🔄 Testing auth endpoint...', 'info');
+            log(`URL: ${API_BASE}/api/auth/register`, 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/auth/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: 'test@test.com',
+                        passwordHash: 'test123',
+                        fullName: 'Test User',
+                        role: 'ADMIN'
+                    })
+                });
+                
+                log(`Status: ${response.status}`, 'info');
+                
+                const data = await response.text();
+                log(`Response: ${data}`, 'info');
+                
+                if (response.status === 400 && data.includes('Email đã tồn tại')) {
+                    log('✅ Endpoint is WORKING! (Email already exists is OK)', 'success');
+                } else if (response.ok) {
+                    log('✅ Auth endpoint is WORKING!', 'success');
+                } else {
+                    log('⚠️ Got response but with error', 'error');
+                }
+            } catch (error) {
+                log(`❌ FAILED: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testCORS() {
+            result.innerHTML = '';
+            log('🔄 Testing CORS...', 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/farms`, {
+                    method: 'GET',
+                    mode: 'cors',
+                    headers: {
+                        'Origin': window.location.origin
+                    }
+                });
+                
+                log(`Status: ${response.status}`, 'info');
+                log(`CORS headers:`, 'info');
+                log(`  Access-Control-Allow-Origin: ${response.headers.get('Access-Control-Allow-Origin')}`, 'info');
+                
+                const data = await response.text();
+                log(`Response: ${data.substring(0, 200)}...`, 'info');
+                
+                if (response.ok) {
+                    log('✅ CORS is configured correctly!', 'success');
+                } else {
+                    log('⚠️ Got response but check CORS headers', 'error');
+                }
+            } catch (error) {
+                log(`❌ CORS FAILED: ${error.message}`, 'error');
+                log('This means CORS is blocking the request!', 'error');
+            }
+        }
+        
+        // Auto test on load
+        window.onload = () => {
+            log('Click buttons above to test...', 'info');
+        };
+    </script>
+</body>
+</html>
+
+

@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Farm - Complete API Testing</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        .status-bar {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .section {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #667eea;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .section h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .result {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .success { color: #28a745; font-weight: bold; }
+        .error { color: #dc3545; font-weight: bold; }
+        .warning { color: #ffc107; font-weight: bold; }
+        .info { color: #17a2b8; font-weight: bold; }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border 0.3s;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin: 0 5px;
+        }
+        .badge-success { background: #d4edda; color: #155724; }
+        .badge-danger { background: #f8d7da; color: #721c24; }
+        .badge-warning { background: #fff3cd; color: #856404; }
+        .badge-info { background: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌾 Smart Farm - Complete API Testing</h1>
+        
+        <div class="status-bar">
+            <div>
+                <strong>Backend:</strong> <span id="backendStatus" class="badge badge-warning">Not Tested</span>
+            </div>
+            <div>
+                <strong>Token:</strong> <span id="tokenStatus" class="badge badge-danger">No Token</span>
+            </div>
+            <div>
+                <button onclick="testAllQuick()">🚀 Test All Quick</button>
+            </div>
+        </div>
+
+        <!-- LOGIN SECTION -->
+        <div class="section">
+            <h2>🔐 1. Authentication</h2>
+            <div class="grid">
+                <input type="email" id="email" placeholder="Email" value="admin@smartfarm.com">
+                <input type="password" id="password" placeholder="Password" value="123456">
+            </div>
+            <button onclick="testLogin()">Login</button>
+            <button onclick="testRegister()">Test Register</button>
+            <div id="loginResult" class="result"></div>
+        </div>
+
+        <!-- BACKEND APIs -->
+        <div class="section">
+            <h2>🏗️ 2. Backend APIs (Railway)</h2>
+            <div class="grid">
+                <button onclick="testBackendHealth()">Health Check</button>
+                <button onclick="testGetFarms()">GET Farms</button>
+                <button onclick="testGetFields()">GET Fields</button>
+                <button onclick="testGetSensors()">GET Sensors</button>
+                <button onclick="testGetCrops()">GET Crops</button>
+                <button onclick="testCreateFarm()">Create Test Farm</button>
+            </div>
+            <div id="backendResult" class="result"></div>
+        </div>
+
+        <!-- PEST & DISEASE AI -->
+        <div class="section">
+            <h2>🐛 3. Pest & Disease AI (Hugging Face)</h2>
+            <p><strong>URL:</strong> https://kimngan0407-pest-disease.hf.space</p>
+            <button onclick="testPestHealth()">Test Health</button>
+            <button onclick="testPestClasses()">Get Classes</button>
+            <button onclick="testPestDetect()">Test Detection (via Backend)</button>
+            <input type="file" id="pestImage" accept="image/*" style="margin: 10px 0;">
+            <div id="pestResult" class="result"></div>
+        </div>
+
+        <!-- CROP AI -->
+        <div class="section">
+            <h2>🌾 4. Crop Recommendation AI (Render)</h2>
+            <p><strong>URL:</strong> https://hackathon-pione-dream.onrender.com</p>
+            <p class="warning">⚠️ Render free tier sleeps after 15 min. First call may take 30-60 seconds!</p>
+            <button onclick="testCropHealth()">Test Health</button>
+            <button onclick="testCropRecommend()">Test Recommendation (via Backend)</button>
+            <div class="grid">
+                <input type="number" id="n" placeholder="N (0-150)" value="90">
+                <input type="number" id="p" placeholder="P (0-150)" value="42">
+                <input type="number" id="k" placeholder="K (0-250)" value="43">
+                <input type="number" id="temp" placeholder="Temperature (°C)" value="25">
+                <input type="number" id="humidity" placeholder="Humidity (%)" value="80">
+                <input type="number" id="ph" placeholder="pH (3-10)" value="6.5">
+                <input type="number" id="rainfall" placeholder="Rainfall (mm)" value="200">
+            </div>
+            <div id="cropResult" class="result"></div>
+        </div>
+
+        <!-- CHATBOT -->
+        <div class="section">
+            <h2>🤖 5. Chatbot AI (Vercel)</h2>
+            <p><strong>URL:</strong> https://hackathon-pione-dream-vzj5.vercel.app</p>
+            <button onclick="testChatbot()">Open Chatbot</button>
+            <button onclick="checkChatbotAccess()">Check Chatbot Access</button>
+            <div id="chatbotResult" class="result"></div>
+        </div>
+
+        <!-- SUMMARY -->
+        <div class="section">
+            <h2>📊 Test Summary</h2>
+            <div id="summary" class="result">
+                Click "🚀 Test All Quick" to run all tests automatically.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const BACKEND_URL = 'https://hackathonpionedream-production.up.railway.app';
+        const PEST_AI_URL = 'https://kimngan0407-pest-disease.hf.space';
+        const CROP_AI_URL = 'https://hackathon-pione-dream.onrender.com';
+        const CHATBOT_URL = 'https://hackathon-pione-dream-vzj5.vercel.app';
+        
+        let authToken = localStorage.getItem('token') || null;
+        
+        // Update UI
+        function updateTokenStatus() {
+            const statusEl = document.getElementById('tokenStatus');
+            if (authToken) {
+                statusEl.className = 'badge badge-success';
+                statusEl.textContent = 'Token Ready';
+            } else {
+                statusEl.className = 'badge badge-danger';
+                statusEl.textContent = 'No Token';
+            }
+        }
+        updateTokenStatus();
+
+        // Helper to log results
+        function log(elementId, message, type = 'info') {
+            const el = document.getElementById(elementId);
+            const timestamp = new Date().toLocaleTimeString();
+            const prefix = type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : 'ℹ️';
+            el.innerHTML = `<span class="${type}">[${timestamp}] ${prefix} ${message}</span>\n` + el.innerHTML;
+        }
+
+        // === AUTHENTICATION ===
+        async function testLogin() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            log('loginResult', 'Testing login...', 'info');
+            
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.token) {
+                    authToken = data.token;
+                    localStorage.setItem('token', authToken);
+                    updateTokenStatus();
+                    log('loginResult', `LOGIN SUCCESS!\nUser: ${data.personalInfo?.fullName}\nEmail: ${data.personalInfo?.email}\nToken saved!`, 'success');
+                    document.getElementById('backendStatus').className = 'badge badge-success';
+                    document.getElementById('backendStatus').textContent = 'Connected';
+                } else {
+                    log('loginResult', `LOGIN FAILED!\nStatus: ${response.status}\nError: ${data.error || 'Unknown'}`, 'error');
+                }
+            } catch (error) {
+                log('loginResult', `ERROR: ${error.message}`, 'error');
+            }
+        }
+
+        // === BACKEND APIs ===
+        async function testBackendHealth() {
+            log('backendResult', 'Testing backend health...', 'info');
+            try {
+                const response = await fetch(`${BACKEND_URL}/actuator/health`);
+                const data = await response.json();
+                log('backendResult', `Backend Health: ${data.status}\n${JSON.stringify(data, null, 2)}`, 'success');
+            } catch (error) {
+                log('backendResult', `Backend health check failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testGetFarms() {
+            if (!authToken) {
+                log('backendResult', 'Please login first!', 'error');
+                return;
+            }
+            
+            log('backendResult', 'Getting farms...', 'info');
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/farms`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    const count = Array.isArray(data) ? data.length : 'Unknown';
+                    log('backendResult', `Farms retrieved: ${count}\n${JSON.stringify(data, null, 2)}`, 'success');
+                } else {
+                    log('backendResult', `Failed to get farms: ${response.status}\n${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                log('backendResult', `Error getting farms: ${error.message}`, 'error');
+            }
+        }
+
+        async function testGetFields() {
+            if (!authToken) {
+                log('backendResult', 'Please login first!', 'error');
+                return;
+            }
+            
+            log('backendResult', 'Getting fields...', 'info');
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/fields`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                const data = await response.json();
+                const count = Array.isArray(data) ? data.length : 'Unknown';
+                log('backendResult', `Fields retrieved: ${count}\n${JSON.stringify(data, null, 2)}`, response.ok ? 'success' : 'error');
+            } catch (error) {
+                log('backendResult', `Error getting fields: ${error.message}`, 'error');
+            }
+        }
+
+        async function testGetSensors() {
+            if (!authToken) {
+                log('backendResult', 'Please login first!', 'error');
+                return;
+            }
+            
+            log('backendResult', 'Getting sensors...', 'info');
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/sensors`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                const data = await response.json();
+                const count = Array.isArray(data) ? data.length : 'Unknown';
+                log('backendResult', `Sensors retrieved: ${count}\n${JSON.stringify(data, null, 2)}`, response.ok ? 'success' : 'error');
+            } catch (error) {
+                log('backendResult', `Error getting sensors: ${error.message}`, 'error');
+            }
+        }
+
+        async function testGetCrops() {
+            if (!authToken) {
+                log('backendResult', 'Please login first!', 'error');
+                return;
+            }
+            
+            log('backendResult', 'Getting crops...', 'info');
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/plants`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                
+                const data = await response.json();
+                const count = Array.isArray(data) ? data.length : 'Unknown';
+                log('backendResult', `Crops retrieved: ${count}\n${JSON.stringify(data, null, 2)}`, response.ok ? 'success' : 'error');
+            } catch (error) {
+                log('backendResult', `Error getting crops: ${error.message}`, 'error');
+            }
+        }
+
+        async function testCreateFarm() {
+            if (!authToken) {
+                log('backendResult', 'Please login first!', 'error');
+                return;
+            }
+            
+            const testFarm = {
+                name: `Test Farm ${Date.now()}`,
+                location: 'Đà Lạt, Lâm Đồng',
+                area: 5000,
+                description: 'Test farm created by API test'
+            };
+            
+            log('backendResult', 'Creating test farm...', 'info');
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/farms`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(testFarm)
+                });
+                
+                const data = await response.json();
+                log('backendResult', `Farm created!\n${JSON.stringify(data, null, 2)}`, response.ok ? 'success' : 'error');
+            } catch (error) {
+                log('backendResult', `Error creating farm: ${error.message}`, 'error');
+            }
+        }
+
+        // === PEST & DISEASE AI ===
+        async function testPestHealth() {
+            log('pestResult', 'Testing Pest AI health (may take 10-30s if sleeping)...', 'info');
+            try {
+                const response = await fetch(`${PEST_AI_URL}/health`, { signal: AbortSignal.timeout(60000) });
+                const data = await response.json();
+                log('pestResult', `Pest AI Health: ${data.status}\n${JSON.stringify(data, null, 2)}`, 'success');
+            } catch (error) {
+                log('pestResult', `Pest AI health check failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testPestClasses() {
+            log('pestResult', 'Getting pest/disease classes...', 'info');
+            try {
+                const response = await fetch(`${PEST_AI_URL}/api/classes`);
+                const data = await response.json();
+                log('pestResult', `Classes retrieved:\n${JSON.stringify(data, null, 2)}`, 'success');
+            } catch (error) {
+                log('pestResult', `Error getting classes: ${error.message}`, 'error');
+            }
+        }
+
+        async function testPestDetect() {
+            const fileInput = document.getElementById('pestImage');
+            if (!fileInput.files[0]) {
+                log('pestResult', 'Please select an image first!', 'error');
+                return;
+            }
+            
+            if (!authToken) {
+                log('pestResult', 'Please login first!', 'error');
+                return;
+            }
+            
+            log('pestResult', 'Detecting pest/disease (may take 10-30s)...', 'info');
+            
+            const formData = new FormData();
+            formData.append('image', fileInput.files[0]);
+            
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/pest-disease/detect`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${authToken}` },
+                    body: formData
+                });
+                
+                const data = await response.json();
+                log('pestResult', `Detection result:\n${JSON.stringify(data, null, 2)}`, response.ok ? 'success' : 'error');
+            } catch (error) {
+                log('pestResult', `Error detecting: ${error.message}`, 'error');
+            }
+        }
+
+        // === CROP AI ===
+        async function testCropHealth() {
+            log('cropResult', 'Testing Crop AI health (may take 30-60s if sleeping)...', 'warning');
+            try {
+                const response = await fetch(`${CROP_AI_URL}/health`, { signal: AbortSignal.timeout(90000) });
+                const data = await response.json();
+                log('cropResult', `Crop AI Health: ${data.status}\n${JSON.stringify(data, null, 2)}`, 'success');
+            } catch (error) {
+                log('cropResult', `Crop AI health check failed (may be sleeping): ${error.message}`, 'error');
+            }
+        }
+
+        async function testCropRecommend() {
+            if (!authToken) {
+                log('cropResult', 'Please login first!', 'error');
+                return;
+            }
+            
+            const cropData = {
+                N: parseFloat(document.getElementById('n').value),
+                P: parseFloat(document.getElementById('p').value),
+                K: parseFloat(document.getElementById('k').value),
+                temperature: parseFloat(document.getElementById('temp').value),
+                humidity: parseFloat(document.getElementById('humidity').value),
+                ph: parseFloat(document.getElementById('ph').value),
+                rainfall: parseFloat(document.getElementById('rainfall').value)
+            };
+            
+            log('cropResult', 'Getting crop recommendation (may take 30-60s if Render is sleeping)...', 'warning');
+            
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/crop/recommend`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(cropData),
+                    signal: AbortSignal.timeout(90000)
+                });
+                
+                const data = await response.json();
+                log('cropResult', `Recommendation:\n${JSON.stringify(data, null, 2)}`, response.ok ? 'success' : 'error');
+            } catch (error) {
+                log('cropResult', `Error getting recommendation: ${error.message}`, 'error');
+            }
+        }
+
+        // === CHATBOT ===
+        function testChatbot() {
+            window.open(CHATBOT_URL, '_blank');
+            log('chatbotResult', 'Chatbot opened in new tab', 'success');
+        }
+
+        async function checkChatbotAccess() {
+            log('chatbotResult', 'Checking chatbot access...', 'info');
+            try {
+                const response = await fetch(CHATBOT_URL);
+                if (response.ok) {
+                    log('chatbotResult', 'Chatbot is accessible! Status: ' + response.status, 'success');
+                } else {
+                    log('chatbotResult', 'Chatbot returned: ' + response.status, 'warning');
+                }
+            } catch (error) {
+                log('chatbotResult', `Chatbot access error: ${error.message}`, 'error');
+            }
+        }
+
+        // === TEST ALL ===
+        async function testAllQuick() {
+            document.getElementById('summary').innerHTML = '<span class="info">Running all tests...</span>';
+            
+            // 1. Login
+            await testLogin();
+            await new Promise(r => setTimeout(r, 1000));
+            
+            // 2. Backend
+            await testBackendHealth();
+            await new Promise(r => setTimeout(r, 500));
+            await testGetFarms();
+            await new Promise(r => setTimeout(r, 500));
+            
+            // 3. Pest AI
+            await testPestHealth();
+            await new Promise(r => setTimeout(r, 500));
+            
+            // 4. Crop AI
+            await testCropHealth();
+            await new Promise(r => setTimeout(r, 500));
+            
+            // 5. Chatbot
+            await checkChatbotAccess();
+            
+            document.getElementById('summary').innerHTML = '<span class="success">✅ All tests completed! Check results above.</span>';
+        }
+
+        async function testRegister() {
+            const testUser = {
+                email: `test${Date.now()}@smartfarm.com`,
+                password: 'Test123!',
+                fullName: 'Test User'
+            };
+            
+            log('loginResult', 'Testing registration...', 'info');
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(testUser)
+                });
+                
+                const data = await response.json();
+                log('loginResult', `Registration: ${data.message}\n${JSON.stringify(data, null, 2)}`, response.ok ? 'success' : 'error');
+            } catch (error) {
+                log('loginResult', `Registration error: ${error.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>
+
+

@@ -24,6 +24,7 @@ public class CorsConfig {
             "https://hackathon-pione-dream.vercel.app",
             "https://hackathon-pione-dream-vzj5.vercel.app",
             "http://localhost:3000",
+            "http://localhost:8000",
             "http://localhost:8080"
         ));
         
