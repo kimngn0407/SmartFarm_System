@@ -227,12 +227,13 @@ const getFertilizationHistoryAll = (fieldId) => {
 
 // Debug functions to test correct API endpoints
 const testDatabaseEndpoints = async () => {
+    const API_BASE = 'https://hackathonpionedream-production.up.railway.app';
     const endpoints = [
         // Test endpoints that work
-        'http://localhost:8080/api/farms',
-        'http://localhost:8080/api/farms/1/fields',
-        'http://localhost:8080/api/irrigation?fieldId=7',
-        'http://localhost:8080/api/fertilization?fieldId=1'
+        `${API_BASE}/api/farms`,
+        `${API_BASE}/api/farms/1/fields`,
+        `${API_BASE}/api/irrigation?fieldId=7`,
+        `${API_BASE}/api/fertilization?fieldId=1`
     ];
     
     console.log('=== TESTING BACKEND ENDPOINTS WITH REQUIRED PARAMETERS ===');
