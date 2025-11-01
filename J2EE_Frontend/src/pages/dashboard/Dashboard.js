@@ -17,6 +17,7 @@ import farmService from '../../services/farmService';
 import fieldService from '../../services/fieldService';
 import sensorService from '../../services/sensorService';
 import alertService from '../../services/alertService';
+import { safeArray, safeMap } from '../../utils/responseHelper';
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, BarController, BarElement);
 
@@ -111,13 +112,17 @@ const Dashboard = () => {
       try {
         // 1. Lấy tất cả farms
         const farmsResponse = await farmService.getFarms();
-        const farms = Array.isArray(farmsResponse.data) ? farmsResponse.data : [];
+        console.log('✅ Farms response:', farmsResponse);
+        
+        // Safe extraction using helper
+        const farms = safeArray(farmsResponse);
         
         if (farms.length === 0) {
           console.warn('⚠️ No farms found in database');
         }
         
-        farmNamesArr = farms.map(f => f.farmName);
+        // Safe mapping using helper
+        farmNamesArr = safeMap(farmsResponse, f => f.farmName);
         
         // 2. Lấy TẤT CẢ SENSORS 1 LẦN (thay vì từng field)
         try {
