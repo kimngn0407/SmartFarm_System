@@ -37,6 +37,12 @@ public class FieldService {
         return convertToDTO(fieldRepository.save(field));
     }
 
+    public List<FieldDTO> getAllFields() {
+        return fieldRepository.findAll().stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
     public List<FieldDTO> getFieldsByFarmId(Long farmId) {
         return fieldRepository.findByFarmId(farmId).stream()
                 .map(this::convertToDTO)

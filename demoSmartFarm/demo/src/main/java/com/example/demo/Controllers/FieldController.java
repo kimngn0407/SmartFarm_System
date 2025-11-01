@@ -21,6 +21,11 @@ public class FieldController {
         return fieldService.createField(dto);
     }
 
+    @GetMapping
+    public List<FieldDTO> getAllFields() {
+        return fieldService.getAllFields();
+    }
+
     @GetMapping("/{farmId}/field")
     public List<FieldDTO> getFieldsByFarmId(@PathVariable Long farmId) {
         return fieldService.getFieldsByFarmId(farmId);

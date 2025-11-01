@@ -78,7 +78,7 @@ public class FarmService {
         return new FarmDTO(
                 farm.getId(),
                 farm.getFarmName(),
-                farm.getOwner().getId(),
+                farm.getOwner() != null ? farm.getOwner().getId() : null,
                 farm.getLat(),
                 farm.getLng(),
                 farm.getArea(),

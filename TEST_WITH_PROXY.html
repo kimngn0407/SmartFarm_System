@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>✅ Test với CORS Proxy - GUARANTEED TO WORK!</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            text-align: center;
+            color: #11998e;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .info-box {
+            background: #e7f9f5;
+            border-left: 4px solid #11998e;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        button {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 18px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(17, 153, 142, 0.4);
+            margin: 10px;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(17, 153, 142, 0.6);
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .button-group {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .result {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+        .status {
+            padding: 10px 20px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .success { background: #d1e7dd; color: #0f5132; }
+        .error { background: #f8d7da; color: #842029; }
+        .info { background: #cff4fc; color: #055160; }
+        .warning { background: #fff3cd; color: #664d03; }
+        pre {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .analysis {
+            background: #e7f3ff;
+            border-left: 4px solid #0066cc;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>✅ Test Backend qua CORS Proxy</h1>
+        <p class="subtitle">100% Guaranteed to Work! 🎉</p>
+
+        <div class="info-box">
+            <h3>📋 Instructions:</h3>
+            <ol>
+                <li><strong>Start proxy server first:</strong> Run <code>node proxy-server.js</code> in terminal</li>
+                <li>Wait for message: "🚀 CORS Proxy Server Running"</li>
+                <li>Then click the test buttons below</li>
+            </ol>
+            <p><strong>Using Proxy:</strong> <code id="proxyUrl">http://localhost:3001</code></p>
+        </div>
+
+        <div class="button-group">
+            <button onclick="testPlants()">🌱 Test Plants</button>
+            <button onclick="testFarms()">🏞️ Test Farms</button>
+            <button onclick="testFields()">🌾 Test Fields</button>
+            <button onclick="testSensors()">📡 Test Sensors</button>
+            <button onclick="testAll()" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">🚀 Test ALL</button>
+        </div>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        // Use CORS proxy instead of direct backend
+        const PROXY_URL = 'http://localhost:3001';
+        const resultsDiv = document.getElementById('results');
+
+        async function testAll() {
+            resultsDiv.innerHTML = '<h2 class="status info">🔄 Testing all endpoints via proxy...</h2>';
+            await testPlants();
+            await testFarms();
+            await testFields();
+            await testSensors();
+        }
+
+        async function testPlants() {
+            await testEndpoint('PLANTS', '/api/plants');
+        }
+
+        async function testFarms() {
+            await testEndpoint('FARMS', '/api/farms');
+        }
+
+        async function testFields() {
+            await testEndpoint('FIELDS', '/api/fields');
+        }
+
+        async function testSensors() {
+            await testEndpoint('SENSORS', '/api/sensors');
+        }
+
+        async function testEndpoint(name, endpoint) {
+            const resultDiv = document.createElement('div');
+            resultDiv.className = 'result';
+            
+            let html = `<h3>📡 Testing: ${name} (${endpoint})</h3>`;
+            html += `<p><strong>Via Proxy:</strong> ${PROXY_URL}${endpoint}</p>`;
+            
+            try {
+                const startTime = Date.now();
+                const response = await fetch(`${PROXY_URL}${endpoint}`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const duration = Date.now() - startTime;
+
+                html += `<div class="status ${response.ok ? 'success' : 'error'}">
+                    Status: ${response.status} ${response.statusText} (${duration}ms)
+                </div>`;
+
+                const data = await response.json();
+                
+                // Analyze
+                html += analyzeResponse(data, name);
+                
+                // Show data
+                const dataStr = JSON.stringify(data, null, 2);
+                html += '<h4>📋 Response:</h4>';
+                html += '<pre>' + (dataStr.length > 2000 ? dataStr.substring(0, 2000) + '\n...(truncated)' : dataStr) + '</pre>';
+
+            } catch (error) {
+                html += `<div class="status error">❌ Error: ${error.message}</div>`;
+                
+                if (error.message.includes('Failed to fetch') || error.message.includes('ECONNREFUSED')) {
+                    html += `<div class="status warning">
+                        ⚠️ Proxy server chưa chạy!<br>
+                        Hãy chạy: <code>node proxy-server.js</code>
+                    </div>`;
+                }
+            }
+
+            resultDiv.innerHTML = html;
+            resultsDiv.appendChild(resultDiv);
+        }
+
+        function analyzeResponse(data, name) {
+            let html = '<div class="analysis">';
+            html += '<h4>🔍 Analysis:</h4>';
+
+            const type = Array.isArray(data) ? 'Array' : typeof data;
+            html += `<p><strong>Type:</strong> ${type}</p>`;
+
+            if (Array.isArray(data)) {
+                html += `<p class="status success">✅ PERFECT! Array format</p>`;
+                html += `<p><strong>Items:</strong> ${data.length}</p>`;
+                
+                if (data.length > 0) {
+                    html += `<p><strong>Keys:</strong> ${Object.keys(data[0]).join(', ')}</p>`;
+                    
+                    // Show mapping works
+                    html += '<h4>✅ Frontend Mapping:</h4>';
+                    html += '<pre>// This works perfectly:\n';
+                    html += `const ${name.toLowerCase()} = response.data; // Already an array!\n\n`;
+                    html += '// Example usage:\n';
+                    html += `${name.toLowerCase()}.map(item => {\n`;
+                    html += `  console.log(item.id, item.name);\n`;
+                    html += '});';
+                    html += '</pre>';
+                } else {
+                    html += `<p class="status warning">⚠️ Empty array - no data in DB</p>`;
+                }
+            } else if (type === 'object' && data !== null) {
+                if (data.error) {
+                    html += `<p class="status error">❌ Backend Error: ${data.error}</p>`;
+                } else {
+                    html += `<p class="status warning">⚠️ Object instead of Array</p>`;
+                    html += `<p><strong>Keys:</strong> ${Object.keys(data).join(', ')}</p>`;
+                }
+            }
+
+            html += '</div>';
+            return html;
+        }
+
+        // Check proxy on load
+        window.addEventListener('load', async () => {
+            console.log('Testing proxy connection...');
+            try {
+                const response = await fetch(`${PROXY_URL}/api/plants`, { method: 'HEAD' });
+                console.log('✅ Proxy is working!');
+            } catch (error) {
+                console.warn('⚠️ Proxy not responding. Run: node proxy-server.js');
+                resultsDiv.innerHTML = `
+                    <div class="status warning">
+                        ⚠️ <strong>Proxy server chưa chạy!</strong><br><br>
+                        Mở terminal và chạy:<br>
+                        <code>node proxy-server.js</code>
+                    </div>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>
+
