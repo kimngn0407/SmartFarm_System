@@ -135,11 +135,11 @@ const Dashboard = () => {
         }
         
         // 3. Lấy tất cả fields của tất cả farms
-        if (farms.length > 0) {
+        if (Array.isArray(farms) && farms.length > 0) {
           await Promise.all(farms.map(async (farm) => {
           try {
             const fieldsResponse = await fieldService.getFieldsByFarm(farm.id);
-            const fields = Array.isArray(fieldsResponse.data) ? fieldsResponse.data : [];
+            const fields = safeArray(fieldsResponse);
             allFields = allFields.concat(fields);
           } catch (error) {
             console.error('Error fetching fields for farm', farm.id, error);
@@ -148,7 +148,7 @@ const Dashboard = () => {
         }
         
         // 4. Lấy trạng thái từng field và đếm alerts
-        if (allFields.length > 0) {
+        if (Array.isArray(allFields) && allFields.length > 0) {
           await Promise.all(allFields.map(async (field) => {
             try {
               const fieldDetailResponse = await fieldService.getFieldById(field.id);
