@@ -79,17 +79,30 @@ const CropManager = () => {
     const fetchCrops = () => {
         // Get all plants first, then get flat stages for each plant
         cropService.getCropsByField()
-            .then(response => {
-                const plants = Array.isArray(response.data) ? response.data : [];
+            .then(plantsResp => {
+                // Multi-level defensive check for plants
+                const plants = Array.isArray(plantsResp) ? plantsResp
+                              : Array.isArray(plantsResp?.data) ? plantsResp.data
+                              : Array.isArray(plantsResp?.data?.data) ? plantsResp.data.data
+                              : [];
+                
                 console.log('All plants:', plants);
                 
                 // Get flat stages for all plants
-                const promises = plants.map(plant => 
+                const promises = Array.isArray(plants) ? plants.map(plant => 
                     cropService.getFlatStagesByPlantId(plant.id)
-                        .then(stagesResponse => ({
-                            plant: plant,
-                            stages: Array.isArray(stagesResponse.data) ? stagesResponse.data : []
-                        }))
+                        .then(stagesResp => {
+                            // Multi-level defensive check for stages
+                            const stages = Array.isArray(stagesResp) ? stagesResp
+                                         : Array.isArray(stagesResp?.data) ? stagesResp.data
+                                         : Array.isArray(stagesResp?.data?.data) ? stagesResp.data.data
+                                         : [];
+                            
+                            return {
+                                plant: plant,
+                                stages: stages
+                            };
+                        })
                         .catch(error => {
                             console.warn(`No stages found for plant ${plant.id}:`, error);
                             return {
@@ -97,7 +110,7 @@ const CropManager = () => {
                                 stages: []
                             };
                         })
-                );
+                ) : [];
                 
                 Promise.all(promises)
                     .then(results => {

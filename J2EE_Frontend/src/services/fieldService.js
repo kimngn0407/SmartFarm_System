@@ -20,24 +20,41 @@ const validateCoordinates = (coordinates) => {
     );
 };
 
-export const getFieldsByFarm = (farmId) => axios.get(`${API_BASE_URL}/api/fields/${farmId}/field`, { headers: getAuthHeader() });
-export const getFieldCoordinates = (fieldId) => axios.get(`${API_BASE_URL}/api/coordinates?fieldId=${fieldId}`, { headers: getAuthHeader() });
+// Updated to return response.data directly
+export const getFieldsByFarm = async (farmId) => {
+    try {
+        const response = await axios.get(`${API_BASE_URL}/api/fields/${farmId}/field`, { headers: getAuthHeader() });
+        return response.data;
+    } catch (error) {
+        console.error(`Error fetching fields for farm ${farmId}:`, error);
+        return [];
+    }
+};
+
+export const getFieldCoordinates = async (fieldId) => {
+    try {
+        const response = await axios.get(`${API_BASE_URL}/api/coordinates?fieldId=${fieldId}`, { headers: getAuthHeader() });
+        return response.data;
+    } catch (error) {
+        console.error(`Error fetching coordinates for field ${fieldId}:`, error);
+        return [];
+    }
+};
 
 const getAllFields = async () => {
     try {
         const response = await axios.get(`${API_BASE_URL}/api/fields`, { headers: getAuthHeader() });
-
-        return response;
+        return response.data;
     } catch (error) {
         console.error('Error fetching all fields:', error);
-        throw error;
+        return [];
     }
 };
 
-const getFieldById = (id) => axios.get(`/api/fields/${id}`, { headers: getAuthHeader() });
-const createField = (data) => axios.post('/api/fields', data, { headers: getAuthHeader() });
-const updateField = (id, data) => axios.put(`/api/fields/${id}`, data, { headers: getAuthHeader() });
-const deleteField = (id) => axios.delete(`/api/fields/${id}`, { headers: getAuthHeader() });
+const getFieldById = (id) => axios.get(`${API_BASE_URL}/api/fields/${id}`, { headers: getAuthHeader() });
+const createField = (data) => axios.post(`${API_BASE_URL}/api/fields`, data, { headers: getAuthHeader() });
+const updateField = (id, data) => axios.put(`${API_BASE_URL}/api/fields/${id}`, data, { headers: getAuthHeader() });
+const deleteField = (id) => axios.delete(`${API_BASE_URL}/api/fields/${id}`, { headers: getAuthHeader() });
 
 export default {
     getFieldsByFarm,
