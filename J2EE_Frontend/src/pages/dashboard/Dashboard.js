@@ -113,12 +113,19 @@ const Dashboard = () => {
         // 1. Lấy tất cả farms
         const farmsResp = await farmService.getFarms();
         console.log('✅ Farms response:', farmsResp);
+        console.log('🔍 Response type:', typeof farmsResp);
+        console.log('🔍 Is Array?', Array.isArray(farmsResp));
+        console.log('🔍 Response.data?', farmsResp?.data);
+        console.log('🔍 Is data Array?', Array.isArray(farmsResp?.data));
         
         // Multi-level defensive check for farms
         const farms = Array.isArray(farmsResp) ? farmsResp
                     : Array.isArray(farmsResp?.data) ? farmsResp.data
                     : Array.isArray(farmsResp?.data?.data) ? farmsResp.data.data
                     : [];
+        
+        console.log('✅ Extracted farms:', farms);
+        console.log('✅ Farms count:', farms.length);
         
         if (farms.length === 0) {
           console.warn('⚠️ No farms found in database');
