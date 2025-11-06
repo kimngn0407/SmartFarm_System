@@ -104,7 +104,13 @@ services:
     build:
       context: ./J2EE_Frontend
       dockerfile: Dockerfile
+      args:
+        - REACT_APP_API_URL=http://173.249.48.25:8080
+        - REACT_APP_RENDER_API_BASE=http://173.249.48.25:8080
     container_name: smartfarm-frontend
+    environment:
+      - REACT_APP_API_URL=http://173.249.48.25:8080
+      - REACT_APP_RENDER_API_BASE=http://173.249.48.25:8080
     ports:
       - "80:80"
     depends_on:
