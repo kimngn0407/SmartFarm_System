@@ -20,6 +20,9 @@ RUN npm ci
 # Copy source code
 COPY . .
 
+# Xóa file .env nếu có (để không override environment variables)
+RUN rm -f .env .env.local .env.production .env.development
+
 # Build application (tắt ESLint để tránh lỗi syntax)
 ENV DISABLE_ESLINT_PLUGIN=true
 ENV ESLINT_NO_DEV_ERRORS=true
