@@ -277,18 +277,21 @@ def get_crop_list():
     }), 200
 
 if __name__ == '__main__':
-    # Load model khi khởi động
-    if load_model():
-        logger.info("Đang khởi động Crop Recommendation Service...")
-        logger.info("API sẽ chạy tại: http://localhost:5000")
-        logger.info("\nEndpoints available:")
-        logger.info("  - GET  /health                    - Health check")
-        logger.info("  - POST /api/recommend-crop        - Gợi ý cây trồng (single)")
-        logger.info("  - POST /api/recommend-crop/batch  - Gợi ý cây trồng (batch)")
-        logger.info("  - GET  /api/crops                 - Danh sách cây trồng")
-        
-        app.run(host='0.0.0.0', port=5000, debug=True)
-    else:
-        logger.error("Không thể khởi động service do lỗi load model")
+    # Load model khi khởi động (nhưng vẫn chạy service dù không load được)
+    load_model()
+    
+    logger.info("Đang khởi động Crop Recommendation Service...")
+    logger.info("API sẽ chạy tại: http://localhost:5000")
+    logger.info("\nEndpoints available:")
+    logger.info("  - GET  /health                    - Health check")
+    logger.info("  - POST /api/recommend-crop        - Gợi ý cây trồng (single)")
+    logger.info("  - POST /api/recommend-crop/batch  - Gợi ý cây trồng (batch)")
+    logger.info("  - GET  /api/crops                 - Danh sách cây trồng")
+    
+    if model is None:
+        logger.warning("⚠️  WARNING: Model chưa được load. API /api/recommend-crop sẽ trả về lỗi.")
+        logger.warning("⚠️  Service vẫn chạy để health check hoạt động.")
+    
+    app.run(host='0.0.0.0', port=5000, debug=False)
 
 
