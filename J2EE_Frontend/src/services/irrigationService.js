@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { API_BASE_URL } from '../config/api.config';
 
 const getAuthHeader = () => {
     const token = localStorage.getItem('token');
@@ -6,7 +7,7 @@ const getAuthHeader = () => {
 };
 
 // API endpoints - Using correct backend endpoints with full URL
-const API_BASE = 'http://localhost:8080/api';
+const API_BASE = `${API_BASE_URL}/api`;
 
 // Core irrigation functions - using correct backend endpoints
 const logIrrigation = (data) => 
@@ -228,10 +229,10 @@ const getFertilizationHistoryAll = (fieldId) => {
 const testDatabaseEndpoints = async () => {
     const endpoints = [
         // Test endpoints that work
-        'http://localhost:8080/api/farms',
-        'http://localhost:8080/api/farms/1/fields',
-        'http://localhost:8080/api/irrigation?fieldId=7',
-        'http://localhost:8080/api/fertilization?fieldId=1'
+        `${API_BASE_URL}/api/farms`,
+        `${API_BASE_URL}/api/farms/1/fields`,
+        `${API_BASE_URL}/api/irrigation?fieldId=7`,
+        `${API_BASE_URL}/api/fertilization?fieldId=1`
     ];
     
     console.log('=== TESTING BACKEND ENDPOINTS WITH REQUIRED PARAMETERS ===');
