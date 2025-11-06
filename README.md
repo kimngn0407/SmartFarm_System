@@ -11,9 +11,11 @@
 
 | Mục đích | File để đọc | Thời gian |
 |----------|-------------|-----------|
-| 🏃 **Chạy trên máy local** | Đọc tiếp file này (README.md) | 10 phút |
-| 🌐 **Deploy lên Internet (Người mới)** | [`STEP_BY_STEP_DEPLOYMENT.md`](STEP_BY_STEP_DEPLOYMENT.md) ⭐ | 2-3 giờ |
-| 📚 **Xem tất cả hướng dẫn** | [`START_HERE.md`](START_HERE.md) | 5 phút |
+| 🏃 **Chạy LOCAL (Khuyên dùng!)** | [`START_HERE.txt`](START_HERE.txt) ⭐⭐ | 1 phút |
+| 📖 **Hướng dẫn Local chi tiết** | [`HUONG_DAN_LOCAL.md`](HUONG_DAN_LOCAL.md) | 10 phút |
+| 💰 **Chọn VPS giá rẻ (Sinh viên)** | [`VPS_CHOICE_GUIDE.md`](VPS_CHOICE_GUIDE.md) ⭐⭐ | 5 phút |
+| 🌐 **Deploy lên VPS** | [`DEPLOYMENT_GUIDE.md`](DEPLOYMENT_GUIDE.md) | 30 phút |
+| 💾 **Tối ưu VPS RAM thấp** | [`LOW_MEMORY_OPTIMIZATION.md`](LOW_MEMORY_OPTIMIZATION.md) | 10 phút |
 
 ---
 
@@ -173,6 +175,8 @@ MANUAL_RUN.bat
 | 🏗️ **Kiến trúc** | [`FULL_SYSTEM_ARCHITECTURE.md`](FULL_SYSTEM_ARCHITECTURE.md) | Hiểu cách hệ thống hoạt động (9 thành phần) |
 | 🚀 **Deploy Hoàn Chỉnh** | [`COMPLETE_DEPLOYMENT_GUIDE.md`](COMPLETE_DEPLOYMENT_GUIDE.md) | Deploy Database, Blockchain, IoT (nâng cao) |
 | ⚡ **Quick Reference** | [`QUICK_REFERENCE.md`](QUICK_REFERENCE.md) | Commands, endpoints, troubleshooting |
+| 🔒 **CORS Setup** | [`CORS_SETUP.md`](CORS_SETUP.md) | ⭐ **MỚI!** Cấu hình CORS giữa Vercel ↔ Render ↔ Hugging Face |
+| 🇻🇳 **CORS Hướng Dẫn Tiếng Việt** | [`HUONG_DAN_CORS.md`](HUONG_DAN_CORS.md) | ⭐ **MỚI!** Hướng dẫn chi tiết bằng tiếng Việt |
 
 ---
 
@@ -363,8 +367,10 @@ taskkill /PID <PID> /F
 ```
 
 ### CORS Error
-- Restart cả Backend và Frontend
-- Kiểm tra `@CrossOrigin` trong Controller
+- ✅ **Đã cấu hình CORS tự động**: Xem [`CORS_SETUP.md`](CORS_SETUP.md) để biết chi tiết
+- Set biến môi trường `FRONTEND_ORIGINS` trên Railway/Render/Vercel
+- Test CORS: Chạy `test-cors.sh` (Linux/Mac) hoặc `test-cors.bat` (Windows)
+- Kiểm tra browser console để xem lỗi cụ thể
 
 ## 🎓 Technologies Used
 
@@ -420,5 +426,7 @@ start_all_services.bat
 **Đọc thêm:**
 - [QUICK_START.md](QUICK_START.md) - Hướng dẫn nhanh
 - [INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md) - Hướng dẫn tích hợp
+- [TOM_TAT_CORS.md](TOM_TAT_CORS.md) - Cấu hình CORS 3 bước ⭐
+- [HUONG_DAN_CORS.md](HUONG_DAN_CORS.md) - Hướng dẫn CORS chi tiết ⭐
 
 **Happy Farming! 🌾🚜**

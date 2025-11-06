@@ -100,11 +100,8 @@ const SensorMap = ({ fields = [], farm = null }) => {
     const mapsRef = useRef(null);
     const polygonsRef = useRef([]);
     const [hoveredFieldId, setHoveredFieldId] = useState(null);
-    const [updated, setUpdated] = useState(false);
 
     const mapCenter = React.useMemo(() => {
-        setTimeout(() => {
-        }, 3000);
         if (farm && farm.lat && farm.lng) {
             return { lat: Number(farm.lat), lng: Number(farm.lng) };
         }
@@ -162,16 +159,14 @@ const SensorMap = ({ fields = [], farm = null }) => {
     }, []);
 
     // Lấy tất cả sensor từ fields
-    const allSensors = fields.flatMap(field => field.sensors || []);
-    if (allSensors.length > 0) {
-        debugger
-        setTimeout(() => { console.log("aaaa") }, 3000); // Giả lập delay để xem hiệu ứng
-    }
+    const allSensors = Array.isArray(fields) ? fields.flatMap(field => (Array.isArray(field?.sensors) ? field.sensors : [])) : [];
 
+    const apiKey = process.env.REACT_APP_GOOGLE_MAPS_API_KEY || 'AIzaSyAsTXC2iITKFsDIdn_WRfIzC79k4QgItbA';
+    
     return (
         <Box sx={{ height: 500, width: '100%', position: 'relative', mt: 2 }}>
             <GoogleMapReact
-                bootstrapURLKeys={{ key: 'AIzaSyAsTXC2iITKFsDIdn_WRfIzC79k4QgItbA' }}
+                bootstrapURLKeys={{ key: apiKey }}
                 center={mapCenter}
                 defaultCenter={mapCenter}
                 defaultZoom={12}

@@ -104,6 +104,14 @@ const Field = () => {
     const loadFields = async (farmId) => {
         try {
             const response = await fieldService.getFieldsByFarm(farmId);
+            
+            // Check if response.data exists and is an array
+            if (!response || !response.data || !Array.isArray(response.data)) {
+                console.warn('No fields data received or invalid format:', response);
+                setFields([]);
+                return;
+            }
+            
             const fieldsData = response.data;
 
             const fieldsWithCoordinates = await Promise.all(fieldsData.map(async (field) => {
@@ -145,12 +153,13 @@ const Field = () => {
                 }
             }));
 
-            setFields(fieldsWithCoordinates);
-            console.log("Fields data with coordinates:", fieldsWithCoordinates);
-            if (fieldsWithCoordinates.length > 0) {
+            const safeFields = Array.isArray(fieldsWithCoordinates) ? fieldsWithCoordinates : [];
+            setFields(safeFields);
+            console.log("Fields data with coordinates:", safeFields);
+            if (safeFields.length > 0) {
                 let minLat = Infinity, maxLat = -Infinity, minLng = Infinity, maxLng = -Infinity;
 
-                fieldsWithCoordinates.forEach(field => {
+                safeFields.forEach(field => {
                      if (field.coordinates && field.coordinates.length > 0) {
                         field.coordinates.forEach(coord => {
                             minLat = Math.min(minLat, coord.lat);
@@ -436,7 +445,7 @@ const Field = () => {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {fields.map((field) => (
+                        {Array.isArray(fields) && fields.map((field) => (
                             <TableRow 
                                 key={field.id}
                                 onMouseEnter={() => handleFieldHover(field)}

@@ -15,7 +15,23 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS cho phép frontend gọi API
+
+# Configure CORS with environment variable support
+origins_env = os.environ.get("FRONTEND_ORIGINS", "")
+if origins_env:
+    origins = [origin.strip() for origin in origins_env.split(",") if origin.strip()]
+else:
+    # Default origins for local development
+    origins = [
+        "http://localhost:3000",
+        "http://localhost:8000",
+        "http://localhost:8080",
+        "http://localhost:9002"
+    ]
+
+CORS(app, origins=origins, supports_credentials=True, 
+     allow_headers=["Content-Type", "Authorization"],
+     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
 
 # Load model khi khởi động service
 MODEL_PATH = 'RandomForest_RecomentTree.pkl'

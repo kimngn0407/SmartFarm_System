@@ -40,7 +40,10 @@ public class PestDiseaseService {
             
             if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
                 Map<String, Object> body = response.getBody();
-                return "ok".equals(body.get("status")) && "loaded".equals(body.get("model"));
+                // Python service returns "healthy" and model_loaded
+                String status = (String) body.get("status");
+                Boolean modelLoaded = (Boolean) body.get("model_loaded");
+                return "healthy".equals(status) && Boolean.TRUE.equals(modelLoaded);
             }
             return false;
 
@@ -85,7 +88,7 @@ public class PestDiseaseService {
             headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
             MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-            body.add("file", new ByteArrayResource(imageFile.getBytes()) {
+            body.add("image", new ByteArrayResource(imageFile.getBytes()) {
                 @Override
                 public String getFilename() {
                     return imageFile.getOriginalFilename();
@@ -130,7 +133,7 @@ public class PestDiseaseService {
             headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
             MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-            body.add("file", new ByteArrayResource(imageBytes) {
+            body.add("image", new ByteArrayResource(imageBytes) {
                 @Override
                 public String getFilename() {
                     return filename != null ? filename : "image.jpg";

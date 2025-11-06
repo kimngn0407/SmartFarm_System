@@ -39,7 +39,6 @@ import FieldMap from '../../components/FieldMap';
 import RoleGuard from '../../components/Auth/RoleGuard';
 
 import { getFieldsByFarm, getFieldCoordinates } from '../../services/fieldService';
-import { getSensorsByField } from '../../services/sensorService';
 
 const SensorManager = () => {
     const [farms, setFarms] = useState([]);
@@ -72,10 +71,11 @@ const SensorManager = () => {
             setError('');
             try {
                 const res = await farmService.getFarms();
-                setFarms(res.data);
+                const farmsData = Array.isArray(res?.data) ? res.data : (Array.isArray(res) ? res : []);
+                setFarms(farmsData);
                 // Auto-select first farm if available
-                if (res.data && res.data.length > 0 && !selectedFarm) {
-                    setSelectedFarm(res.data[0].id);
+                if (farmsData && farmsData.length > 0 && !selectedFarm) {
+                    setSelectedFarm(farmsData[0].id);
                 }
             } catch (err) {
                 console.error('Error fetching farms:', err);
@@ -100,28 +100,52 @@ const SensorManager = () => {
             setLoading(true);
             try {
                 const resFields = await fieldService.getFieldsByFarm(selectedFarm);
+                
+                // Check if resFields.data exists and is an array
+                if (!resFields || !resFields.data || !Array.isArray(resFields.data)) {
+                    console.warn('No fields data received:', resFields);
+                    setFields([]);
+                    setSensors([]);
+                    return;
+                }
+                
                 const fieldsWithCoordinates = await Promise.all(
                     resFields.data.map(async (field) => {
-                        const resCoords = await fieldService.getFieldCoordinates(field.id);
-                        const resSensors = await sensorService.getSensorsByField(field.id);
-                        return {
-                            ...field,
-                            coordinates: Array.isArray(resCoords.data) ? resCoords.data : [],
-                            sensors: Array.isArray(resSensors.data) ? resSensors.data : [],
-                        };
+                        try {
+                            const resCoords = await fieldService.getFieldCoordinates(field.id);
+                            const resSensors = await sensorService.getSensorsByField(field.id);
+                            return {
+                                ...field,
+                                coordinates: Array.isArray(resCoords?.data) ? resCoords.data : [],
+                                sensors: Array.isArray(resSensors?.data) ? resSensors.data : [],
+                            };
+                        } catch (err) {
+                            console.error(`Error loading field ${field.id}:`, err);
+                            return {
+                                ...field,
+                                coordinates: [],
+                                sensors: [],
+                            };
+                        }
                     })
                 );
-                setTimeout(() => {}, 200); 
+                
                 console.log('Fields with coordinates loaded:', fieldsWithCoordinates);
-                setFields(fieldsWithCoordinates);
-                const allSensors = fieldsWithCoordinates.flatMap(f => f.sensors || []);
+                const safeFields = Array.isArray(fieldsWithCoordinates) ? fieldsWithCoordinates : [];
+                setFields(safeFields);
+                
+                const allSensors = safeFields.flatMap(f => (Array.isArray(f.sensors) ? f.sensors : []));
                 console.log('All sensors loaded:', allSensors);
-                setSensors(allSensors);
+                setSensors(Array.isArray(allSensors) ? allSensors : []);
                 
                 // Lấy thông tin farm
-                const farmRes = await farmService.getFarmById(selectedFarm);
-                console.log('Farm data loaded:', farmRes.data);
-                setSelectedFarmData(farmRes.data);
+                try {
+                    const farmRes = await farmService.getFarmById(selectedFarm);
+                    setSelectedFarmData(farmRes?.data || null);
+                } catch (farmErr) {
+                    console.error('Error loading farm data:', farmErr);
+                    setSelectedFarmData(null);
+                }
             } catch (err) {
                 setFields([]);
                 setSensors([]);
@@ -148,15 +172,25 @@ const SensorManager = () => {
             try {
                 await sensorService.deleteSensor(sensorId);
                 if (selectedFarm) {
-                    const resFields = await fieldService.getFieldsByFarm(selectedFarm);
-                    const allSensors = [];
-                    for (const field of resFields.data) {
-                        const resSensors = await sensorService.getSensorsByField(field.id);
-                        if (Array.isArray(resSensors.data)) {
-                            allSensors.push(...resSensors.data);
+                    try {
+                        const resFields = await fieldService.getFieldsByFarm(selectedFarm);
+                        const fieldsData = Array.isArray(resFields?.data) ? resFields.data : [];
+                        const allSensors = [];
+                        for (const field of fieldsData) {
+                            try {
+                                const resSensors = await sensorService.getSensorsByField(field.id);
+                                if (Array.isArray(resSensors?.data)) {
+                                    allSensors.push(...resSensors.data);
+                                }
+                            } catch (sensorErr) {
+                                console.error(`Error loading sensors for field ${field.id}:`, sensorErr);
+                            }
                         }
+                        setSensors(Array.isArray(allSensors) ? allSensors : []);
+                    } catch (reloadErr) {
+                        console.error('Error reloading sensors after delete:', reloadErr);
+                        setSensors([]);
                     }
-                    setSensors(allSensors);
                 }
             } catch (error) {
                 console.error('Error deleting sensor:', error);
@@ -234,15 +268,25 @@ const SensorManager = () => {
             
             // 🔄 Reload danh sách sensors
             if (selectedFarm) {
-                const resFields = await fieldService.getFieldsByFarm(selectedFarm);
-                const allSensors = [];
-                for (const field of resFields.data) {
-                    const resSensors = await sensorService.getSensorsByField(field.id);
-                    if (Array.isArray(resSensors.data)) {
-                        allSensors.push(...resSensors.data);
+                try {
+                    const resFields = await fieldService.getFieldsByFarm(selectedFarm);
+                    const fieldsData = Array.isArray(resFields?.data) ? resFields.data : [];
+                    const allSensors = [];
+                    for (const field of fieldsData) {
+                        try {
+                            const resSensors = await sensorService.getSensorsByField(field.id);
+                            if (Array.isArray(resSensors?.data)) {
+                                allSensors.push(...resSensors.data);
+                            }
+                        } catch (sensorErr) {
+                            console.error(`Error loading sensors for field ${field.id}:`, sensorErr);
+                        }
                     }
+                    setSensors(Array.isArray(allSensors) ? allSensors : []);
+                } catch (reloadErr) {
+                    console.error('Error reloading sensors:', reloadErr);
+                    setSensors([]);
                 }
-                setSensors(allSensors);
             }
         } catch (error) {
             console.error('❌ Lỗi khi lưu sensor:', error);
@@ -479,13 +523,18 @@ const SensorManager = () => {
     };
 
     const displayedSensors = React.useMemo(() => {
+        if (!Array.isArray(sensors)) {
+            return [];
+        }
+        
         let filtered = sensors;
         if (selectedField) {
-            filtered = filtered.filter(s => s.fieldId === selectedField);
+            filtered = filtered.filter(s => s && s.fieldId === selectedField);
         }
         filtered = filtered.filter(sensor => {
-            const matchesSearch = sensor.sensorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                sensor.type.toLowerCase().includes(searchTerm.toLowerCase());
+            if (!sensor) return false;
+            const matchesSearch = (sensor.sensorName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (sensor.type || '').toLowerCase().includes(searchTerm.toLowerCase());
             
             // 🔧 Hỗ trợ mapping status cho filter
             let matchesFilter = filterStatus === 'all';
@@ -570,20 +619,22 @@ const SensorManager = () => {
                                 <MenuItem value="" disabled>
                                     {farmsLoading ? 'Đang tải...' : 'Chọn nông trại'}
                                 </MenuItem>
-                                {farms.map(farm => (
+                                {Array.isArray(farms) && farms.map(farm => (
                                     <MenuItem key={farm.id} value={farm.id}>
                                         {farm.farmName} - {farm.region}
                                     </MenuItem>
                                 ))}
                             </TextField>
                             <Tooltip title="Làm mới danh sách nông trại">
-                                <IconButton 
-                                    onClick={handleRefreshFarms}
-                                    disabled={farmsLoading}
-                                    color="primary"
-                                >
-                                    <RefreshIcon />
-                                </IconButton>
+                                <span>
+                                    <IconButton 
+                                        onClick={handleRefreshFarms}
+                                        disabled={farmsLoading}
+                                        color="primary"
+                                    >
+                                        <RefreshIcon />
+                                    </IconButton>
+                                </span>
                             </Tooltip>
                         </Box>
                     </Grid>
@@ -597,7 +648,7 @@ const SensorManager = () => {
                             disabled={!selectedFarm || fields.length === 0}
                         >
                             <MenuItem value="">Tất cả cánh đồng</MenuItem>
-                            {fields.map(field => (
+                            {Array.isArray(fields) && fields.map(field => (
                                 <MenuItem key={field.id} value={field.id}>
                                     {field.fieldName} ({field.area} ha)
                                 </MenuItem>

@@ -40,58 +40,63 @@ const statsConfig = [
     },
 ];
 
-const SensorStats = ({ sensors }) => (
-    <Grid container spacing={2} sx={{ mb: 3 }}>
-        {statsConfig.map((stat) => (
-            <Grid item xs={12} sm={6} md={3} key={stat.label}>
-                <Card
-                    elevation={0}
-                    sx={{
-                        borderRadius: 2,
-                        background: stat.cardBg,
-                        boxShadow: 'none',
-                    }}
-                >
-                    <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Box
-                            sx={{
-                                background: stat.iconBg,
-                                borderRadius: '50%',
-                                width: 60,
-                                height: 60,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
-                            }}
-                        >
+const SensorStats = ({ sensors = [] }) => {
+    // Ensure sensors is always an array
+    const safeSensors = Array.isArray(sensors) ? sensors : [];
+    
+    return (
+        <Grid container spacing={2} sx={{ mb: 3 }}>
+            {statsConfig.map((stat) => (
+                <Grid item xs={12} sm={6} md={3} key={stat.label}>
+                    <Card
+                        elevation={0}
+                        sx={{
+                            borderRadius: 2,
+                            background: stat.cardBg,
+                            boxShadow: 'none',
+                        }}
+                    >
+                        <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                             <Box
                                 sx={{
-                                    background: '#fff',
+                                    background: stat.iconBg,
                                     borderRadius: '50%',
-                                    width: 48,
-                                    height: 48,
+                                    width: 60,
+                                    height: 60,
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
+                                    boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
                                 }}
                             >
-                                {stat.icon}
+                                <Box
+                                    sx={{
+                                        background: '#fff',
+                                        borderRadius: '50%',
+                                        width: 48,
+                                        height: 48,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                    }}
+                                >
+                                    {stat.icon}
+                                </Box>
                             </Box>
-                        </Box>
-                        <Box>
-                            <Typography variant="h4" sx={{ fontWeight: 700, color: stat.color, lineHeight: 1 }}>
-                                {stat.getValue(sensors)}
-                            </Typography>
-                            <Typography variant="body1" sx={{ fontWeight: 500 }} color="text.secondary" >
-                                {stat.label}
-                            </Typography>
-                        </Box>
-                    </CardContent>
-                </Card>
-            </Grid>
-        ))}
-    </Grid>
-);
+                            <Box>
+                                <Typography variant="h4" sx={{ fontWeight: 700, color: stat.color, lineHeight: 1 }}>
+                                    {stat.getValue(safeSensors)}
+                                </Typography>
+                                <Typography variant="body1" sx={{ fontWeight: 500 }} color="text.secondary" >
+                                    {stat.label}
+                                </Typography>
+                            </Box>
+                        </CardContent>
+                    </Card>
+                </Grid>
+            ))}
+        </Grid>
+    );
+};
 
 export default SensorStats;

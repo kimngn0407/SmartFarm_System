@@ -13,6 +13,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.client.RestClientException;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 @Service
 public class AIRecommendationService {
 
@@ -39,14 +44,14 @@ public class AIRecommendationService {
 
         try {
             String url = aiApiUrl + "/health";
-            ResponseEntity<AIHealthResponse> response = restTemplate.getForEntity(
+            ResponseEntity<Map> response = restTemplate.getForEntity(
                 url,
-                AIHealthResponse.class
+                Map.class
             );
 
             if (response.getStatusCode() == HttpStatus.OK) {
-                AIHealthResponse health = response.getBody();
-                return health != null && Boolean.TRUE.equals(health.getModelLoaded());
+                Map<String, Object> health = response.getBody();
+                return health != null && Boolean.TRUE.equals(health.get("model_loaded"));
             }
 
             return false;
@@ -70,37 +75,64 @@ public class AIRecommendationService {
         }
 
         try {
-            String url = aiApiUrl + "/predict";
+            // Use the actual endpoint from Python service
+            String url = aiApiUrl + "/api/recommend-crop";
 
-            // Create request
-            AIPredictionRequest request = new AIPredictionRequest(
-                temperature, humidity, soilMoisture, ph,
-                rainfall, nitrogen, phosphorus, potassium
-            );
+            // Create request - map to Python service format (only 3 fields)
+            Map<String, Object> requestMap = new HashMap<>();
+            requestMap.put("temperature", temperature);
+            requestMap.put("humidity", humidity);
+            requestMap.put("soil_moisture", soilMoisture);
 
             // Set headers
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
 
-            HttpEntity<AIPredictionRequest> entity = new HttpEntity<>(request, headers);
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestMap, headers);
 
             // Make API call
-            logger.info("Calling AI API for prediction: {}", request);
+            logger.info("Calling AI API for prediction: {}", requestMap);
 
-            ResponseEntity<AIPredictionResponse> response = restTemplate.postForEntity(
+            ResponseEntity<Map> response = restTemplate.postForEntity(
                 url,
                 entity,
-                AIPredictionResponse.class
+                Map.class
             );
 
-            AIPredictionResponse result = response.getBody();
+            Map<String, Object> result = response.getBody();
 
-            if (result != null && Boolean.TRUE.equals(result.getSuccess())) {
-                logger.info("AI prediction successful: {}", result.getPrediction());
-                return result;
+            // Map Python response to Java DTO
+            AIPredictionResponse aiResponse = new AIPredictionResponse();
+            if (result != null && Boolean.TRUE.equals(result.get("success"))) {
+                aiResponse.setSuccess(true);
+                
+                // Extract crop information from Python service response
+                // Python service returns: { success: true, recommended_crop: "Dưa hấu", crop_name_en: "watermelon", confidence: 0.8, input_data: {...} }
+                if (result.containsKey("recommended_crop")) {
+                    aiResponse.setRecommendedCrop((String) result.get("recommended_crop"));
+                }
+                if (result.containsKey("crop_name_en")) {
+                    aiResponse.setCropNameEn((String) result.get("crop_name_en"));
+                }
+                if (result.containsKey("confidence")) {
+                    Object conf = result.get("confidence");
+                    if (conf instanceof Number) {
+                        aiResponse.setConfidence(((Number) conf).doubleValue());
+                    }
+                }
+                
+                // Store crop name as string in prediction field for compatibility
+                List<List<Double>> predictionList = new ArrayList<>();
+                List<Double> cropList = new ArrayList<>();
+                cropList.add(1.0); // placeholder
+                predictionList.add(cropList);
+                aiResponse.setPrediction(predictionList);
+                logger.info("AI prediction successful: {} ({})", result.get("recommended_crop"), result.get("crop_name_en"));
+                return aiResponse;
             } else {
-                logger.error("AI prediction failed: {}", result != null ? result.getError() : "Unknown error");
-                return createErrorResponse(result != null ? result.getError() : "Prediction failed");
+                String errorMsg = (String) result.getOrDefault("error", "Prediction failed");
+                logger.error("AI prediction failed: {}", errorMsg);
+                return createErrorResponse(errorMsg);
             }
 
         } catch (RestClientException e) {

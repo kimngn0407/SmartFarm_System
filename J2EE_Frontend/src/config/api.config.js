@@ -3,20 +3,15 @@
  * Centralized API endpoint configuration for all environments
  */
 
-// Determine the API base URL based on environment
+// Get API base URL from environment
 const getApiBaseUrl = () => {
-  // Production: Use Railway backend
-  if (process.env.NODE_ENV === 'production') {
-    return 'https://hackathonpionedream-production.up.railway.app';
-  }
-  
-  // Development: Can override with environment variable or use Railway
+  // Can override with environment variable
   if (process.env.REACT_APP_API_URL) {
     return process.env.REACT_APP_API_URL;
   }
   
-  // Default: Use Railway backend (works for both dev and prod)
-  return 'https://hackathonpionedream-production.up.railway.app';
+  // Default: Use localhost for local development
+  return process.env.REACT_APP_RENDER_API_BASE || 'http://localhost:8080';
 };
 
 // Export the API base URL

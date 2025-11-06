@@ -65,23 +65,16 @@ const IrrigationManager = () => {
 
     const loadFarmsData = async () => {
         try {
-            const farmsResp = await farmService.getFarms();
-            
-            // Multi-level defensive check for farms
-            const farmsData = Array.isArray(farmsResp) ? farmsResp
-                            : Array.isArray(farmsResp?.data) ? farmsResp.data
-                            : Array.isArray(farmsResp?.data?.data) ? farmsResp.data.data
-                            : [];
-            
+            const response = await farmService.getFarms();
+            const farmsData = response.data || [];
             // Transform data để phù hợp với UI
-            const transformedFarms = Array.isArray(farmsData) ? farmsData.map(farm => ({
+            const transformedFarms = farmsData.map(farm => ({
                 id: farm.id,
                 name: farm.farmName || farm.name, // farmName từ API
                 fieldCount: 0, // sẽ được cập nhật khi load fields
                 area: farm.area,
                 region: farm.region
-            })) : [];
-            
+            }));
             setFarms(transformedFarms);
             setApiError(null);
         } catch (error) {

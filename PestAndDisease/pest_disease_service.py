@@ -19,7 +19,23 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS
+
+# Configure CORS with environment variable support
+origins_env = os.environ.get("FRONTEND_ORIGINS", "")
+if origins_env:
+    origins = [origin.strip() for origin in origins_env.split(",") if origin.strip()]
+else:
+    # Default origins for local development
+    origins = [
+        "http://localhost:3000",
+        "http://localhost:8000",
+        "http://localhost:8080",
+        "http://localhost:9002"
+    ]
+
+CORS(app, origins=origins, supports_credentials=True,
+     allow_headers=["Content-Type", "Authorization"],
+     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
 
 # Model configuration
 MODEL_PATH = 'best_vit_wheat_model_4classes.pth'
@@ -262,7 +278,7 @@ if __name__ == '__main__':
         logger.info("  - POST /api/detect       - Phát hiện sâu bệnh")
         logger.info("  - GET  /api/classes      - Danh sách bệnh")
         
-        port = int(os.environ.get('PORT', 7860))
+        port = int(os.environ.get('PORT', 5001))
         app.run(host='0.0.0.0', port=port, debug=False)
     else:
         logger.error("Không thể khởi động service do lỗi load model")

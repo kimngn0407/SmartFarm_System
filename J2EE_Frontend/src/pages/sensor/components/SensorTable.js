@@ -24,7 +24,10 @@ const ActionIcons = ({ onEdit, onDelete }) => (
     </>
 );
 
-const SensorTable = ({ sensors, onEdit, onDelete, onSort, sortConfig, fields }) => {
+const SensorTable = ({ sensors = [], onEdit, onDelete, onSort, sortConfig, fields = [] }) => {
+    // Ensure sensors is always an array
+    const safeSensors = Array.isArray(sensors) ? sensors : [];
+    
     const getStatusColor = (status) => {
         switch (status) {
             case 'Active': return 'success';
@@ -63,7 +66,7 @@ const SensorTable = ({ sensors, onEdit, onDelete, onSort, sortConfig, fields }) 
 
     return (
         <>
-            {sensors.length > 0 ? (
+            {safeSensors.length > 0 ? (
                 <TableContainer component={Paper} sx={{ maxHeight: 400, overflowY: 'auto' }}>
                     <Table stickyHeader>
                         <TableHead>
@@ -79,7 +82,7 @@ const SensorTable = ({ sensors, onEdit, onDelete, onSort, sortConfig, fields }) 
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {sensors.map((sensor, idx) => (
+                            {safeSensors.map((sensor, idx) => (
                                 <TableRow key={sensor.id} sx={{ '&:hover': { backgroundColor: '#f5f5f5' }, cursor: 'pointer' }}>
                                     <TableCell>{idx + 1}</TableCell>
                                     <TableCell>{sensor.sensorName}</TableCell>
@@ -89,11 +92,15 @@ const SensorTable = ({ sensors, onEdit, onDelete, onSort, sortConfig, fields }) 
                                     </TableCell>
                                     <TableCell>
                                         <Tooltip title="View on map">
-                                            <Typography variant="body2">{sensor.lat.toFixed(4)}, {sensor.lng.toFixed(4)}</Typography>
+                                            <Typography variant="body2">
+                                                {sensor.lat != null && sensor.lng != null 
+                                                    ? `${Number(sensor.lat).toFixed(4)}, ${Number(sensor.lng).toFixed(4)}`
+                                                    : 'N/A'}
+                                            </Typography>
                                         </Tooltip>
                                     </TableCell>
                                     <TableCell>{getFieldName(sensor.fieldId)}</TableCell>
-                                    <TableCell>{formatDate(sensor.installationDate)}</TableCell>
+                                    <TableCell>{sensor.installationDate ? formatDate(sensor.installationDate) : 'N/A'}</TableCell>
                                     <TableCell sx={{ fontWeight: 'bold' }}>
                                         <ActionIcons
                                             onEdit={e => { e.stopPropagation(); onEdit(sensor); }}

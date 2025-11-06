@@ -58,13 +58,18 @@ public class PestDiseaseController {
      */
     @PostMapping("/detect")
     public ResponseEntity<Map<String, Object>> detectDisease(
-            @RequestParam("file") MultipartFile file) {
+            @RequestParam(value = "image", required = false) MultipartFile imageFile,
+            @RequestParam(value = "file", required = false) MultipartFile fileParam) {
+        
+        // Support both "image" and "file" parameters for compatibility
+        MultipartFile file = imageFile != null ? imageFile : fileParam;
         
         logger.info("Received disease detection request for file: {}", 
                     file != null ? file.getOriginalFilename() : "null");
 
         if (file == null || file.isEmpty()) {
             Map<String, Object> error = new HashMap<>();
+            error.put("success", false);
             error.put("error", "No image file provided");
             return ResponseEntity.badRequest().body(error);
         }
@@ -72,7 +77,14 @@ public class PestDiseaseController {
         try {
             Map<String, Object> result = pestDiseaseService.detectDisease(file);
             
-            if (result.containsKey("error")) {
+            if (result == null) {
+                Map<String, Object> error = new HashMap<>();
+                error.put("success", false);
+                error.put("error", "Pest AI service không phản hồi");
+                return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(error);
+            }
+            
+            if (result.containsKey("error") || (result.containsKey("success") && !Boolean.TRUE.equals(result.get("success")))) {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(result);
             }
             
@@ -81,6 +93,7 @@ public class PestDiseaseController {
         } catch (Exception e) {
             logger.error("Error detecting disease: {}", e.getMessage(), e);
             Map<String, Object> error = new HashMap<>();
+            error.put("success", false);
             error.put("error", "Detection failed: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }

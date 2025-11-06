@@ -3,9 +3,10 @@
  * Service để gọi API gợi ý cây trồng từ ML model
  */
 
-import { API_ENDPOINTS } from '../config/api.config';
+import { API_BASE_URL as CONFIG_API_BASE_URL, API_ENDPOINTS } from '../config/api.config';
 
-const API_BASE_URL = API_ENDPOINTS.CROP.RECOMMEND.replace('/recommend', '');
+// Use the backend API base URL directly
+const API_BASE_URL = CONFIG_API_BASE_URL;
 
 const cropRecommendationService = {
   /**
@@ -23,7 +24,8 @@ const cropRecommendationService = {
    */
   async recommendCrop(data) {
     try {
-      const response = await fetch(`${API_BASE_URL}/recommend`, {
+      // Call backend endpoint /api/crop/recommend
+      const response = await fetch(`${API_BASE_URL}/api/crop/recommend`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -51,7 +53,7 @@ const cropRecommendationService = {
    */
   async recommendCropBatch(samples) {
     try {
-      const response = await fetch(`${API_BASE_URL}/recommend-batch`, {
+      const response = await fetch(`${API_BASE_URL}/api/crop/recommend-batch`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -78,7 +80,7 @@ const cropRecommendationService = {
    */
   async getCropList() {
     try {
-      const response = await fetch(`${API_BASE_URL}/crops`);
+      const response = await fetch(`${API_BASE_URL}/api/crop/crops`);
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -99,7 +101,7 @@ const cropRecommendationService = {
    */
   async checkHealth() {
     try {
-      const response = await fetch(`${API_BASE_URL}/health`);
+      const response = await fetch(`${API_BASE_URL}/api/crop/health`);
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);

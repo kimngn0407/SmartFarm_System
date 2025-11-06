@@ -79,30 +79,17 @@ const CropManager = () => {
     const fetchCrops = () => {
         // Get all plants first, then get flat stages for each plant
         cropService.getCropsByField()
-            .then(plantsResp => {
-                // Multi-level defensive check for plants
-                const plants = Array.isArray(plantsResp) ? plantsResp
-                              : Array.isArray(plantsResp?.data) ? plantsResp.data
-                              : Array.isArray(plantsResp?.data?.data) ? plantsResp.data.data
-                              : [];
-                
+            .then(response => {
+                const plants = response.data;
                 console.log('All plants:', plants);
                 
                 // Get flat stages for all plants
-                const promises = Array.isArray(plants) ? plants.map(plant => 
+                const promises = plants.map(plant => 
                     cropService.getFlatStagesByPlantId(plant.id)
-                        .then(stagesResp => {
-                            // Multi-level defensive check for stages
-                            const stages = Array.isArray(stagesResp) ? stagesResp
-                                         : Array.isArray(stagesResp?.data) ? stagesResp.data
-                                         : Array.isArray(stagesResp?.data?.data) ? stagesResp.data.data
-                                         : [];
-                            
-                            return {
-                                plant: plant,
-                                stages: stages
-                            };
-                        })
+                        .then(stagesResponse => ({
+                            plant: plant,
+                            stages: stagesResponse.data
+                        }))
                         .catch(error => {
                             console.warn(`No stages found for plant ${plant.id}:`, error);
                             return {
@@ -110,7 +97,7 @@ const CropManager = () => {
                                 stages: []
                             };
                         })
-                ) : [];
+                );
                 
                 Promise.all(promises)
                     .then(results => {

@@ -27,11 +27,11 @@ const getSensorDataByFieldAndType = (fieldId, type, date) =>
     axios.get(`${API_BASE_URL}/api/sensor-data`, { params: { fieldId, type, date }, headers: getAuthHeader() });
 
 const getLatestSensorDataByField = (fieldId) =>
-    axios.get(`${API_BASE_URL}/api/sensor-data/latest', { params: { fieldId }, headers: getAuthHeader() });
+    axios.get(`${API_BASE_URL}/api/sensor-data/latest`, { params: { fieldId }, headers: getAuthHeader() });
 
 const getSensorDataByField = async (fieldId) => {
     try {
-        const response = await axios.get(`${API_BASE_URL}/api/sensor-data', { params: { fieldId }, headers: getAuthHeader() });
+        const response = await axios.get(`${API_BASE_URL}/api/sensor-data`, { params: { fieldId }, headers: getAuthHeader() });
         return transformSensorDataForCharts(response.data);
     } catch (error) {
         console.error('Error fetching sensor data:', error);
@@ -41,7 +41,7 @@ const getSensorDataByField = async (fieldId) => {
 
 const getAllSensorDataForDashboard = async () => {
     try {
-        const response = await axios.get(`${API_BASE_URL}/api/sensor-data', { headers: getAuthHeader() });
+        const response = await axios.get(`${API_BASE_URL}/api/sensor-data`, { headers: getAuthHeader() });
         return transformSensorDataForCharts(response.data);
     } catch (error) {
         console.error('Error fetching all sensor data:', error);
@@ -51,7 +51,7 @@ const getAllSensorDataForDashboard = async () => {
 
 const getSensorList = async () => {
     try {
-        const response = await axios.get(`${API_BASE_URL}/api/sensors', { headers: getAuthHeader() });
+        const response = await axios.get(`${API_BASE_URL}/api/sensors`, { headers: getAuthHeader() });
         return response.data;
     } catch (error) {
         console.error('Error fetching sensor list:', error);

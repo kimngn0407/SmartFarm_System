@@ -1,0 +1,49 @@
+================================================================================
+                    🔧 CẤU HÌNH ENVIRONMENT VARIABLES
+================================================================================
+
+Để map hiển thị đúng, cần tạo file .env trong folder J2EE_Frontend
+
+================================================================================
+CÁCH TẠO FILE .ENV
+================================================================================
+
+1. Trong folder J2EE_Frontend, tạo file mới tên: .env
+
+2. Copy nội dung sau vào:
+
+REACT_APP_GOOGLE_MAPS_API_KEY=YOUR_GOOGLE_MAPS_API_KEY_HERE
+REACT_APP_API_URL=http://localhost:8080
+REACT_APP_RENDER_API_BASE=http://localhost:8080
+
+3. Thay YOUR_GOOGLE_MAPS_API_KEY_HERE bằng API key thật
+
+4. Save file
+
+5. RESTART frontend: npm start
+
+================================================================================
+LẤY GOOGLE MAPS API KEY
+================================================================================
+
+1. Vào: https://console.cloud.google.com/
+2. Tạo project hoặc chọn project có sẵn
+3. Enable "Maps JavaScript API"
+4. Enable "Places API" (tùy chọn)
+5. Enable "Geocoding API" (tùy chọn)
+6. Tạo API key:
+   - APIs & Services → Credentials
+   - Create Credentials → API Key
+7. Copy API key vào file .env
+
+================================================================================
+LƯU Ý
+================================================================================
+
+1. Sau khi tạo .env → Phải restart frontend!
+2. File .env không nên commit lên git (thêm vào .gitignore)
+3. Nếu không có API key, code sẽ dùng fallback key (có thể hết hạn)
+
+================================================================================
+
+

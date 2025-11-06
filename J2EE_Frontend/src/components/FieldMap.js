@@ -267,10 +267,12 @@ const FieldMap = ({ fields, mapCenter, mapZoom, selectedFarmData, hoveredFieldId
         };
     }, []);
 
+    const apiKey = process.env.REACT_APP_GOOGLE_MAPS_API_KEY || "AIzaSyC6u36nb6hEkCKQonlMJpm-L-WzSRLCk3A";
+    
     return (
         <GoogleMapReact
             bootstrapURLKeys={{
-                key: "AIzaSyC6u36nb6hEkCKQonlMJpm-L-WzSRLCk3A",
+                key: apiKey,
                 libraries: ["places", "geometry"],
             }}
             center={mapCenter}
