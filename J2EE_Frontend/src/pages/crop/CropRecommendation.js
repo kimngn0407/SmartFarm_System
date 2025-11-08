@@ -86,10 +86,23 @@ const CropRecommendation = () => {
 
       // Log response để debug
       console.log('🔍 Crop recommendation response:', response);
+      console.log('🔍 Response type:', typeof response);
       console.log('🔍 Response keys:', response ? Object.keys(response) : 'null');
+      console.log('🔍 response.success:', response?.success);
+      console.log('🔍 response.recommended_crop:', response?.recommended_crop);
 
       // Service đã trả về object với success/error, không throw exception
-      if (response && response.success) {
+      // Kiểm tra success (có thể là boolean true hoặc string "true")
+      const isSuccess = response && (
+        response.success === true || 
+        response.success === 'true' || 
+        response.success === 1 ||
+        (response.recommended_crop && !response.error)
+      );
+      
+      console.log('🔍 isSuccess:', isSuccess);
+
+      if (isSuccess) {
         // Đảm bảo có recommended_crop hoặc fallback
         if (!response.recommended_crop) {
           console.warn('⚠️ Response không có recommended_crop, tìm fallback...');
@@ -97,12 +110,26 @@ const CropRecommendation = () => {
           response.recommended_crop = response.crop || 
                                       response.recommendedCrop || 
                                       response.crop_name || 
+                                      response.cropName ||
                                       'Cây trồng được gợi ý';
           console.log('✅ Fallback crop name:', response.recommended_crop);
         }
+        
+        // Đảm bảo success là boolean true
+        response.success = true;
+        
+        console.log('✅ Setting result with:', {
+          success: response.success,
+          recommended_crop: response.recommended_crop,
+          crop_name_en: response.crop_name_en,
+          confidence: response.confidence
+        });
+        
         setResult(response);
       } else {
-        setError(response?.error || 'Có lỗi xảy ra khi gợi ý cây trồng');
+        const errorMsg = response?.error || 'Có lỗi xảy ra khi gợi ý cây trồng';
+        console.error('❌ Error response:', errorMsg);
+        setError(errorMsg);
       }
     } catch (err) {
       setError(err.message || 'Không thể kết nối đến server');
@@ -362,18 +389,23 @@ const CropRecommendation = () => {
           </div>
         )}
 
-        {result && result.success && (
+        {result && (result.success === true || result.success === 'true' || result.recommended_crop || result.crop) && (
           <div className="result-section success">
             <h3>✅ Kết quả gợi ý</h3>
             
             <div className="recommendation-card">
               <div className="crop-icon">🌾</div>
               <h2>
-                {result.recommended_crop || 
-                 result.crop || 
-                 result.recommendedCrop || 
-                 result.crop_name || 
-                 'Cây trồng được gợi ý'}
+                {(() => {
+                  const cropName = result.recommended_crop || 
+                                  result.crop || 
+                                  result.recommendedCrop || 
+                                  result.crop_name || 
+                                  result.cropName ||
+                                  'Cây trồng được gợi ý';
+                  console.log('🎨 Rendering crop name:', cropName);
+                  return cropName;
+                })()}
                 {result.crop_name_en && (
                   <span style={{ 
                     fontSize: '0.6em', 
@@ -407,15 +439,21 @@ const CropRecommendation = () => {
                 <div className="summary-grid">
                   <div className="summary-item">
                     <span className="label">Nhiệt độ:</span>
-                    <span className="value">{result.input_data.temperature} °C</span>
+                    <span className="value">
+                      {result.input_data?.temperature || result.temperature || formData.temperature} °C
+                    </span>
                   </div>
                   <div className="summary-item">
                     <span className="label">Độ ẩm không khí:</span>
-                    <span className="value">{result.input_data.humidity} %</span>
+                    <span className="value">
+                      {result.input_data?.humidity || result.humidity || formData.humidity} %
+                    </span>
                   </div>
                   <div className="summary-item">
                     <span className="label">Độ ẩm đất:</span>
-                    <span className="value">{result.input_data.soil_moisture} %</span>
+                    <span className="value">
+                      {result.input_data?.soil_moisture || result.soil_moisture || formData.soil_moisture} %
+                    </span>
                   </div>
                 </div>
               </div>
