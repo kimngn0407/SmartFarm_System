@@ -389,21 +389,44 @@ const CropRecommendation = () => {
           </div>
         )}
 
-        {result && (result.success === true || result.success === 'true' || result.recommended_crop || result.crop) && (
-          <div className="result-section success">
+        {/* Hiển thị kết quả - đơn giản hóa condition để luôn hiển thị nếu có result */}
+        {result && (
+          <div className="result-section success" style={{ 
+            display: 'block',
+            marginTop: '20px',
+            padding: '20px',
+            background: '#f0fdf4',
+            borderRadius: '12px',
+            border: '2px solid #86efac'
+          }}>
             <h3>✅ Kết quả gợi ý</h3>
             
-            <div className="recommendation-card">
-              <div className="crop-icon">🌾</div>
-              <h2>
+            <div className="recommendation-card" style={{
+              background: 'white',
+              padding: '20px',
+              borderRadius: '8px',
+              marginTop: '15px'
+            }}>
+              <div className="crop-icon" style={{ fontSize: '48px', textAlign: 'center', marginBottom: '10px' }}>🌾</div>
+              <h2 style={{
+                textAlign: 'center',
+                color: '#166534',
+                fontSize: '1.8em',
+                marginBottom: '10px',
+                fontWeight: 'bold'
+              }}>
                 {(() => {
+                  // Tìm tên cây trồng từ nhiều nguồn
                   const cropName = result.recommended_crop || 
                                   result.crop || 
                                   result.recommendedCrop || 
                                   result.crop_name || 
                                   result.cropName ||
-                                  'Cây trồng được gợi ý';
+                                  (result.success ? 'Đang xử lý...' : 'Cây trồng được gợi ý');
+                  
                   console.log('🎨 Rendering crop name:', cropName);
+                  console.log('🎨 Full result object:', JSON.stringify(result, null, 2));
+                  
                   return cropName;
                 })()}
                 {result.crop_name_en && (
@@ -420,43 +443,87 @@ const CropRecommendation = () => {
               </h2>
               
               {result.confidence && (
-                <div className="confidence-bar">
-                  <label>Độ tin cậy:</label>
-                  <div className="progress-bar">
+                <div className="confidence-bar" style={{ marginTop: '15px', marginBottom: '15px' }}>
+                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600' }}>Độ tin cậy:</label>
+                  <div className="progress-bar" style={{
+                    width: '100%',
+                    height: '20px',
+                    background: '#e5e7eb',
+                    borderRadius: '10px',
+                    overflow: 'hidden',
+                    position: 'relative'
+                  }}>
                     <div 
                       className="progress-fill" 
-                      style={{ width: `${result.confidence * 100}%` }}
+                      style={{ 
+                        width: `${(result.confidence * 100) || 0}%`,
+                        height: '100%',
+                        background: '#22c55e',
+                        transition: 'width 0.3s'
+                      }}
                     />
                   </div>
-                  <span className="confidence-value">
-                    {(result.confidence * 100).toFixed(1)}%
+                  <span className="confidence-value" style={{
+                    display: 'block',
+                    marginTop: '5px',
+                    textAlign: 'center',
+                    fontWeight: '600',
+                    color: '#166534'
+                  }}>
+                    {((result.confidence * 100) || 0).toFixed(1)}%
                   </span>
                 </div>
               )}
 
-              <div className="input-summary">
-                <h4>Thông số đầu vào:</h4>
-                <div className="summary-grid">
-                  <div className="summary-item">
-                    <span className="label">Nhiệt độ:</span>
-                    <span className="value">
-                      {result.input_data?.temperature || result.temperature || formData.temperature} °C
+              <div className="input-summary" style={{ marginTop: '20px', paddingTop: '15px', borderTop: '1px solid #e5e7eb' }}>
+                <h4 style={{ marginBottom: '10px', color: '#374151' }}>Thông số đầu vào:</h4>
+                <div className="summary-grid" style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(3, 1fr)',
+                  gap: '15px'
+                }}>
+                  <div className="summary-item" style={{
+                    padding: '10px',
+                    background: '#f9fafb',
+                    borderRadius: '6px'
+                  }}>
+                    <span className="label" style={{ display: 'block', fontSize: '0.85em', color: '#6b7280', marginBottom: '5px' }}>Nhiệt độ:</span>
+                    <span className="value" style={{ display: 'block', fontSize: '1.1em', fontWeight: '600', color: '#111827' }}>
+                      {result.input_data?.temperature || result.temperature || formData.temperature || 'N/A'} °C
                     </span>
                   </div>
-                  <div className="summary-item">
-                    <span className="label">Độ ẩm không khí:</span>
-                    <span className="value">
-                      {result.input_data?.humidity || result.humidity || formData.humidity} %
+                  <div className="summary-item" style={{
+                    padding: '10px',
+                    background: '#f9fafb',
+                    borderRadius: '6px'
+                  }}>
+                    <span className="label" style={{ display: 'block', fontSize: '0.85em', color: '#6b7280', marginBottom: '5px' }}>Độ ẩm không khí:</span>
+                    <span className="value" style={{ display: 'block', fontSize: '1.1em', fontWeight: '600', color: '#111827' }}>
+                      {result.input_data?.humidity || result.humidity || formData.humidity || 'N/A'} %
                     </span>
                   </div>
-                  <div className="summary-item">
-                    <span className="label">Độ ẩm đất:</span>
-                    <span className="value">
-                      {result.input_data?.soil_moisture || result.soil_moisture || formData.soil_moisture} %
+                  <div className="summary-item" style={{
+                    padding: '10px',
+                    background: '#f9fafb',
+                    borderRadius: '6px'
+                  }}>
+                    <span className="label" style={{ display: 'block', fontSize: '0.85em', color: '#6b7280', marginBottom: '5px' }}>Độ ẩm đất:</span>
+                    <span className="value" style={{ display: 'block', fontSize: '1.1em', fontWeight: '600', color: '#111827' }}>
+                      {result.input_data?.soil_moisture || result.soil_moisture || formData.soil_moisture || 'N/A'} %
                     </span>
                   </div>
                 </div>
               </div>
+              
+              {/* Debug info - chỉ hiển thị trong development */}
+              {process.env.NODE_ENV === 'development' && (
+                <div style={{ marginTop: '15px', padding: '10px', background: '#fef3c7', borderRadius: '6px', fontSize: '0.85em' }}>
+                  <strong>Debug:</strong>
+                  <pre style={{ margin: '5px 0 0 0', fontSize: '0.75em', overflow: 'auto' }}>
+                    {JSON.stringify(result, null, 2)}
+                  </pre>
+                </div>
+              )}
             </div>
           </div>
         )}
