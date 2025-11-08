@@ -20,6 +20,7 @@ import {
   RefreshCw,  // Icon làm mới
 } from "lucide-react"; // Thư viện icons
 import React, { useRef, useState, useTransition, useEffect } from "react"; // React hooks
+import { generateUUID } from "@/lib/uuid"; // UUID generator với fallback
 
 // ===== ĐỊNH NGHĨA TYPE CHO TIN NHẮN =====
 // Mỗi tin nhắn sẽ có cấu trúc như này
@@ -35,7 +36,7 @@ export default function Home() {
   // Danh sách tin nhắn (bắt đầu với lời chào từ AI)
   const [messages, setMessages] = useState<Message[]>([
     {
-      id: crypto.randomUUID(), // Tạo ID ngẫu nhiên
+      id: generateUUID(), // Tạo ID ngẫu nhiên
       role: 'assistant',       // Tin nhắn từ AI
       content: "Xin chào! Tôi là Smart Farm Bot - Trợ lý AI chuyên về nông nghiệp thông minh và canh tác cây trồng tại Việt Nam. Tôi có thể hỗ trợ bạn về kỹ thuật trồng trọt, chăm sóc cây trồng, quản lý sâu bệnh và các kiến thức nông nghiệp khác. Bạn có câu hỏi gì về cây trồng không?"
     }
@@ -68,7 +69,7 @@ export default function Home() {
   const handleClearChat = () => {
     // Reset về tin nhắn chào ban đầu
     setMessages([{
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       role: 'assistant',
       content: "Xin chào! Tôi là Smart Farm Bot - Trợ lý AI chuyên về nông nghiệp thông minh và canh tác cây trồng tại Việt Nam. Tôi có thể hỗ trợ bạn về kỹ thuật trồng trọt, chăm sóc cây trồng, quản lý sâu bệnh và các kiến thức nông nghiệp khác. Bạn có câu hỏi gì về cây trồng không?"
     }]);
@@ -86,7 +87,7 @@ export default function Home() {
     // ===== BƯỚC 1: THÊM TIN NHẮN CỦA USER VÀO DANH SÁCH =====
     setMessages((prev) => [
       ...prev, // Giữ lại tin nhắn cũ
-      { id: crypto.randomUUID(), role: "user", content: query }, // Thêm tin nhắn mới
+      { id: generateUUID(), role: "user", content: query }, // Thêm tin nhắn mới
     ]);
 
     // ===== BƯỚC 2: GỬI CHO AI XỬ LÝ (ASYNC) =====
@@ -109,7 +110,7 @@ export default function Home() {
         setMessages((prev) => [
           ...prev, // Giữ lại tin nhắn cũ
           {
-            id: crypto.randomUUID(),
+            id: generateUUID(),
             role: "assistant",
             content: result.answer, // Câu trả lời từ AI
           },

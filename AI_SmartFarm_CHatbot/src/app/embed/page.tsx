@@ -19,6 +19,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import React, { useRef, useState, useTransition, useEffect } from "react";
+import { generateUUID } from "@/lib/uuid"; // UUID generator với fallback
 
 type Message = {
   id: string;
@@ -29,7 +30,7 @@ type Message = {
 export default function EmbedPage() {
   const [messages, setMessages] = useState<Message[]>([
     {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       role: 'assistant',
       content: "Xin chào! Tôi là Smart Farm Bot - Trợ lý AI chuyên về nông nghiệp thông minh và canh tác cây trồng tại Việt Nam. Tôi có thể hỗ trợ bạn về kỹ thuật trồng trọt, chăm sóc cây trồng, quản lý sâu bệnh và các kiến thức nông nghiệp khác. Bạn có câu hỏi gì về cây trồng không?"
     }
@@ -55,7 +56,7 @@ export default function EmbedPage() {
 
   const handleClearChat = () => {
     setMessages([{
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       role: 'assistant',
       content: "Xin chào! Tôi là Smart Farm Bot - Trợ lý AI chuyên về nông nghiệp thông minh và canh tác cây trồng tại Việt Nam. Tôi có thể hỗ trợ bạn về kỹ thuật trồng trọt, chăm sóc cây trồng, quản lý sâu bệnh và các kiến thức nông nghiệp khác. Bạn có câu hỏi gì về cây trồng không?"
     }]);
@@ -88,7 +89,7 @@ export default function EmbedPage() {
         setMessages((prev) => [
           ...prev,
           {
-            id: crypto.randomUUID(),
+            id: generateUUID(),
             role: "assistant",
             content: result.answer,
           },

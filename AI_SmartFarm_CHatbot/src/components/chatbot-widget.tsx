@@ -22,6 +22,7 @@ import {
   Leaf,
 } from "lucide-react";
 import React, { useRef, useState, useTransition, useEffect } from "react";
+import { generateUUID } from "@/lib/uuid"; // UUID generator với fallback
 
 type Message = {
   id: string;
@@ -42,7 +43,7 @@ export function ChatbotWidget({
 }: ChatbotWidgetProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       role: 'assistant',
       content: initialMessage
     }
@@ -69,7 +70,7 @@ export function ChatbotWidget({
 
   const handleClearChat = () => {
     setMessages([{
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       role: 'assistant',
       content: initialMessage
     }]);
@@ -102,7 +103,7 @@ export function ChatbotWidget({
         setMessages((prev) => [
           ...prev,
           {
-            id: crypto.randomUUID(),
+            id: generateUUID(),
             role: "assistant",
             content: result.answer,
           },
