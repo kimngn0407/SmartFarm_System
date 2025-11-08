@@ -172,19 +172,36 @@ const generateInsightsFromExcelFlow = ai.defineFlow(
     } catch (error: any) {
       // Xử lý lỗi và trả về thông báo thân thiện
       console.error('Error in generateInsightsFromExcelFlow:', error);
+      console.error('Error details:', {
+        message: error?.message,
+        digest: error?.digest,
+        stack: error?.stack,
+        code: error?.code,
+        cause: error?.cause,
+        name: error?.name
+      });
       
       // Kiểm tra lỗi API key
-      if (error?.message?.includes('API key') || error?.message?.includes('GOOGLE')) {
-        throw new Error('API key chưa được cấu hình. Vui lòng liên hệ quản trị viên.');
+      const errorMsg = error?.message || '';
+      const errorStr = JSON.stringify(error || {});
+      
+      if (errorMsg.includes('API key') || errorMsg.includes('GOOGLE') || errorStr.includes('API key') || errorStr.includes('GOOGLE')) {
+        throw new Error('API key chưa được cấu hình. Vui lòng liên hệ quản trị viên để cấu hình GOOGLE_GENAI_API_KEY.');
       }
       
       // Kiểm tra lỗi file
       if (error?.code === 'ENOENT') {
-        throw new Error('Không tìm thấy file dữ liệu. Vui lòng thử lại sau.');
+        throw new Error('Không tìm thấy file dữ liệu. Đang sử dụng dữ liệu mặc định.');
       }
       
-      // Lỗi khác
-      throw new Error('Có lỗi xảy ra khi xử lý câu hỏi. Vui lòng thử lại sau.');
+      // Kiểm tra lỗi network/connection
+      if (errorMsg.includes('fetch') || errorMsg.includes('network') || errorMsg.includes('ECONNREFUSED')) {
+        throw new Error('Không thể kết nối đến AI service. Vui lòng kiểm tra kết nối mạng.');
+      }
+      
+      // Lỗi khác - trả về message chi tiết hơn
+      const detailedError = error?.message || error?.digest || 'Unknown error';
+      throw new Error(`Có lỗi xảy ra khi xử lý câu hỏi: ${detailedError}. Vui lòng thử lại sau.`);
     }
   }
 );

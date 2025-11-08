@@ -115,15 +115,29 @@ export default function Home() {
             content: result.answer, // Câu trả lời từ AI
           },
         ]);
-      } catch (error) {
+      } catch (error: any) {
         // ===== XỬ LÝ LỖI =====
         console.error("Error generating insights:", error);
+        console.error("Error details:", {
+          message: error?.message,
+          digest: error?.digest,
+          stack: error?.stack,
+          cause: error?.cause
+        });
+        
+        // Lấy error message chi tiết
+        let errorMessage = "Không thể lấy thông tin chi tiết. Vui lòng thử lại.";
+        if (error?.message) {
+          errorMessage = error.message;
+        } else if (error?.digest) {
+          errorMessage = `Lỗi: ${error.digest}. Vui lòng kiểm tra cấu hình AI service.`;
+        }
         
         // Hiển thị thông báo lỗi cho user
         toast({
           variant: "destructive",
           title: "Có lỗi xảy ra",
-          description: "Không thể lấy thông tin chi tiết. Vui lòng thử lại.",
+          description: errorMessage,
         });
         
         // Xóa tin nhắn user vừa gửi (vì không có response)
