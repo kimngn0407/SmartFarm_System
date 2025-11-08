@@ -5,13 +5,29 @@
 
 // Get API base URL from environment
 const getApiBaseUrl = () => {
-  // Can override with environment variable
+  // Priority 1: Environment variable (set in docker-compose.yml or .env)
   if (process.env.REACT_APP_API_URL) {
     return process.env.REACT_APP_API_URL;
   }
   
-  // Default: Use localhost for local development
-  return process.env.REACT_APP_RENDER_API_BASE || 'http://localhost:8080';
+  // Priority 2: REACT_APP_RENDER_API_BASE
+  if (process.env.REACT_APP_RENDER_API_BASE) {
+    return process.env.REACT_APP_RENDER_API_BASE;
+  }
+  
+  // Priority 3: Auto-detect from browser location (for production on VPS)
+  // Khi chạy trên browser, tự động detect VPS IP từ window.location
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    // Nếu không phải localhost, dùng hostname hiện tại với port 8080
+    if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+      const protocol = window.location.protocol; // http: hoặc https:
+      return `${protocol}//${hostname}:8080`;
+    }
+  }
+  
+  // Priority 4: Default for local development
+  return 'http://localhost:8080';
 };
 
 // Export the API base URL
