@@ -13,7 +13,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/plants")
-@CrossOrigin(origins = {"http://173.249.48.25", "http://173.249.48.25:80", "http://localhost:3000"})
+@CrossOrigin(origins = {"https://hackathon-pione-dream.vercel.app", "https://hackathon-pione-dream-vzj5.vercel.app", "http://localhost:3000"})
 public class PlantController {
 
     @Autowired

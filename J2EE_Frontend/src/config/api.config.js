@@ -5,15 +5,13 @@
 
 // Get API base URL from environment
 const getApiBaseUrl = () => {
-  // Priority 1: Environment variable (set in docker-compose.yml build args)
-  if (process.env.REACT_APP_API_URL && process.env.REACT_APP_API_URL !== 'http://localhost:8080') {
-    console.log('✅ Using REACT_APP_API_URL from env:', process.env.REACT_APP_API_URL);
+  // Priority 1: Environment variable (set in docker-compose.yml or .env)
+  if (process.env.REACT_APP_API_URL) {
     return process.env.REACT_APP_API_URL;
   }
   
   // Priority 2: REACT_APP_RENDER_API_BASE
-  if (process.env.REACT_APP_RENDER_API_BASE && process.env.REACT_APP_RENDER_API_BASE !== 'http://localhost:8080') {
-    console.log('✅ Using REACT_APP_RENDER_API_BASE from env:', process.env.REACT_APP_RENDER_API_BASE);
+  if (process.env.REACT_APP_RENDER_API_BASE) {
     return process.env.REACT_APP_RENDER_API_BASE;
   }
   
@@ -22,24 +20,13 @@ const getApiBaseUrl = () => {
   if (typeof window !== 'undefined') {
     const hostname = window.location.hostname;
     // Nếu không phải localhost, dùng hostname hiện tại với port 8080
-    if (hostname !== 'localhost' && hostname !== '127.0.0.1' && hostname !== '') {
+    if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
       const protocol = window.location.protocol; // http: hoặc https:
-      const detectedUrl = `${protocol}//${hostname}:8080`;
-      console.log('✅ Auto-detected API URL from window.location:', detectedUrl);
-      return detectedUrl;
+      return `${protocol}//${hostname}:8080`;
     }
   }
   
-  // Priority 4: Hardcode VPS IP as fallback (for production)
-  // Nếu không detect được, dùng VPS IP mặc định
-  if (process.env.NODE_ENV === 'production') {
-    const vpsUrl = 'http://173.249.48.25:8080';
-    console.log('⚠️ Using hardcoded VPS URL as fallback:', vpsUrl);
-    return vpsUrl;
-  }
-  
-  // Priority 5: Default for local development
-  console.log('⚠️ Using default localhost URL (development mode)');
+  // Priority 4: Default for local development
   return 'http://localhost:8080';
 };
 
@@ -121,9 +108,6 @@ export const API_ENDPOINTS = {
 // Log configuration (always log in production để debug)
 console.log('🔧 API Configuration:');
 console.log('  Environment:', process.env.NODE_ENV);
-console.log('  REACT_APP_API_URL:', process.env.REACT_APP_API_URL || 'NOT SET');
-console.log('  REACT_APP_RENDER_API_BASE:', process.env.REACT_APP_RENDER_API_BASE || 'NOT SET');
-console.log('  Window hostname:', typeof window !== 'undefined' ? window.location.hostname : 'N/A');
 console.log('  API Base URL:', API_BASE_URL);
 console.log('  Window location:', typeof window !== 'undefined' ? window.location.href : 'N/A');
 console.log('  ✅ Vercel URLs đã được loại bỏ hoàn toàn');
