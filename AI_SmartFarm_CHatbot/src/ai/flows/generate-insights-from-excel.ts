@@ -119,34 +119,72 @@ const generateInsightsFromExcelFlow = ai.defineFlow(
     outputSchema: GenerateInsightsFromExcelOutputSchema, // Schema đầu ra
   },
   async input => {
-    // ===== BƯỚC 1: ĐỌC FILE EXCEL =====
-    let buffer: Buffer; // Biến chứa dữ liệu file Excel
+    try {
+      // ===== BƯỚC 1: ĐỌC FILE EXCEL =====
+      let buffer: Buffer; // Biến chứa dữ liệu file Excel
 
-    // Kiểm tra xem có file Excel được upload không
-    if (input.excelDataUri) {
-      // Nếu có file upload, decode từ base64
-      const base64Data = input.excelDataUri.split(',')[1]; // Tách phần base64
-      buffer = Buffer.from(base64Data, 'base64');          // Convert thành buffer
-    } else {
-      // Nếu không có file upload, dùng file mặc định
-      const filePath = path.join(process.cwd(), 'src', 'data', 'sample-data.xlsx');
-      buffer = fs.readFileSync(filePath); // Đọc file từ hệ thống
+      // Kiểm tra xem có file Excel được upload không
+      if (input.excelDataUri) {
+        // Nếu có file upload, decode từ base64
+        const base64Data = input.excelDataUri.split(',')[1]; // Tách phần base64
+        buffer = Buffer.from(base64Data, 'base64');          // Convert thành buffer
+      } else {
+        // Nếu không có file upload, dùng file mặc định
+        const filePath = path.join(process.cwd(), 'src', 'data', 'sample-data.xlsx');
+        
+        // Kiểm tra file có tồn tại không
+        if (!fs.existsSync(filePath)) {
+          // Nếu không có file, dùng dữ liệu mặc định
+          const defaultData = [
+            { STT: 1, 'CÂU HỎI': 'Cách trồng lúa?', 'CÂU TRẢ LỜI': 'Trồng lúa cần đất phù sa, nước đầy đủ, và chăm sóc thường xuyên.' },
+            { STT: 2, 'CÂU HỎI': 'Cách bón phân cho cây?', 'CÂU TRẢ LỜI': 'Bón phân đúng liều lượng, đúng thời điểm, và tưới nước sau khi bón.' }
+          ];
+          const excelDataJson = defaultData;
+          
+          // Gửi cho AI xử lý với dữ liệu mặc định
+          const {output} = await prompt({
+            excelDataJson: JSON.stringify(excelDataJson),
+            query: input.query,
+            conversationHistory: input.conversationHistory || '',
+          });
+          
+          return output!;
+        }
+        
+        buffer = fs.readFileSync(filePath); // Đọc file từ hệ thống
+      }
+      
+      // ===== BƯỚC 2: XỬ LÝ DỮ LIỆU EXCEL =====
+      const workbook = xlsx.read(buffer, { type: 'buffer' }); // Đọc workbook
+      const sheetName = workbook.SheetNames[0];               // Lấy sheet đầu tiên
+      const worksheet = workbook.Sheets[sheetName];           // Lấy dữ liệu sheet
+      const excelDataJson = xlsx.utils.sheet_to_json(worksheet); // Convert sang JSON
+
+      // ===== BƯỚC 3: GỬI CHO AI XỬ LÝ =====
+      const {output} = await prompt({
+          excelDataJson: JSON.stringify(excelDataJson),    // Dữ liệu Excel dạng JSON
+          query: input.query,                              // Câu hỏi của user
+          conversationHistory: input.conversationHistory || '', // Lịch sử chat (nếu có)
+      });
+      
+      // ===== BƯỚC 4: TRẢ KẾT QUẢ =====
+      return output!; // Trả về câu trả lời từ AI
+    } catch (error: any) {
+      // Xử lý lỗi và trả về thông báo thân thiện
+      console.error('Error in generateInsightsFromExcelFlow:', error);
+      
+      // Kiểm tra lỗi API key
+      if (error?.message?.includes('API key') || error?.message?.includes('GOOGLE')) {
+        throw new Error('API key chưa được cấu hình. Vui lòng liên hệ quản trị viên.');
+      }
+      
+      // Kiểm tra lỗi file
+      if (error?.code === 'ENOENT') {
+        throw new Error('Không tìm thấy file dữ liệu. Vui lòng thử lại sau.');
+      }
+      
+      // Lỗi khác
+      throw new Error('Có lỗi xảy ra khi xử lý câu hỏi. Vui lòng thử lại sau.');
     }
-    
-    // ===== BƯỚC 2: XỬ LÝ DỮ LIỆU EXCEL =====
-    const workbook = xlsx.read(buffer, { type: 'buffer' }); // Đọc workbook
-    const sheetName = workbook.SheetNames[0];               // Lấy sheet đầu tiên
-    const worksheet = workbook.Sheets[sheetName];           // Lấy dữ liệu sheet
-    const excelDataJson = xlsx.utils.sheet_to_json(worksheet); // Convert sang JSON
-
-    // ===== BƯỚC 3: GỬI CHO AI XỬ LÝ =====
-    const {output} = await prompt({
-        excelDataJson: JSON.stringify(excelDataJson),    // Dữ liệu Excel dạng JSON
-        query: input.query,                              // Câu hỏi của user
-        conversationHistory: input.conversationHistory || '', // Lịch sử chat (nếu có)
-    });
-    
-    // ===== BƯỚC 4: TRẢ KẾT QUẢ =====
-    return output!; // Trả về câu trả lời từ AI
   }
 );
