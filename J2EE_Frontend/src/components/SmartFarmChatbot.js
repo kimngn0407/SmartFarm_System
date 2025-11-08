@@ -18,22 +18,30 @@ const SmartFarmChatbot = () => {
   
   // URL của chatbot - Luôn dùng VPS port 9002
   const getChatbotUrl = () => {
-    // Extract base URL từ API_BASE_URL và thay port thành 9002
-    const apiBase = API_BASE_URL || 'http://173.249.48.25:8080';
-    
-    // Extract host (bỏ protocol và port)
-    let host = apiBase
-      .replace('http://', '')
-      .replace('https://', '')
-      .replace(':8080', '')
-      .split('/')[0]; // Lấy phần đầu tiên (host:port)
-    
-    // Nếu không có host, dùng VPS IP mặc định
-    if (!host || host === 'localhost' || host === '127.0.0.1') {
-      host = '173.249.48.25';
+    try {
+      // Extract base URL từ API_BASE_URL và thay port thành 9002
+      const apiBase = API_BASE_URL || 'http://173.249.48.25:8080';
+      
+      // Extract host (bỏ protocol và port)
+      let host = apiBase
+        .replace('http://', '')
+        .replace('https://', '')
+        .replace(':8080', '')
+        .split('/')[0]; // Lấy phần đầu tiên (host:port)
+      
+      // Nếu không có host, dùng VPS IP mặc định
+      if (!host || host === 'localhost' || host === '127.0.0.1') {
+        host = '173.249.48.25';
+      }
+      
+      const url = `http://${host}:9002`;
+      console.log('🤖 Chatbot URL:', url);
+      return url;
+    } catch (error) {
+      console.error('Error getting chatbot URL:', error);
+      // Fallback về VPS IP mặc định
+      return 'http://173.249.48.25:9002';
     }
-    
-    return `http://${host}:9002`;
   };
   
   const CHATBOT_URL = getChatbotUrl();
@@ -201,6 +209,12 @@ const SmartFarmChatbot = () => {
               }}
               allow="microphone"
               title="Smart Farm AI Chatbot"
+              onError={(e) => {
+                console.error('Chatbot iframe error:', e);
+              }}
+              onLoad={() => {
+                console.log('Chatbot iframe loaded from:', CHATBOT_URL);
+              }}
             />
           )}
         </div>

@@ -12,6 +12,8 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 // Import App component chính
 import App from './App';
+// Import Error Boundary để bắt lỗi client-side
+import ErrorBoundary from './components/ErrorBoundary';
 // Import performance monitoring utility (tùy chọn)
 import reportWebVitals from './reportWebVitals';
 // Disable webpack HMR WebSocket warning (optional)
@@ -21,12 +23,14 @@ import './utils/disableWebpackHMR';
 // React 18+ sử dụng createRoot thay vì render trực tiếp
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
-// Render App component vào root element
+// Render App component vào root element với Error Boundary
 root.render(
   // React.StrictMode giúp phát hiện các vấn đề tiềm ẩn trong ứng dụng
   // Chỉ chạy trong development mode, không ảnh hưởng production
   <React.StrictMode>
-    <App />
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
   </React.StrictMode>
 );
 
