@@ -216,7 +216,7 @@ const getAllAccounts = () =>
  * @returns {Promise} Axios response promise
  */
 const updateAccountRole = (id, role) =>
-  axios.put(`/api/accounts/${id}/role`, { role }, { headers: getAuthHeader() });
+  axios.put(`${API_BASE_URL}/api/accounts/${id}/role`, { role }, { headers: getAuthHeader() });
 
 /**
  * Cập nhật quyền VÀ phân công farm/field cho tài khoản (ADMIN ONLY)
