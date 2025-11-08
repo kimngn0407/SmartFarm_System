@@ -153,7 +153,18 @@ const RoleGuard = ({ allowedRoles, children }) => {
         return false;
       }
       
-      // Check base64 format với regex
+      // Skip regex check for JWT tokens (they have dots)
+      if (str.includes('.')) {
+        // JWT token - validate format (3 parts separated by dots)
+        const parts = str.split('.');
+        if (parts.length === 3) {
+          console.log('✅ Token is JWT format');
+          return true;
+        }
+        return false;
+      }
+      
+      // Check base64 format với regex (for simple base64 tokens)
       const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
       if (!base64Regex.test(str)) {
         console.log('❌ Token failed regex validation:', str);
