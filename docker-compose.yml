@@ -35,7 +35,7 @@ services:
       JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
       CROP_RECOMMENDATION_URL: http://crop-service:5000
       PEST_DISEASE_URL: http://pest-service:5001
-      FRONTEND_ORIGINS: ${FRONTEND_ORIGINS:-http://localhost:3000,http://localhost:80}
+      FRONTEND_ORIGINS: ${FRONTEND_ORIGINS:-http://173.249.48.25,http://173.249.48.25:80,http://localhost:3000,http://localhost:80}
     ports:
       - "8080:8080"
     depends_on:
