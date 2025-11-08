@@ -84,7 +84,7 @@ export function ChatbotWidget({
 
     setMessages((prev) => [
       ...prev,
-      { id: crypto.randomUUID(), role: "user", content: query },
+      { id: generateUUID(), role: "user", content: query },
     ]);
 
     startTransition(async () => {
