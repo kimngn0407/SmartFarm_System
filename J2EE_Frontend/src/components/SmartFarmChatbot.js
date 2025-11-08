@@ -3,7 +3,7 @@
  * Tích hợp chatbot AI vào SmartFarm Dashboard với giao diện đẹp & responsive
  */
 import React, { useState, useEffect } from 'react';
-import { IconButton, Tooltip, Badge, Slide, Box } from '@mui/material';
+import { IconButton, Tooltip, Badge, Slide, Box, Typography, Button } from '@mui/material';
 import ChatIcon from '@mui/icons-material/Chat';
 import CloseIcon from '@mui/icons-material/Close';
 import MinimizeIcon from '@mui/icons-material/Minimize';
@@ -15,8 +15,11 @@ const SmartFarmChatbot = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [chatbotUrl, setChatbotUrl] = useState(null);
+  const [iframeError, setIframeError] = useState(false);
   
   // URL của chatbot - Luôn dùng VPS port 9002
+  // Chỉ tính toán khi cần (lazy load)
   const getChatbotUrl = () => {
     try {
       // Extract base URL từ API_BASE_URL và thay port thành 9002
@@ -44,7 +47,18 @@ const SmartFarmChatbot = () => {
     }
   };
   
-  const CHATBOT_URL = getChatbotUrl();
+  // Chỉ tính toán URL khi mở chatbot
+  useEffect(() => {
+    if (isOpen && !chatbotUrl) {
+      try {
+        const url = getChatbotUrl();
+        setChatbotUrl(url);
+      } catch (error) {
+        console.error('Error initializing chatbot URL:', error);
+        setIframeError(true);
+      }
+    }
+  }, [isOpen, chatbotUrl]);
 
   // Detect mobile screen
   useEffect(() => {
@@ -197,10 +211,10 @@ const SmartFarmChatbot = () => {
             </Box>
           </Box>
 
-          {/* Chatbot iframe */}
-          {!isMinimized && (
+          {/* Chatbot iframe - Chỉ load khi có URL và không có lỗi */}
+          {!isMinimized && chatbotUrl && !iframeError && (
             <iframe
-              src={CHATBOT_URL}
+              src={chatbotUrl}
               style={{
                 width: '100%',
                 height: 'calc(100% - 48px)',
@@ -211,11 +225,68 @@ const SmartFarmChatbot = () => {
               title="Smart Farm AI Chatbot"
               onError={(e) => {
                 console.error('Chatbot iframe error:', e);
+                setIframeError(true);
               }}
               onLoad={() => {
-                console.log('Chatbot iframe loaded from:', CHATBOT_URL);
+                console.log('✅ Chatbot iframe loaded from:', chatbotUrl);
+                setIframeError(false);
               }}
             />
+          )}
+          
+          {/* Hiển thị thông báo lỗi nếu iframe không load được */}
+          {!isMinimized && iframeError && (
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: 'calc(100% - 48px)',
+                padding: 3,
+                textAlign: 'center',
+                color: 'text.secondary'
+              }}
+            >
+              <Typography variant="h6" gutterBottom>
+                ⚠️ Không thể tải chatbot
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 2 }}>
+                Chatbot service có thể đang tạm thời không khả dụng.
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 2, fontSize: '0.75rem', color: 'text.disabled' }}>
+                URL: {chatbotUrl || 'Đang tải...'}
+              </Typography>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={() => {
+                  setIframeError(false);
+                  setChatbotUrl(null);
+                  // Retry load
+                  const url = getChatbotUrl();
+                  setChatbotUrl(url);
+                }}
+              >
+                Thử lại
+              </Button>
+            </Box>
+          )}
+          
+          {/* Loading state */}
+          {!isMinimized && !chatbotUrl && !iframeError && (
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: 'calc(100% - 48px)',
+              }}
+            >
+              <Typography variant="body2" color="text.secondary">
+                Đang tải chatbot...
+              </Typography>
+            </Box>
           )}
         </div>
       </Slide>
