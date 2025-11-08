@@ -37,8 +37,9 @@ const SmartFarmChatbot = () => {
         host = '173.249.48.25';
       }
       
-      const url = `http://${host}:9002`;
-      console.log('🤖 Chatbot URL:', url);
+      // Luôn dùng VPS IP và port 9002
+      const url = `http://173.249.48.25:9002`;
+      console.log('🤖 Chatbot URL (VPS):', url);
       return url;
     } catch (error) {
       console.error('Error getting chatbot URL:', error);

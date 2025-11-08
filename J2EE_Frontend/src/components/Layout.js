@@ -78,7 +78,7 @@ const Layout = ({ children }) => {
                 {children || <Outlet />}
             </Box>
 
-            {/* AI Chatbot - Nút chat góc phải dưới */}
+            {/* AI Chatbot - Sử dụng chatbot trên VPS port 9002 */}
             <SmartFarmChatbot />
         </Box>
     );
