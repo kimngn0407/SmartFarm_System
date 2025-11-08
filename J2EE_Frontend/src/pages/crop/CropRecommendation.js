@@ -84,10 +84,11 @@ const CropRecommendation = () => {
 
       const response = await cropRecommendationService.recommendCrop(requestData);
 
-      if (response.success) {
+      // Service đã trả về object với success/error, không throw exception
+      if (response && response.success) {
         setResult(response);
       } else {
-        setError(response.error || 'Có lỗi xảy ra');
+        setError(response?.error || 'Có lỗi xảy ra khi gợi ý cây trồng');
       }
     } catch (err) {
       setError(err.message || 'Không thể kết nối đến server');

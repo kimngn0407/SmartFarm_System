@@ -9,15 +9,27 @@ import CloseIcon from '@mui/icons-material/Close';
 import MinimizeIcon from '@mui/icons-material/Minimize';
 import OpenInFullIcon from '@mui/icons-material/OpenInFull';
 import AgricultureIcon from '@mui/icons-material/Agriculture';
-import { API_ENDPOINTS } from '../config/api.config';
+import { API_BASE_URL, API_ENDPOINTS } from '../config/api.config';
 
 const SmartFarmChatbot = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   
-  // URL của chatbot (Production)
-  const CHATBOT_URL = API_ENDPOINTS.DIRECT.CHATBOT;
+  // URL của chatbot - ưu tiên dùng VPS, fallback về Vercel
+  const getChatbotUrl = () => {
+    // Nếu có API_BASE_URL từ config, dùng port 9002 của VPS
+    const apiBase = API_BASE_URL || '';
+    if (apiBase.includes('173.249.48.25') || apiBase.includes('localhost')) {
+      // Extract base URL và thay port thành 9002
+      const baseUrl = apiBase.replace(':8080', '').replace('http://', '').replace('https://', '');
+      return `http://${baseUrl}:9002`;
+    }
+    // Fallback về Vercel nếu không có VPS URL
+    return API_ENDPOINTS.DIRECT.CHATBOT || 'http://localhost:9002';
+  };
+  
+  const CHATBOT_URL = getChatbotUrl();
 
   // Detect mobile screen
   useEffect(() => {

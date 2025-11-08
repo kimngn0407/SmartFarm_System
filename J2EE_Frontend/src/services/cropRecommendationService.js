@@ -29,19 +29,40 @@ const cropRecommendationService = {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
         },
         body: JSON.stringify(data)
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorMessage = errorJson.error || errorJson.message || errorMessage;
+        } catch (e) {
+          errorMessage = errorText || errorMessage;
+        }
+        throw new Error(errorMessage);
       }
 
       const result = await response.json();
+      
+      // Đảm bảo response có format đúng
+      if (!result.success && !result.crop) {
+        return {
+          success: false,
+          error: result.error || 'Không thể nhận được gợi ý từ server'
+        };
+      }
+      
       return result;
     } catch (error) {
       console.error('Error recommending crop:', error);
-      throw error;
+      return {
+        success: false,
+        error: error.message || 'Không thể kết nối đến server. Vui lòng thử lại sau.'
+      };
     }
   },
 
