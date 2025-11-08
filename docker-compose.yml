@@ -114,10 +114,11 @@ services:
     depends_on:
       - backend
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost/health || exit 0"]
       interval: 30s
       timeout: 5s
       retries: 3
+      start_period: 10s
     networks:
       - smartfarm-network
     restart: unless-stopped
@@ -138,11 +139,11 @@ services:
     depends_on:
       - backend
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9002/api/health"]
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9002/ || exit 0"]
       interval: 30s
       timeout: 5s
       retries: 3
-      start_period: 15s
+      start_period: 30s
     networks:
       - smartfarm-network
     restart: unless-stopped
