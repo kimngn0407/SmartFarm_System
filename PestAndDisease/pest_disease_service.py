@@ -72,8 +72,19 @@ def load_model():
     """Load Vision Transformer model"""
     global model
     try:
+        # Kiểm tra file tồn tại
         if not os.path.exists(MODEL_PATH):
             logger.error(f"Model file không tồn tại: {MODEL_PATH}")
+            logger.error(f"Current working directory: {os.getcwd()}")
+            logger.error(f"Files in current directory: {os.listdir('.')}")
+            return False
+        
+        # Kiểm tra file size
+        file_size = os.path.getsize(MODEL_PATH)
+        logger.info(f"Model file size: {file_size} bytes")
+        
+        if file_size < 1000:
+            logger.error(f"Model file quá nhỏ ({file_size} bytes), có thể bị corrupt")
             return False
         
         logger.info("=" * 50)
@@ -82,6 +93,7 @@ def load_model():
         
         # Create model architecture (torchvision ViT-B/16)
         # This is Vision Transformer Base with 16x16 patches
+        logger.info("🏗️  Creating ViT-B/16 architecture...")
         model = models.vit_b_16(weights=None)
         
         # Modify the head for 4 classes (default is 1000 classes)
@@ -91,22 +103,36 @@ def load_model():
         
         # Load weights
         logger.info("📥 Loading checkpoint...")
-        checkpoint = torch.load(MODEL_PATH, map_location=device)
+        try:
+            checkpoint = torch.load(MODEL_PATH, map_location=device)
+            logger.info("✓ Checkpoint loaded successfully")
+        except Exception as load_error:
+            logger.error(f"Lỗi khi load checkpoint: {str(load_error)}")
+            import traceback
+            traceback.print_exc()
+            return False
         
         # Handle different checkpoint formats
-        if isinstance(checkpoint, dict):
-            if 'model_state_dict' in checkpoint:
-                model.load_state_dict(checkpoint['model_state_dict'])
-                logger.info("✓ Loaded from 'model_state_dict'")
-            elif 'state_dict' in checkpoint:
-                model.load_state_dict(checkpoint['state_dict'])
-                logger.info("✓ Loaded from 'state_dict'")
+        try:
+            if isinstance(checkpoint, dict):
+                if 'model_state_dict' in checkpoint:
+                    model.load_state_dict(checkpoint['model_state_dict'])
+                    logger.info("✓ Loaded from 'model_state_dict'")
+                elif 'state_dict' in checkpoint:
+                    model.load_state_dict(checkpoint['state_dict'])
+                    logger.info("✓ Loaded from 'state_dict'")
+                else:
+                    model.load_state_dict(checkpoint)
+                    logger.info("✓ Loaded from checkpoint dict")
             else:
                 model.load_state_dict(checkpoint)
-                logger.info("✓ Loaded from checkpoint dict")
-        else:
-            model.load_state_dict(checkpoint)
-            logger.info("✓ Loaded checkpoint directly")
+                logger.info("✓ Loaded checkpoint directly")
+        except Exception as state_dict_error:
+            logger.error(f"Lỗi khi load state_dict: {str(state_dict_error)}")
+            logger.error("Có thể model architecture không khớp với checkpoint")
+            import traceback
+            traceback.print_exc()
+            return False
         
         model = model.to(device)
         model.eval()
@@ -269,17 +295,20 @@ def get_classes():
     }), 200
 
 if __name__ == '__main__':
-    # Load model khi khởi động
-    if load_model():
-        logger.info("Đang khởi động Pest and Disease Detection Service...")
-        logger.info("API sẽ chạy tại: http://localhost:5001")
-        logger.info("\nEndpoints available:")
-        logger.info("  - GET  /health           - Health check")
-        logger.info("  - POST /api/detect       - Phát hiện sâu bệnh")
-        logger.info("  - GET  /api/classes      - Danh sách bệnh")
-        
-        port = int(os.environ.get('PORT', 5001))
-        app.run(host='0.0.0.0', port=port, debug=False)
-    else:
-        logger.error("Không thể khởi động service do lỗi load model")
+    # Load model khi khởi động (nhưng vẫn chạy service dù không load được)
+    load_model()
+    
+    logger.info("Đang khởi động Pest and Disease Detection Service...")
+    logger.info("API sẽ chạy tại: http://localhost:5001")
+    logger.info("\nEndpoints available:")
+    logger.info("  - GET  /health           - Health check")
+    logger.info("  - POST /api/detect       - Phát hiện sâu bệnh")
+    logger.info("  - GET  /api/classes      - Danh sách bệnh")
+    
+    if model is None:
+        logger.warning("⚠️  WARNING: Model chưa được load. API /api/detect sẽ trả về lỗi.")
+        logger.warning("⚠️  Service vẫn chạy để health check hoạt động.")
+    
+    port = int(os.environ.get('PORT', 5001))
+    app.run(host='0.0.0.0', port=port, debug=False)
 

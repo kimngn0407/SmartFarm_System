@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.*;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -23,11 +24,18 @@ public class PestDiseaseService {
 
     private final RestTemplate restTemplate;
 
-    @Value("${pest.disease.service.url:https://kimngan0407-pest-disease.hf.space}")
+    @Value("${pest.disease.service.url:http://pest-service:5001}")
     private String pestDiseaseApiUrl;
 
     public PestDiseaseService() {
-        this.restTemplate = new RestTemplate();
+        // Tạo RestTemplate với timeout dài hơn cho ViT model (cần thời gian xử lý)
+        HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory();
+        factory.setConnectTimeout(10000);      // 10 giây để connect
+        factory.setReadTimeout(120000);        // 120 giây (2 phút) để đọc response - QUAN TRỌNG cho ViT model!
+        factory.setConnectionRequestTimeout(10000);
+        
+        this.restTemplate = new RestTemplate(factory);
+        logger.info("PestDiseaseService initialized with 120s read timeout for ViT model");
     }
 
     /**

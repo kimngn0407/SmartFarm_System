@@ -68,23 +68,57 @@ def load_model():
     """Load RandomForest model từ file pkl"""
     global model
     try:
+        # Kiểm tra file tồn tại
         if not os.path.exists(MODEL_PATH):
             logger.error(f"Model file không tồn tại: {MODEL_PATH}")
+            logger.error(f"Current working directory: {os.getcwd()}")
+            logger.error(f"Files in current directory: {os.listdir('.')}")
+            return False
+        
+        # Kiểm tra file size
+        file_size = os.path.getsize(MODEL_PATH)
+        logger.info(f"Model file size: {file_size} bytes")
+        
+        if file_size < 100:
+            logger.error(f"Model file quá nhỏ ({file_size} bytes), có thể bị corrupt")
+            return False
+        
+        # Kiểm tra file có phải là binary không (đọc vài byte đầu)
+        try:
+            with open(MODEL_PATH, 'rb') as f:
+                first_bytes = f.read(10)
+                logger.info(f"First 10 bytes (hex): {first_bytes.hex()}")
+                # Pickle files thường bắt đầu với các byte đặc biệt
+                if first_bytes.startswith(b'version') or first_bytes.startswith(b'v'):
+                    logger.error("File có vẻ là text file, không phải pickle binary")
+                    return False
+        except Exception as e:
+            logger.error(f"Không thể đọc file: {str(e)}")
             return False
         
         # Try using joblib first (better for sklearn models)
         try:
             import joblib
+            logger.info("🔄 Thử load model bằng joblib...")
             model = joblib.load(MODEL_PATH)
             logger.info("✓ Model loaded using joblib")
-        except:
-            # Fallback to pickle with allow_pickle
+        except Exception as joblib_error:
+            logger.warning(f"Joblib load failed: {str(joblib_error)}")
+            logger.info("🔄 Thử load model bằng pickle...")
+            
+            # Fallback to pickle
             import warnings
             warnings.filterwarnings('ignore', category=UserWarning)
             
-            with open(MODEL_PATH, 'rb') as f:
-                model = pickle.load(f)
-            logger.info("✓ Model loaded using pickle")
+            try:
+                with open(MODEL_PATH, 'rb') as f:
+                    model = pickle.load(f)
+                logger.info("✓ Model loaded using pickle")
+            except Exception as pickle_error:
+                logger.error(f"Pickle load failed: {str(pickle_error)}")
+                import traceback
+                traceback.print_exc()
+                return False
         
         logger.info("✓ Model đã được load thành công!")
         logger.info(f"Model type: {type(model)}")
@@ -92,10 +126,15 @@ def load_model():
         # Kiểm tra model có method predict không
         if hasattr(model, 'predict'):
             logger.info("✓ Model có method predict()")
+        else:
+            logger.error("Model không có method predict()")
+            return False
         
         return True
     except Exception as e:
         logger.error(f"Lỗi khi load model: {str(e)}")
+        import traceback
+        traceback.print_exc()
         logger.error("Gợi ý: Model có thể được train với sklearn version khác. Cần train lại model với sklearn hiện tại.")
         return False
 

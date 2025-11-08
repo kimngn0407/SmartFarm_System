@@ -353,7 +353,20 @@ const CropRecommendation = () => {
             
             <div className="recommendation-card">
               <div className="crop-icon">🌾</div>
-              <h2>{result.recommended_crop}</h2>
+              <h2>
+                {result.recommended_crop}
+                {result.crop_name_en && (
+                  <span style={{ 
+                    fontSize: '0.6em', 
+                    color: '#666', 
+                    fontWeight: 'normal',
+                    display: 'block',
+                    marginTop: '4px'
+                  }}>
+                    ({result.crop_name_en})
+                  </span>
+                )}
+              </h2>
               
               {result.confidence && (
                 <div className="confidence-bar">
@@ -367,12 +380,6 @@ const CropRecommendation = () => {
                   <span className="confidence-value">
                     {(result.confidence * 100).toFixed(1)}%
                   </span>
-                </div>
-              )}
-
-              {result.crop_name_en && (
-                <div className="details">
-                  <p><strong>Tên khoa học:</strong> {result.crop_name_en}</p>
                 </div>
               )}
 

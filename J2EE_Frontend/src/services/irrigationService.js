@@ -21,7 +21,17 @@ const getIrrigationHistory = (fieldId) => {
     }
     
     const url = `${API_BASE}/irrigation?fieldId=${fieldId}`;
-    return axios.get(url, { headers: getAuthHeader() });
+    return axios.get(url, { headers: getAuthHeader() })
+        .then(response => {
+            // Backend trả về ResponseEntity, data có thể là List trực tiếp hoặc error message
+            if (Array.isArray(response.data)) {
+                return response; // Trả về response với data là array
+            } else if (typeof response.data === 'string') {
+                // Nếu là error message, throw error
+                throw new Error(response.data);
+            }
+            return response;
+        });
 };
 
 // Fertilization functions - using correct backend endpoints
@@ -36,7 +46,17 @@ const getFertilizationHistory = (fieldId) => {
     }
     
     const url = `${API_BASE}/fertilization?fieldId=${fieldId}`;
-    return axios.get(url, { headers: getAuthHeader() });
+    return axios.get(url, { headers: getAuthHeader() })
+        .then(response => {
+            // Backend trả về ResponseEntity, data có thể là List trực tiếp hoặc error message
+            if (Array.isArray(response.data)) {
+                return response; // Trả về response với data là array
+            } else if (typeof response.data === 'string') {
+                // Nếu là error message, throw error
+                throw new Error(response.data);
+            }
+            return response;
+        });
 };
 
 // Combined history functions
@@ -78,12 +98,20 @@ const getIrrigationHistoryByFarm = async (farmId, fieldId = null) => {
             console.log(`🎯 Lấy dữ liệu cho field cụ thể: ${fieldId}`);
             try {
                 const response = await axios.get(`${API_BASE}/irrigation?fieldId=${fieldId}`, { headers: getAuthHeader() });
-                const data = response.data || [];
+                // Backend trả về ResponseEntity, data có thể là List hoặc error message
+                let data = [];
+                if (Array.isArray(response.data)) {
+                    data = response.data;
+                } else if (typeof response.data === 'string') {
+                    // Nếu là error message, log và trả về empty array
+                    console.warn(`⚠️ Backend trả về error message: ${response.data}`);
+                    return { data: [] };
+                }
                 console.log(`✅ Dữ liệu cho field ${fieldId}:`, data);
                 return { data };
             } catch (fieldError) {
                 console.log(`⚠️ Field ${fieldId}: Không có dữ liệu tưới tiêu hoặc lỗi -`, fieldError.response?.status, fieldError.message);
-                if (fieldError.response?.status === 404) {
+                if (fieldError.response?.status === 404 || fieldError.response?.status === 400) {
                     console.log(`📝 Field ${fieldId} không có dữ liệu tưới tiêu trong database`);
                     return { data: [] }; // Return empty array instead of throwing error
                 }
@@ -110,7 +138,14 @@ const getIrrigationHistoryByFarm = async (farmId, fieldId = null) => {
         for (const field of fields) {
             try {
                 const response = await axios.get(`${API_BASE}/irrigation?fieldId=${field.id}`, { headers: getAuthHeader() });
-                const fieldData = response.data || [];
+                // Backend trả về ResponseEntity, data có thể là List hoặc error message
+                let fieldData = [];
+                if (Array.isArray(response.data)) {
+                    fieldData = response.data;
+                } else if (typeof response.data === 'string') {
+                    console.warn(`⚠️ Field ${field.id}: Backend trả về error message: ${response.data}`);
+                    fieldData = [];
+                }
                 allData.push(...fieldData);
                 console.log(`✅ Field ${field.id}: ${fieldData.length} bản ghi tưới tiêu`);
             } catch (fieldError) {
@@ -151,12 +186,20 @@ const getFertilizationHistoryByFarm = async (farmId, fieldId = null) => {
             console.log(`🎯 Lấy dữ liệu cho field cụ thể: ${fieldId}`);
             try {
                 const response = await axios.get(`${API_BASE}/fertilization?fieldId=${fieldId}`, { headers: getAuthHeader() });
-                const data = response.data || [];
+                // Backend trả về ResponseEntity, data có thể là List hoặc error message
+                let data = [];
+                if (Array.isArray(response.data)) {
+                    data = response.data;
+                } else if (typeof response.data === 'string') {
+                    // Nếu là error message, log và trả về empty array
+                    console.warn(`⚠️ Backend trả về error message: ${response.data}`);
+                    return { data: [] };
+                }
                 console.log(`✅ Dữ liệu cho field ${fieldId}:`, data);
                 return { data };
             } catch (fieldError) {
                 console.log(`⚠️ Field ${fieldId}: Không có dữ liệu bón phân hoặc lỗi -`, fieldError.response?.status, fieldError.message);
-                if (fieldError.response?.status === 404) {
+                if (fieldError.response?.status === 404 || fieldError.response?.status === 400) {
                     console.log(`📝 Field ${fieldId} không có dữ liệu bón phân trong database`);
                     return { data: [] }; // Return empty array instead of throwing error
                 }
@@ -183,7 +226,14 @@ const getFertilizationHistoryByFarm = async (farmId, fieldId = null) => {
         for (const field of fields) {
             try {
                 const response = await axios.get(`${API_BASE}/fertilization?fieldId=${field.id}`, { headers: getAuthHeader() });
-                const fieldData = response.data || [];
+                // Backend trả về ResponseEntity, data có thể là List hoặc error message
+                let fieldData = [];
+                if (Array.isArray(response.data)) {
+                    fieldData = response.data;
+                } else if (typeof response.data === 'string') {
+                    console.warn(`⚠️ Field ${field.id}: Backend trả về error message: ${response.data}`);
+                    fieldData = [];
+                }
                 allData.push(...fieldData);
                 console.log(`✅ Field ${field.id}: ${fieldData.length} bản ghi bón phân`);
             } catch (fieldError) {
