@@ -74,13 +74,9 @@ public class AuthController {
                 return ResponseEntity.badRequest().body(createErrorResponse("Full name is required"));
             }
 
-            // Set default role if not provided
-            String roleString = "FARMER";
-            if (accountDTO.getRoles() != null && !accountDTO.getRoles().isEmpty()) {
-                roleString = String.join(",", accountDTO.getRoles().stream()
-                    .map(role -> role.name())
-                    .toList());
-            }
+            // Tất cả người dùng đăng ký mới đều là ADMIN để trải nghiệm đầy đủ chức năng
+            // Bỏ qua role được gửi từ frontend, luôn gán ADMIN
+            String roleString = "ADMIN";
 
             // Call service
             String response = accountService.register(

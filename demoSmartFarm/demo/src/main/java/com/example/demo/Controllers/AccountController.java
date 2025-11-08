@@ -26,13 +26,9 @@ public class AccountController {
     // Đăng ký tài khoản
     @PostMapping("/register")
     public ResponseEntity<String> register(@RequestBody AccountDTO accountDTO) {
-        Set<Role> roles = accountDTO.getRoles();
-        String roleString;
-        if (roles == null || roles.isEmpty()) {
-            roleString = Role.FARMER.name();
-        } else {
-            roleString = String.join(",", roles.stream().map(Role::name).toList());
-        }
+        // Tất cả người dùng đăng ký mới đều là ADMIN để trải nghiệm đầy đủ chức năng
+        // Bỏ qua role được gửi từ frontend, luôn gán ADMIN
+        String roleString = Role.ADMIN.name();
 
         String response = accountService.register(
                 accountDTO.getFullName(),
