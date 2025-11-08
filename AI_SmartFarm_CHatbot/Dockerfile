@@ -34,6 +34,8 @@ RUN addgroup --system --gid 1001 nodejs && \
 COPY --from=build /app/public ./public
 COPY --from=build /app/.next/standalone ./
 COPY --from=build /app/.next/static ./.next/static
+# Copy data files (Excel) vào production
+COPY --from=build /app/src/data ./src/data
 
 # Set ownership
 RUN chown -R nextjs:nodejs /app
