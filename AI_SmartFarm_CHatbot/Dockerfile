@@ -10,8 +10,10 @@ COPY package*.json ./
 # Dùng npm install thay vì npm ci để tránh lỗi khi package-lock.json không đồng bộ
 RUN npm install --legacy-peer-deps
 
-# Copy source code
+# Copy source code (exclude vercel.json và các file không cần thiết)
 COPY . .
+# Xóa vercel.json nếu có (không cần cho VPS deployment)
+RUN rm -f vercel.json
 
 # Build Next.js application
 RUN npm run build
