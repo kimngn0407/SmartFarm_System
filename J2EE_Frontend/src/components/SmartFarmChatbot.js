@@ -16,17 +16,24 @@ const SmartFarmChatbot = () => {
   const [isMinimized, setIsMinimized] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   
-  // URL của chatbot - ưu tiên dùng VPS, fallback về Vercel
+  // URL của chatbot - Luôn dùng VPS port 9002
   const getChatbotUrl = () => {
-    // Nếu có API_BASE_URL từ config, dùng port 9002 của VPS
-    const apiBase = API_BASE_URL || '';
-    if (apiBase.includes('173.249.48.25') || apiBase.includes('localhost')) {
-      // Extract base URL và thay port thành 9002
-      const baseUrl = apiBase.replace(':8080', '').replace('http://', '').replace('https://', '');
-      return `http://${baseUrl}:9002`;
+    // Extract base URL từ API_BASE_URL và thay port thành 9002
+    const apiBase = API_BASE_URL || 'http://173.249.48.25:8080';
+    
+    // Extract host (bỏ protocol và port)
+    let host = apiBase
+      .replace('http://', '')
+      .replace('https://', '')
+      .replace(':8080', '')
+      .split('/')[0]; // Lấy phần đầu tiên (host:port)
+    
+    // Nếu không có host, dùng VPS IP mặc định
+    if (!host || host === 'localhost' || host === '127.0.0.1') {
+      host = '173.249.48.25';
     }
-    // Fallback về Vercel nếu không có VPS URL
-    return API_ENDPOINTS.DIRECT.CHATBOT || 'http://localhost:9002';
+    
+    return `http://${host}:9002`;
   };
   
   const CHATBOT_URL = getChatbotUrl();

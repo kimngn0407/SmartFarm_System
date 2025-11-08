@@ -59,21 +59,21 @@ export const API_ENDPOINTS = {
     HEALTH: `${API_BASE_URL}/api/crop/health`,
   },
   
-  // Direct AI Services (bypass backend)
+  // Direct AI Services (bypass backend) - DEPRECATED: Tất cả services đều chạy trên VPS
   DIRECT: {
-    // Chatbot
-    CHATBOT: 'https://hackathon-pione-dream-vzj5.vercel.app',
+    // Chatbot - Không dùng nữa, luôn dùng VPS port 9002
+    // CHATBOT: 'https://hackathon-pione-dream-vzj5.vercel.app', // DEPRECATED
     
-    // Pest & Disease AI (direct)
-    PEST_AI: 'https://kimngan0407-pest-disease.hf.space',
-    PEST_HEALTH: 'https://kimngan0407-pest-disease.hf.space/health',
-    PEST_DETECT: 'https://kimngan0407-pest-disease.hf.space/api/detect',
-    PEST_CLASSES: 'https://kimngan0407-pest-disease.hf.space/api/classes',
+    // Pest & Disease AI (direct) - Không dùng nữa, dùng qua backend
+    // PEST_AI: 'https://kimngan0407-pest-disease.hf.space', // DEPRECATED
+    // PEST_HEALTH: 'https://kimngan0407-pest-disease.hf.space/health', // DEPRECATED
+    // PEST_DETECT: 'https://kimngan0407-pest-disease.hf.space/api/detect', // DEPRECATED
+    // PEST_CLASSES: 'https://kimngan0407-pest-disease.hf.space/api/classes', // DEPRECATED
     
-    // Crop Recommendation AI (direct)
-    CROP_AI: 'https://hackathon-pione-dream.onrender.com',
-    CROP_AI_HEALTH: 'https://hackathon-pione-dream.onrender.com/health',
-    CROP_AI_RECOMMEND: 'https://hackathon-pione-dream.onrender.com/api/recommend',
+    // Crop Recommendation AI (direct) - Không dùng nữa, dùng qua backend
+    // CROP_AI: 'https://hackathon-pione-dream.onrender.com', // DEPRECATED
+    // CROP_AI_HEALTH: 'https://hackathon-pione-dream.onrender.com/health', // DEPRECATED
+    // CROP_AI_RECOMMEND: 'https://hackathon-pione-dream.onrender.com/api/recommend', // DEPRECATED
   },
   
   // Alerts
