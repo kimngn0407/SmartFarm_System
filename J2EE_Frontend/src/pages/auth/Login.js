@@ -72,20 +72,37 @@ const Login = () => {
     } catch (err) {
       console.error('❌ Login error:', err);
       console.error('Error response:', err.response);
+      console.error('Error status:', err.response?.status);
+      console.error('Error data:', err.response?.data);
       
       // Parse error message properly
       let errorMessage = 'Đăng nhập thất bại! Vui lòng kiểm tra lại email hoặc mật khẩu.';
       
       if (err.response?.data) {
         const errorData = err.response.data;
+        console.log('Error data type:', typeof errorData);
+        console.log('Error data content:', JSON.stringify(errorData));
+        
         // Check if error data is an object with error property
         if (typeof errorData === 'object' && errorData.error) {
           errorMessage = errorData.error;
+        } else if (typeof errorData === 'object' && errorData.message) {
+          errorMessage = errorData.message;
         } else if (typeof errorData === 'string') {
           errorMessage = errorData;
+        } else if (err.response.status === 401) {
+          errorMessage = 'Email hoặc mật khẩu không đúng. Vui lòng thử lại.';
         }
       } else if (err.message) {
         errorMessage = err.message;
+      }
+      
+      // Special handling for 401
+      if (err.response?.status === 401) {
+        console.log('⚠️ 401 Unauthorized - Credentials may be incorrect');
+        if (!errorMessage.includes('Email') && !errorMessage.includes('mật khẩu')) {
+          errorMessage = 'Email hoặc mật khẩu không đúng. Vui lòng thử lại hoặc đăng ký tài khoản mới.';
+        }
       }
       
       setError(errorMessage);
