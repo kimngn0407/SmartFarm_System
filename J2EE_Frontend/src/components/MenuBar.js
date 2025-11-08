@@ -427,18 +427,9 @@ const MenuBar = () => {
                     <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.1)', mb: 2 }} />
 
                     <List sx={{ flexGrow: 1 }}>
-                        {/* Ví dụ: chỉ ADMIN mới thấy mục quản lý tài khoản */}
-                        <RoleGuard allowedRoles={['ADMIN']}>
-                            <StyledListItem
-                                button
-                                onClick={() => handleItemClick('/accounts', 'accounts')}
-                                selected={selectedItem === 'accounts'}
-                            >
-                                <ListItemIcon><AuthIcon /></ListItemIcon>
-                                <ListItemText primary="Quản lý tài khoản" />
-                            </StyledListItem>
-                        </RoleGuard>
-                        {/* Các mục menu khác, nếu muốn ẩn/hiện theo role thì bọc RoleGuard tương tự */}
+                        {/* Menu "Quản lý tài khoản" đã được ẩn theo yêu cầu */}
+                        {/* Tất cả user đăng ký mới đều có quyền ADMIN như admin.nguyen@smartfarm.com */}
+                        {/* Các mục menu khác */}
                         {menuItems.map((item) => (
                             <StyledListItem
                                 key={item.id}
