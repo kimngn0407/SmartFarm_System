@@ -75,22 +75,9 @@ export const API_ENDPOINTS = {
     HEALTH: `${API_BASE_URL}/api/crop/health`,
   },
   
-  // Direct AI Services (bypass backend) - DEPRECATED: Tất cả services đều chạy trên VPS
-  DIRECT: {
-    // Chatbot - Không dùng nữa, luôn dùng VPS port 9002
-    // CHATBOT: 'https://hackathon-pione-dream-vzj5.vercel.app', // DEPRECATED
-    
-    // Pest & Disease AI (direct) - Không dùng nữa, dùng qua backend
-    // PEST_AI: 'https://kimngan0407-pest-disease.hf.space', // DEPRECATED
-    // PEST_HEALTH: 'https://kimngan0407-pest-disease.hf.space/health', // DEPRECATED
-    // PEST_DETECT: 'https://kimngan0407-pest-disease.hf.space/api/detect', // DEPRECATED
-    // PEST_CLASSES: 'https://kimngan0407-pest-disease.hf.space/api/classes', // DEPRECATED
-    
-    // Crop Recommendation AI (direct) - Không dùng nữa, dùng qua backend
-    // CROP_AI: 'https://hackathon-pione-dream.onrender.com', // DEPRECATED
-    // CROP_AI_HEALTH: 'https://hackathon-pione-dream.onrender.com/health', // DEPRECATED
-    // CROP_AI_RECOMMEND: 'https://hackathon-pione-dream.onrender.com/api/recommend', // DEPRECATED
-  },
+  // Direct AI Services - REMOVED: Tất cả services đều chạy trên VPS
+  // Không còn sử dụng Vercel, Render, hoặc bất kỳ external service nào
+  DIRECT: {},
   
   // Alerts
   ALERTS: {
@@ -118,12 +105,12 @@ export const API_ENDPOINTS = {
   },
 };
 
-// Log configuration in development
-if (process.env.NODE_ENV !== 'production') {
-  console.log('🔧 API Configuration:');
-  console.log('  Environment:', process.env.NODE_ENV);
-  console.log('  API Base URL:', API_BASE_URL);
-}
+// Log configuration (always log in production để debug)
+console.log('🔧 API Configuration:');
+console.log('  Environment:', process.env.NODE_ENV);
+console.log('  API Base URL:', API_BASE_URL);
+console.log('  Window location:', typeof window !== 'undefined' ? window.location.href : 'N/A');
+console.log('  ✅ Vercel URLs đã được loại bỏ hoàn toàn');
 
 export default {
   API_BASE_URL,
