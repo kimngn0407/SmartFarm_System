@@ -163,7 +163,7 @@ export const getCurrentUserEmail = () => {
  * 
  * @returns {Promise} Axios response promise với profile data
  */
-const getProfile = () => axios.get('/api/accounts/profile', { headers: getAuthHeader() });
+const getProfile = () => axios.get(`${API_BASE_URL}/api/accounts/profile`, { headers: getAuthHeader() });
 
 /**
  * Update user profile data
@@ -171,7 +171,7 @@ const getProfile = () => axios.get('/api/accounts/profile', { headers: getAuthHe
  * @param {object} data - Profile data để update
  * @returns {Promise} Axios response promise
  */
-const updateProfile = (data) => axios.put('/api/accounts/updateprofile', data, { headers: getAuthHeader() });
+const updateProfile = (data) => axios.put(`${API_BASE_URL}/api/accounts/updateprofile`, data, { headers: getAuthHeader() });
 
 /**
  * Get authentication token từ localStorage
@@ -206,7 +206,7 @@ const getAuthHeader = () => {
  * @returns {Promise} Axios response promise với array of accounts
  */
 const getAllAccounts = () =>
-  axios.get('/api/accounts/all', { headers: getAuthHeader() });
+  axios.get(`${API_BASE_URL}/api/accounts/all`, { headers: getAuthHeader() });
 
 /**
  * Cập nhật quyền của một tài khoản (ADMIN ONLY)

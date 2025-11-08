@@ -110,8 +110,11 @@ const Dashboard = () => {
       
       try {
         // 1. Lấy tất cả farms
+        console.log('🔍 Fetching farms...');
         const farmsResponse = await farmService.getFarms();
+        console.log('✅ Farms response:', farmsResponse);
         const farms = farmsResponse.data;
+        console.log('✅ Farms data:', farms);
         farmNamesArr = farms.map(f => f.farmName);
         
         // 2. Lấy TẤT CẢ SENSORS 1 LẦN (thay vì từng field)
@@ -119,18 +122,33 @@ const Dashboard = () => {
           const allSensorsResponse = await sensorService.getSensorList();
           totalSensors = allSensorsResponse.length || 0;
           console.log('✅ Total sensors:', totalSensors);
+          console.log('✅ Sensors response:', allSensorsResponse);
         } catch (sensorError) {
           console.error('❌ Error fetching sensors:', sensorError);
+          console.error('❌ Sensor error details:', {
+            message: sensorError.message,
+            response: sensorError.response?.data,
+            status: sensorError.response?.status,
+            config: sensorError.config
+          });
           totalSensors = 0;
         }
         
         // 3. Lấy tất cả fields của tất cả farms
+        console.log('🔍 Fetching fields for farms...');
         await Promise.all(farms.map(async (farm) => {
           try {
             const fieldsResponse = await fieldService.getFieldsByFarm(farm.id);
+            console.log(`✅ Fields for farm ${farm.id}:`, fieldsResponse.data);
             allFields = allFields.concat(fieldsResponse.data);
           } catch (error) {
-            console.error('Error fetching fields for farm', farm.id, error);
+            console.error('❌ Error fetching fields for farm', farm.id, error);
+            console.error('❌ Field error details:', {
+              message: error.message,
+              response: error.response?.data,
+              status: error.response?.status,
+              config: error.config
+            });
           }
         }));
         
