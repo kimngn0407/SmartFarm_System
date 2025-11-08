@@ -34,10 +34,10 @@ const getAllFields = async () => {
     }
 };
 
-const getFieldById = (id) => axios.get(`/api/fields/${id}`, { headers: getAuthHeader() });
+const getFieldById = (id) => axios.get(`${API_BASE_URL}/api/fields/${id}`, { headers: getAuthHeader() });
 const createField = (data) => axios.post('/api/fields', data, { headers: getAuthHeader() });
-const updateField = (id, data) => axios.put(`/api/fields/${id}`, data, { headers: getAuthHeader() });
-const deleteField = (id) => axios.delete(`/api/fields/${id}`, { headers: getAuthHeader() });
+const updateField = (id, data) => axios.put(`${API_BASE_URL}/api/fields/${id}`, data, { headers: getAuthHeader() });
+const deleteField = (id) => axios.delete(`${API_BASE_URL}/api/fields/${id}`, { headers: getAuthHeader() });
 
 export default {
     getFieldsByFarm,

@@ -226,7 +226,7 @@ const updateAccountRole = (id, role) =>
  * @returns {Promise} Axios response promise
  */
 const updateAccountAssignment = (id, data) =>
-  axios.put(`/api/accounts/${id}/assign`, data, { headers: getAuthHeader() });
+  axios.put(`${API_BASE_URL}/api/accounts/${id}/assign`, data, { headers: getAuthHeader() });
 
 /**
  * DEFAULT EXPORT - Object chứa tất cả functions
