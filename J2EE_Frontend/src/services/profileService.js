@@ -27,7 +27,8 @@ class ProfileService {
       }
 
       const response = await axios.get(
-        `${API_BASE_URL}/api/accounts/profile?email=${email}`
+        `${API_BASE_URL}/api/accounts/profile?email=${email}`,
+        { headers: getAuthHeader() }
       );
       
       console.log('✅ Profile fetched successfully:', response.data);
@@ -180,7 +181,10 @@ class ProfileService {
   // Get all accounts
   async getAllAccounts() {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/accounts/all`);
+      const response = await axios.get(
+        `${API_BASE_URL}/api/accounts/all`,
+        { headers: getAuthHeader() }
+      );
       return response.data;
     } catch (error) {
       console.error('Error fetching accounts:', error);

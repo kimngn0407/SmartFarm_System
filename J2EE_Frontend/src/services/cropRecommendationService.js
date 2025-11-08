@@ -49,10 +49,20 @@ const cropRecommendationService = {
       const result = await response.json();
       
       // Đảm bảo response có format đúng
-      if (!result.success && !result.crop) {
+      // Backend trả về: { success: true, recommended_crop: "...", crop_name_en: "...", confidence: 0.8, input_data: {...} }
+      if (!result.success && !result.recommended_crop) {
         return {
           success: false,
           error: result.error || 'Không thể nhận được gợi ý từ server'
+        };
+      }
+      
+      // Đảm bảo có input_data nếu không có
+      if (result.success && !result.input_data) {
+        result.input_data = {
+          temperature: result.temperature || '',
+          humidity: result.humidity || '',
+          soil_moisture: result.soil_moisture || ''
         };
       }
       
