@@ -100,6 +100,15 @@ public class AIRecommendationService {
             );
 
             Map<String, Object> result = response.getBody();
+            
+            // Log raw response from Python service
+            logger.info("🔍 Raw Python service response: {}", result);
+            if (result != null) {
+                logger.info("🔍 Response keys: {}", result.keySet());
+                logger.info("🔍 recommended_crop value: {}", result.get("recommended_crop"));
+                logger.info("🔍 crop_name_en value: {}", result.get("crop_name_en"));
+                logger.info("🔍 confidence value: {}", result.get("confidence"));
+            }
 
             // Map Python response to Java DTO
             AIPredictionResponse aiResponse = new AIPredictionResponse();
@@ -109,15 +118,26 @@ public class AIRecommendationService {
                 // Extract crop information from Python service response
                 // Python service returns: { success: true, recommended_crop: "Dưa hấu", crop_name_en: "watermelon", confidence: 0.8, input_data: {...} }
                 if (result.containsKey("recommended_crop")) {
-                    aiResponse.setRecommendedCrop((String) result.get("recommended_crop"));
+                    Object recommendedCropObj = result.get("recommended_crop");
+                    String recommendedCrop = recommendedCropObj != null ? recommendedCropObj.toString() : null;
+                    aiResponse.setRecommendedCrop(recommendedCrop);
+                    logger.info("✅ Set recommendedCrop: {}", recommendedCrop);
+                } else {
+                    logger.warn("⚠️ Response không có key 'recommended_crop'");
                 }
+                
                 if (result.containsKey("crop_name_en")) {
-                    aiResponse.setCropNameEn((String) result.get("crop_name_en"));
+                    Object cropNameEnObj = result.get("crop_name_en");
+                    String cropNameEn = cropNameEnObj != null ? cropNameEnObj.toString() : null;
+                    aiResponse.setCropNameEn(cropNameEn);
+                    logger.info("✅ Set cropNameEn: {}", cropNameEn);
                 }
+                
                 if (result.containsKey("confidence")) {
                     Object conf = result.get("confidence");
                     if (conf instanceof Number) {
                         aiResponse.setConfidence(((Number) conf).doubleValue());
+                        logger.info("✅ Set confidence: {}", conf);
                     }
                 }
                 
@@ -127,7 +147,9 @@ public class AIRecommendationService {
                 cropList.add(1.0); // placeholder
                 predictionList.add(cropList);
                 aiResponse.setPrediction(predictionList);
-                logger.info("AI prediction successful: {} ({})", result.get("recommended_crop"), result.get("crop_name_en"));
+                
+                logger.info("✅ AI prediction successful - Final AIPredictionResponse: recommendedCrop={}, cropNameEn={}, confidence={}", 
+                    aiResponse.getRecommendedCrop(), aiResponse.getCropNameEn(), aiResponse.getConfidence());
                 return aiResponse;
             } else {
                 String errorMsg = (String) result.getOrDefault("error", "Prediction failed");

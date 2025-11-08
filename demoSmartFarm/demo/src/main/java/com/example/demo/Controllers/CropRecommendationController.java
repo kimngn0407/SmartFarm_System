@@ -50,6 +50,13 @@ public class CropRecommendationController {
                 aiRequest.getPotassium()
             );
 
+            // Log prediction response
+            System.out.println("🔍 AIPredictionResponse from service:");
+            System.out.println("  - success: " + prediction.getSuccess());
+            System.out.println("  - recommendedCrop: " + prediction.getRecommendedCrop());
+            System.out.println("  - cropNameEn: " + prediction.getCropNameEn());
+            System.out.println("  - confidence: " + prediction.getConfidence());
+
             // Map response to frontend expected format
             Map<String, Object> response = new HashMap<>();
             Boolean success = prediction.getSuccess() != null && prediction.getSuccess();
@@ -58,15 +65,22 @@ public class CropRecommendationController {
                 // Extract crop information from AI service response
                 // Đảm bảo luôn có recommended_crop
                 String recommendedCrop = prediction.getRecommendedCrop();
+                System.out.println("🔍 recommendedCrop from prediction: '" + recommendedCrop + "'");
+                
                 if (recommendedCrop != null && !recommendedCrop.trim().isEmpty()) {
                     response.put("recommended_crop", recommendedCrop);
+                    System.out.println("✅ Set recommended_crop: " + recommendedCrop);
                 } else {
                     // Fallback: thử lấy từ cropNameEn hoặc set default
                     String cropNameEn = prediction.getCropNameEn();
+                    System.out.println("⚠️ recommendedCrop is null/empty, trying cropNameEn: '" + cropNameEn + "'");
+                    
                     if (cropNameEn != null && !cropNameEn.trim().isEmpty()) {
                         response.put("recommended_crop", cropNameEn);
+                        System.out.println("✅ Set recommended_crop from cropNameEn: " + cropNameEn);
                     } else {
                         response.put("recommended_crop", "Cây trồng được gợi ý");
+                        System.out.println("⚠️ Using default: 'Cây trồng được gợi ý'");
                     }
                 }
                 
