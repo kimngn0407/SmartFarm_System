@@ -84,8 +84,22 @@ const CropRecommendation = () => {
 
       const response = await cropRecommendationService.recommendCrop(requestData);
 
+      // Log response để debug
+      console.log('🔍 Crop recommendation response:', response);
+      console.log('🔍 Response keys:', response ? Object.keys(response) : 'null');
+
       // Service đã trả về object với success/error, không throw exception
       if (response && response.success) {
+        // Đảm bảo có recommended_crop hoặc fallback
+        if (!response.recommended_crop) {
+          console.warn('⚠️ Response không có recommended_crop, tìm fallback...');
+          // Thử các field khác
+          response.recommended_crop = response.crop || 
+                                      response.recommendedCrop || 
+                                      response.crop_name || 
+                                      'Cây trồng được gợi ý';
+          console.log('✅ Fallback crop name:', response.recommended_crop);
+        }
         setResult(response);
       } else {
         setError(response?.error || 'Có lỗi xảy ra khi gợi ý cây trồng');
@@ -355,7 +369,11 @@ const CropRecommendation = () => {
             <div className="recommendation-card">
               <div className="crop-icon">🌾</div>
               <h2>
-                {result.recommended_crop}
+                {result.recommended_crop || 
+                 result.crop || 
+                 result.recommendedCrop || 
+                 result.crop_name || 
+                 'Cây trồng được gợi ý'}
                 {result.crop_name_en && (
                   <span style={{ 
                     fontSize: '0.6em', 

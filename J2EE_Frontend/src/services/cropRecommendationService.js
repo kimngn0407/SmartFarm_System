@@ -48,24 +48,41 @@ const cropRecommendationService = {
 
       const result = await response.json();
       
+      // Log raw response để debug
+      console.log('🔍 Raw crop recommendation response:', result);
+      console.log('🔍 Response keys:', Object.keys(result));
+      
       // Đảm bảo response có format đúng
       // Backend trả về: { success: true, recommended_crop: "...", crop_name_en: "...", confidence: 0.8, input_data: {...} }
       if (!result.success && !result.recommended_crop) {
+        console.warn('⚠️ Response không có success hoặc recommended_crop');
         return {
           success: false,
           error: result.error || 'Không thể nhận được gợi ý từ server'
         };
       }
       
+      // Đảm bảo có recommended_crop (thử nhiều field names)
+      if (result.success && !result.recommended_crop) {
+        console.warn('⚠️ Response success nhưng không có recommended_crop, tìm fallback...');
+        result.recommended_crop = result.crop || 
+                                 result.recommendedCrop || 
+                                 result.crop_name || 
+                                 result.cropName ||
+                                 'Cây trồng được gợi ý';
+        console.log('✅ Fallback crop name:', result.recommended_crop);
+      }
+      
       // Đảm bảo có input_data nếu không có
       if (result.success && !result.input_data) {
         result.input_data = {
-          temperature: result.temperature || '',
-          humidity: result.humidity || '',
-          soil_moisture: result.soil_moisture || ''
+          temperature: result.temperature || data.temperature || '',
+          humidity: result.humidity || data.humidity || '',
+          soil_moisture: result.soil_moisture || data.soil_moisture || ''
         };
       }
       
+      console.log('✅ Final processed result:', result);
       return result;
     } catch (error) {
       console.error('Error recommending crop:', error);
