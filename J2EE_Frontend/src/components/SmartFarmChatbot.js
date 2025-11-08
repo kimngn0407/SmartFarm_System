@@ -18,34 +18,14 @@ const SmartFarmChatbot = () => {
   const [chatbotUrl, setChatbotUrl] = useState(null);
   const [iframeError, setIframeError] = useState(false);
   
-  // URL của chatbot - Luôn dùng VPS port 9002
-  // Chỉ tính toán khi cần (lazy load)
+  // URL của chatbot - Hardcode VPS IP để tránh lỗi
+  // Luôn dùng VPS port 9002, không dùng Vercel
+  const CHATBOT_VPS_URL = 'http://173.249.48.25:9002';
+  
   const getChatbotUrl = () => {
-    try {
-      // Extract base URL từ API_BASE_URL và thay port thành 9002
-      const apiBase = API_BASE_URL || 'http://173.249.48.25:8080';
-      
-      // Extract host (bỏ protocol và port)
-      let host = apiBase
-        .replace('http://', '')
-        .replace('https://', '')
-        .replace(':8080', '')
-        .split('/')[0]; // Lấy phần đầu tiên (host:port)
-      
-      // Nếu không có host, dùng VPS IP mặc định
-      if (!host || host === 'localhost' || host === '127.0.0.1') {
-        host = '173.249.48.25';
-      }
-      
-      // Luôn dùng VPS IP và port 9002
-      const url = `http://173.249.48.25:9002`;
-      console.log('🤖 Chatbot URL (VPS):', url);
-      return url;
-    } catch (error) {
-      console.error('Error getting chatbot URL:', error);
-      // Fallback về VPS IP mặc định
-      return 'http://173.249.48.25:9002';
-    }
+    // Hardcode VPS URL để đảm bảo không gọi Vercel
+    console.log('🤖 Chatbot URL (VPS hardcoded):', CHATBOT_VPS_URL);
+    return CHATBOT_VPS_URL;
   };
   
   // Chỉ tính toán URL khi mở chatbot
