@@ -49,56 +49,88 @@ const RoleGuard = ({ allowedRoles, children }) => {
       
       if (token) {
         try {
-          // Validate token format (phải là valid base64)
-          if (!isValidBase64(token)) {
-            console.warn('⚠️ Invalid token format, clearing old token');
-            console.log('Token that failed validation:', token);
-            localStorage.removeItem('token');
-            setHasRole(false);
-            setLoading(false);
-            return;
-          }
+          // Check if token is JWT format (has dots)
+          const isJWT = token.includes('.') && token.split('.').length === 3;
+          
+          if (isJWT) {
+            // Decode JWT token (get payload from second part)
+            const parts = token.split('.');
+            const payload = parts[1];
+            
+            // Decode base64 payload (handle URL-safe base64)
+            const base64Payload = payload.replace(/-/g, '+').replace(/_/g, '/');
+            const decodedPayload = atob(base64Payload);
+            const userInfo = JSON.parse(decodedPayload);
+            
+            console.log('🔍 JWT token decoded:', userInfo);
+            
+            // Check if token has email/sub (JWT format)
+            const email = userInfo.sub || userInfo.email;
+            const roles = userInfo.roles || [];
+            
+            if (!email) {
+              console.warn('⚠️ JWT token missing email/sub, denying access');
+              setHasRole(false);
+              setLoading(false);
+              return;
+            }
+            
+            // Check if user has required role
+            if (allowedRoles && allowedRoles.length > 0) {
+              const hasRequiredRole = roles.some(role => 
+                allowedRoles.includes(role.toUpperCase()) || 
+                allowedRoles.includes(role.toLowerCase())
+              );
+              
+              if (!hasRequiredRole) {
+                console.log('⚠️ User does not have required role:', allowedRoles, 'User roles:', roles);
+                setHasRole(false);
+                setLoading(false);
+                return;
+              }
+            }
+            
+            console.log('✅ RoleGuard - Valid JWT token, allowing access');
+            setHasRole(true);
+          } else {
+            // Try simple base64 token (legacy format)
+            if (!isValidBase64(token)) {
+              console.warn('⚠️ Invalid token format, clearing old token');
+              console.log('Token that failed validation:', token);
+              localStorage.removeItem('token');
+              setHasRole(false);
+              setLoading(false);
+              return;
+            }
 
-          // Decode simple token (không phải JWT)
-          const decoded = atob(token);
-          console.log('🔍 Decoded token string:', decoded);
-          
-          // Parse JSON string thành object
-          const userInfo = JSON.parse(decoded);
-          console.log('🔍 Parsed user info:', userInfo);
-          
-          // Validate userInfo có required fields
-          if (!userInfo.email) {
-            console.warn('⚠️ Token missing email, clearing invalid token');
-            localStorage.removeItem('token');
-            setHasRole(false);
-            setLoading(false);
-            return;
+            // Decode simple token (không phải JWT)
+            const decoded = atob(token);
+            console.log('🔍 Decoded token string:', decoded);
+            
+            // Parse JSON string thành object
+            const userInfo = JSON.parse(decoded);
+            console.log('🔍 Parsed user info:', userInfo);
+            
+            // Validate userInfo có required fields
+            if (!userInfo.email) {
+              console.warn('⚠️ Token missing email, clearing invalid token');
+              localStorage.removeItem('token');
+              setHasRole(false);
+              setLoading(false);
+              return;
+            }
+            
+            console.log('✅ RoleGuard - Valid simple token, allowing access');
+            setHasRole(true);
           }
-          
-          // Vì backend không return role trong token, tạm thời allow access
-          // Trong production app, cần check actual role từ backend
-          console.log('✅ RoleGuard - Valid token found, allowing access');
-          
-          // Temporary: allow access cho valid token
-          // TODO: Implement proper role checking với backend
-          setHasRole(true);
         } catch (err) {
-          // Error handling cho token decode failures
-          console.error('❌ Error decoding simple token:', err);
+          console.error('❌ Error decoding token:', err);
           console.log('Token that caused error:', token);
           
-          // Conservative approach về clearing tokens
-          // Chỉ clear nếu chắc chắn là base64 decode error
-          if (err.name === 'InvalidCharacterError') {
-            console.warn('⚠️ Clearing invalid token due to base64 decode error');
-            localStorage.removeItem('token');
-            setHasRole(false);
-          } else {
-            // Cho other errors (như JSON parse), deny access nhưng không clear token
-            console.warn('⚠️ Token decode error, denying access but keeping token');
-            setHasRole(false);
-          }
+          // Don't clear token on decode error - might be valid JWT
+          // Just deny access
+          console.warn('⚠️ Token decode error, denying access but keeping token');
+          setHasRole(false);
         }
       } else {
         // Không có token = deny access
