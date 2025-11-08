@@ -14,7 +14,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/pest-disease")
-@CrossOrigin(origins = {"https://hackathon-pione-dream.vercel.app", "http://localhost:3000"})
+@CrossOrigin(origins = {"http://173.249.48.25", "http://173.249.48.25:80", "http://localhost:3000"})
 public class PestDiseaseController {
 
     private static final Logger logger = LoggerFactory.getLogger(PestDiseaseController.class);
