@@ -108,6 +108,9 @@ export const API_ENDPOINTS = {
 // Log configuration (always log in production để debug)
 console.log('🔧 API Configuration:');
 console.log('  Environment:', process.env.NODE_ENV);
+console.log('  REACT_APP_API_URL:', process.env.REACT_APP_API_URL || 'NOT SET');
+console.log('  REACT_APP_RENDER_API_BASE:', process.env.REACT_APP_RENDER_API_BASE || 'NOT SET');
+console.log('  Window hostname:', typeof window !== 'undefined' ? window.location.hostname : 'N/A');
 console.log('  API Base URL:', API_BASE_URL);
 console.log('  Window location:', typeof window !== 'undefined' ? window.location.href : 'N/A');
 console.log('  ✅ Vercel URLs đã được loại bỏ hoàn toàn');
