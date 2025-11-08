@@ -7,7 +7,8 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci
+# Dùng npm install thay vì npm ci để tránh lỗi khi package-lock.json không đồng bộ
+RUN npm install --legacy-peer-deps
 
 # Copy source code
 COPY . .
