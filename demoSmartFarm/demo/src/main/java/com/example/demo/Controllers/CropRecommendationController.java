@@ -56,13 +56,21 @@ public class CropRecommendationController {
             response.put("success", success);
             if (success) {
                 // Extract crop information from AI service response
-                if (prediction.getRecommendedCrop() != null) {
-                    response.put("recommended_crop", prediction.getRecommendedCrop());
+                // Đảm bảo luôn có recommended_crop
+                String recommendedCrop = prediction.getRecommendedCrop();
+                if (recommendedCrop != null && !recommendedCrop.trim().isEmpty()) {
+                    response.put("recommended_crop", recommendedCrop);
                 } else {
-                    response.put("recommended_crop", "Crop recommended");
+                    // Fallback: thử lấy từ cropNameEn hoặc set default
+                    String cropNameEn = prediction.getCropNameEn();
+                    if (cropNameEn != null && !cropNameEn.trim().isEmpty()) {
+                        response.put("recommended_crop", cropNameEn);
+                    } else {
+                        response.put("recommended_crop", "Cây trồng được gợi ý");
+                    }
                 }
                 
-                if (prediction.getCropNameEn() != null) {
+                if (prediction.getCropNameEn() != null && !prediction.getCropNameEn().trim().isEmpty()) {
                     response.put("crop_name_en", prediction.getCropNameEn());
                 }
                 
@@ -71,21 +79,20 @@ public class CropRecommendationController {
                 }
                 
                 // Include input data if available
-                if (request.containsKey("temperature") || request.containsKey("humidity") || request.containsKey("soil_moisture")) {
-                    Map<String, Object> inputData = new HashMap<>();
-                    if (request.containsKey("temperature")) {
-                        inputData.put("temperature", request.get("temperature"));
-                    }
-                    if (request.containsKey("humidity")) {
-                        inputData.put("humidity", request.get("humidity"));
-                    }
-                    if (request.containsKey("soil_moisture")) {
-                        inputData.put("soil_moisture", request.get("soil_moisture"));
-                    }
-                    response.put("input_data", inputData);
+                Map<String, Object> inputData = new HashMap<>();
+                if (request.containsKey("temperature")) {
+                    inputData.put("temperature", request.get("temperature"));
                 }
+                if (request.containsKey("humidity")) {
+                    inputData.put("humidity", request.get("humidity"));
+                }
+                if (request.containsKey("soil_moisture")) {
+                    inputData.put("soil_moisture", request.get("soil_moisture"));
+                }
+                // Luôn có input_data, ngay cả khi empty
+                response.put("input_data", inputData);
             } else {
-                response.put("error", prediction.getError());
+                response.put("error", prediction.getError() != null ? prediction.getError() : "Không thể nhận được gợi ý từ server");
             }
 
             return ResponseEntity.ok(response);
