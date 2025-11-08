@@ -27,7 +27,7 @@ public class AIRecommendationService {
     @Qualifier("aiRestTemplate")
     private RestTemplate restTemplate;
 
-    @Value("${crop.recommendation.service.url:http://localhost:5000}")
+    @Value("${crop.recommendation.url:http://crop-service:5000}")
     private String aiApiUrl;
 
     @Value("${ai.api.enabled:true}")
