@@ -26,12 +26,12 @@ fi
 echo "📦 PostgreSQL container: $DB_CONTAINER"
 echo ""
 
-# Lấy database name từ docker-compose hoặc dùng default
+# Lấy database name từ docker-compose (SmartFarm1)
 # Kiểm tra xem database nào đang được dùng
-DB_NAME="smartfarm"  # Default, có thể cần đổi thành SmartFarm1
+DB_NAME="SmartFarm1"  # Theo docker-compose.yml
 
 # Kiểm tra xem database có tồn tại không
-EXISTING_DB=$(docker exec $DB_CONTAINER psql -U postgres -t -c "SELECT datname FROM pg_database WHERE datname IN ('smartfarm', 'SmartFarm1', 'SmartFarm');" 2>/dev/null | xargs | head -1)
+EXISTING_DB=$(docker exec $DB_CONTAINER psql -U postgres -t -c "SELECT datname FROM pg_database WHERE datname IN ('SmartFarm1', 'smartfarm', 'SmartFarm');" 2>/dev/null | xargs | head -1)
 
 if [ ! -z "$EXISTING_DB" ]; then
     DB_NAME="$EXISTING_DB"
