@@ -75,7 +75,7 @@ public class SensorDataService {
                     dto.setType(data.getSensor().getType());
                     dto.setFieldId(data.getSensor().getFieldId());
                     if (data.getSensor().getField() != null) {
-                        dto.setFieldName(data.getSensor().getField().getName());
+                        dto.setFieldName(data.getSensor().getField().getFieldName());
                     }
                     return dto;
                 })
@@ -96,7 +96,7 @@ public class SensorDataService {
                     dto.setType(data.getSensor().getType());
                     dto.setFieldId(data.getSensor().getFieldId());
                     if (data.getSensor().getField() != null) {
-                        dto.setFieldName(data.getSensor().getField().getName());
+                        dto.setFieldName(data.getSensor().getField().getFieldName());
                     }
                     return dto;
                 })
@@ -124,7 +124,7 @@ public class SensorDataService {
                     dto.setType(data.getSensor().getType());
                     dto.setFieldId(data.getSensor().getFieldId());
                     if (data.getSensor().getField() != null) {
-                        dto.setFieldName(data.getSensor().getField().getName());
+                        dto.setFieldName(data.getSensor().getField().getFieldName());
                     }
                     return dto;
                 })
