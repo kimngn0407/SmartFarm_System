@@ -6,8 +6,6 @@ import com.example.demo.Entities.SensorEntity;
 import com.example.demo.Repositories.SensorDataRepository;
 import com.example.demo.Repositories.SensorRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -117,8 +115,7 @@ public class SensorDataService {
      * Lấy dữ liệu mới nhất theo type (cho dashboard)
      */
     public List<com.example.demo.DTO.DashboardSensorDataDTO> getLatestDataByType(String type, int limit) {
-        Pageable pageable = PageRequest.of(0, limit);
-        List<SensorDataEntity> dataList = sensorDataRepository.findLatestByType(type, pageable);
+        List<SensorDataEntity> dataList = sensorDataRepository.findLatestByType(type, limit);
         return dataList.stream()
                 .map(data -> {
                     com.example.demo.DTO.DashboardSensorDataDTO dto = new com.example.demo.DTO.DashboardSensorDataDTO();
