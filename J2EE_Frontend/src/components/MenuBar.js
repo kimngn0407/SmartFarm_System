@@ -34,8 +34,8 @@ import {
     Menu as MenuIcon,                    // Mobile menu toggle icon
     Notifications as NotificationsIcon,   // Notifications icon (unused)
     Person as PersonIcon,                // Person/user icon
-    ExpandLess,                          // Expand menu icon (unused)
-    ExpandMore,                          // Collapse menu icon (unused)
+    ExpandLess,                          // Expand menu icon
+    ExpandMore,                          // Collapse menu icon
     Map as FieldIcon,                    // Field management icon
     Spa as CropIcon,                     // Crop management icon
     BugReport as PestIcon,               // Pest detection icon
@@ -145,6 +145,11 @@ const MenuBar = () => {
     // State management
     const [open, setOpen] = useState(!isMobile);        // Sidebar open/closed state (closed on mobile by default)
     const [selectedItem, setSelectedItem] = useState('dashboard'); // Currently selected menu item
+    const [expandedGroups, setExpandedGroups] = useState({
+        'quan-ly-nong-trai': true,
+        'cay-trong-canh-tac': true,
+        'he-thong': true,
+    }); // Collapsible menu groups state
     
     // React Router hooks
     const navigate = useNavigate();  // Navigate function
@@ -230,82 +235,46 @@ const MenuBar = () => {
      * - path: Router path
      * - id: Unique identifier cho selected state
     /**
-     * Menu Items Configuration
-     * 
-     * STRUCTURE: Mỗi item có:
-     * - text: Display text
-     * - icon: Material-UI icon component
-     * - path: Router path
-     * - id: Unique identifier cho selected state
+     * Menu Groups Configuration với collapsible
      */
-    const menuItems = [
+    const menuGroups = [
         {
-            text: 'Dashboard',              // Main dashboard
-            icon: <DashboardIcon />,
-            path: '/dashboard',
-            id: 'dashboard'
+            id: 'quan-ly-nong-trai',
+            title: 'Quản lý Nông trại',
+            items: [
+                { text: 'Farm Manager', icon: <FarmIcon />, path: '/farm', id: 'farm' },
+                { text: 'Field Manager', icon: <FieldIcon />, path: '/field', id: 'field' },
+                { text: 'Sensor Manager', icon: <SensorIcon />, path: '/sensor', id: 'sensor' },
+                { text: 'Irrigation & Fertilization', icon: <WaterIcon />, path: '/irrigation', id: 'irrigation' },
+            ]
         },
         {
-            text: 'Farm Manager',           // Quản lý nông trại
-            icon: <FarmIcon />,
-            path: '/farm',
-            id: 'farm'
+            id: 'cay-trong-canh-tac',
+            title: 'Cây trồng & Canh tác',
+            items: [
+                { text: 'Crop Manager', icon: <CropIcon />, path: '/crop', id: 'crop' },
+                { text: 'Pest Detection', icon: <PestIcon />, path: '/pest-detection', id: 'pest-detection' },
+                { text: 'Harvest & Revenue', icon: <RevenueIcon />, path: '/harvest', id: 'harvest' },
+            ]
         },
         {
-            text: 'Field Manager',          // Quản lý đồng ruộng
-            icon: <FieldIcon />,
-            path: '/field',
-            id: 'field'
-        },
-        {
-            text: 'Crop Manager',           // Quản lý cây trồng
-            icon: <CropIcon />,
-            path: '/crop',
-            id: 'crop'
-        },
-        {
-            text: 'Pest Detection',         // Phát hiện sâu bệnh
-            icon: <PestIcon />,
-            path: '/pest-detection',
-            id: 'pest-detection'
-        },
-        {
-            text: 'Sensor Manager',         // Quản lý cảm biến
-            icon: <SensorIcon />,
-            path: '/sensor',
-            id: 'sensor'
-        },
-        {
-            text: 'Alert Screen',           // Màn hình cảnh báo
-            icon: <AlertIcon />,
-            path: '/alert',
-            id: 'alert'
-        },
-        {
-            text: 'Harvest & Revenue',      // Thu hoạch và doanh thu
-            icon: <RevenueIcon />,
-            path: '/harvest',
-            id: 'harvest'
-        },
-        {
-            text: 'Irrigation & Fertilization', // Tưới tiêu và bón phân
-            icon: <WaterIcon />,
-            path: '/irrigation',
-            id: 'irrigation'
-        },
-        {
-            text: 'User Profile',           // Hồ sơ người dùng
-            icon: <UserProfileIcon />,
-            path: '/profile',
-            id: 'profile'
-        },
-        {
-            text: 'System Settings',        // Cài đặt hệ thống
-            icon: <SettingsIcon />,
-            path: '/settings',
-            id: 'settings'
+            id: 'he-thong',
+            title: 'Hệ thống',
+            items: [
+                { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard', id: 'dashboard' },
+                { text: 'Alert Screen', icon: <AlertIcon />, path: '/alert', id: 'alert' },
+                { text: 'User Profile', icon: <UserProfileIcon />, path: '/profile', id: 'profile' },
+                { text: 'System Settings', icon: <SettingsIcon />, path: '/settings', id: 'settings' },
+            ]
         },
     ];
+
+    const handleGroupToggle = (groupId) => {
+        setExpandedGroups(prev => ({
+            ...prev,
+            [groupId]: !prev[groupId]
+        }));
+    };
 
     /**
      * Toggle sidebar open/close state
@@ -427,19 +396,57 @@ const MenuBar = () => {
                     <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.1)', mb: 2 }} />
 
                     <List sx={{ flexGrow: 1 }}>
-                        {/* Menu "Quản lý tài khoản" đã được ẩn theo yêu cầu */}
-                        {/* Tất cả user đăng ký mới đều có quyền ADMIN như admin.nguyen@smartfarm.com */}
-                        {/* Các mục menu khác */}
-                        {menuItems.map((item) => (
-                            <StyledListItem
-                                key={item.id}
-                                button
-                                onClick={() => handleItemClick(item.path, item.id)}
-                                selected={selectedItem === item.id}
-                            >
-                                <ListItemIcon>{item.icon}</ListItemIcon>
-                                <ListItemText primary={item.text} />
-                            </StyledListItem>
+                        {menuGroups.map((group) => (
+                            <React.Fragment key={group.id}>
+                                {/* Group Header - Collapsible */}
+                                <StyledListItem
+                                    button
+                                    onClick={() => handleGroupToggle(group.id)}
+                                    sx={{
+                                        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                                        mb: 0.5,
+                                        '&:hover': {
+                                            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                                        },
+                                    }}
+                                >
+                                    <ListItemText 
+                                        primary={
+                                            <Typography variant="subtitle2" sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+                                                {group.title}
+                                            </Typography>
+                                        }
+                                    />
+                                    <ListItemIcon sx={{ minWidth: 'auto', color: 'white' }}>
+                                        {expandedGroups[group.id] ? <ExpandLess /> : <ExpandMore />}
+                                    </ListItemIcon>
+                                </StyledListItem>
+                                
+                                {/* Group Items - Collapsible */}
+                                {expandedGroups[group.id] && (
+                                    <Box
+                                        sx={{
+                                            maxHeight: expandedGroups[group.id] ? '1000px' : 0,
+                                            overflow: 'hidden',
+                                            transition: 'max-height 0.3s ease-in-out',
+                                            ml: 2,
+                                        }}
+                                    >
+                                        {group.items.map((item) => (
+                                            <StyledListItem
+                                                key={item.id}
+                                                button
+                                                onClick={() => handleItemClick(item.path, item.id)}
+                                                selected={selectedItem === item.id}
+                                                sx={{ pl: 3 }}
+                                            >
+                                                <ListItemIcon>{item.icon}</ListItemIcon>
+                                                <ListItemText primary={item.text} />
+                                            </StyledListItem>
+                                        ))}
+                                    </Box>
+                                )}
+                            </React.Fragment>
                         ))}
                     </List>
 

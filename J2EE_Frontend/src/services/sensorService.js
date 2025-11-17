@@ -49,6 +49,38 @@ const getAllSensorDataForDashboard = async () => {
     }
 };
 
+// Hàm mới để lấy dữ liệu sensor cho dashboard (12 giờ gần nhất)
+const getDashboardSensorData = async (hours = 12) => {
+    try {
+        const to = new Date();
+        const from = new Date(to.getTime() - hours * 60 * 60 * 1000);
+        
+        const fromISO = from.toISOString();
+        const toISO = to.toISOString();
+        
+        const response = await axios.get(`${API_BASE_URL}/api/sensor-data/dashboard`, {
+            params: {
+                from: fromISO,
+                to: toISO
+            },
+            headers: getAuthHeader()
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching dashboard sensor data:', error);
+        return {
+            temperature: [],
+            humidity: [],
+            soilMoisture: [],
+            light: [],
+            avgTemperature: 0,
+            avgHumidity: 0,
+            avgSoilMoisture: 0,
+            avgLight: 0
+        };
+    }
+};
+
 const getSensorList = async () => {
     try {
         const response = await axios.get(`${API_BASE_URL}/api/sensors`, { headers: getAuthHeader() });
@@ -75,5 +107,8 @@ export default {
     // Các hàm helper cũ (xóa nếu không dùng)
     getSensorDataByField, 
     getAllSensorDataForDashboard,
-    getSensorList
+    getSensorList,
+    
+    // Dashboard API mới
+    getDashboardSensorData
 };

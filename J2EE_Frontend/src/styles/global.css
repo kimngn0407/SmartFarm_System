@@ -1,0 +1,151 @@
+/* Global Styles - Chuẩn hóa toàn bộ UI/UX */
+
+/* Dark Mode Support */
+.dark-mode {
+  background-color: #121212;
+  color: #ffffff;
+}
+
+.dark-mode .MuiPaper-root {
+  background-color: #1e1e1e;
+  color: #ffffff;
+}
+
+.dark-mode .MuiCard-root {
+  background-color: #1e1e1e;
+  color: #ffffff;
+}
+
+/* Card Hover Effects */
+.card-hover {
+  transition: all 0.3s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+}
+
+/* Table Hover Effects */
+.table-row-hover {
+  transition: background-color 0.2s ease;
+}
+
+.table-row-hover:hover {
+  background-color: rgba(0, 0, 0, 0.04) !important;
+}
+
+.dark-mode .table-row-hover:hover {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Modal Transitions */
+.modal-enter {
+  opacity: 0;
+  transform: scale(0.9);
+}
+
+.modal-enter-active {
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity 300ms, transform 300ms;
+}
+
+.modal-exit {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.modal-exit-active {
+  opacity: 0;
+  transform: scale(0.9);
+  transition: opacity 300ms, transform 300ms;
+}
+
+/* Loading Skeleton */
+.skeleton-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.skeleton-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+/* Responsive Breakpoints */
+@media (min-width: 1366px) {
+  .container-responsive {
+    max-width: 1320px;
+    margin: 0 auto;
+  }
+}
+
+@media (min-width: 1440px) {
+  .container-responsive {
+    max-width: 1400px;
+  }
+}
+
+@media (min-width: 1920px) {
+  .container-responsive {
+    max-width: 1800px;
+  }
+}
+
+/* Card Spacing - Chuẩn hóa */
+.card-spacing {
+  margin-bottom: 24px;
+}
+
+.card-spacing:last-child {
+  margin-bottom: 0;
+}
+
+/* Table Styling - Chuẩn hóa */
+.table-standard {
+  font-size: 0.875rem;
+}
+
+.table-standard .MuiTableCell-head {
+  font-weight: 600;
+  font-size: 0.875rem;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.dark-mode .table-standard .MuiTableCell-head {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Typography - Chuẩn hóa */
+.title-standard {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.subtitle-standard {
+  font-size: 1.125rem;
+  font-weight: 500;
+  margin-bottom: 12px;
+}
+
+/* Icon Standardization */
+.icon-edit-delete {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* Smooth Transitions */
+* {
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+
+

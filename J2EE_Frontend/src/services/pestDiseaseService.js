@@ -66,6 +66,9 @@ export const pestDiseaseService = {
       // Call API
       const response = await fetch(API_BASE_URL.DETECT, {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+        },
         body: formData,
       });
 

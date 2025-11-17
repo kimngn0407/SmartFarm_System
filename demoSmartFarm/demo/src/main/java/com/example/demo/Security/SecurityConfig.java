@@ -37,7 +37,17 @@ public class SecurityConfig {
         return http
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
+                        // Public endpoints - không cần authentication
+                        .requestMatchers("/api/auth/**", "/api/accounts/login", "/api/accounts/register").permitAll()
+                        .requestMatchers("/api/email/test/**").permitAll()
+                        .requestMatchers("/ws/**", "/app/**", "/topic/**").permitAll()
+                        .requestMatchers("/actuator/**").permitAll()
+                        // Tất cả các endpoints khác cần authentication
+                        .anyRequest().authenticated()
+                )
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
     

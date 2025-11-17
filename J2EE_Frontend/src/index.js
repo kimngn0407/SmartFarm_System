@@ -10,6 +10,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 // Import CSS global styles
 import './index.css';
+import './styles/global.css';
 // Import App component chính
 import App from './App';
 // Import Error Boundary để bắt lỗi client-side

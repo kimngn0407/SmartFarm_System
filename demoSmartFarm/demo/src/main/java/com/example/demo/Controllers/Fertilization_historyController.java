@@ -12,7 +12,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/fertilization")
-@CrossOrigin(origins = {"https://hackathon-pione-dream.vercel.app", "http://localhost:3000"})
 public class Fertilization_historyController {
 
     @Autowired

@@ -10,7 +10,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/fields")
-@CrossOrigin(origins = {"https://hackathon-pione-dream.vercel.app", "https://hackathon-pione-dream-vzj5.vercel.app", "http://localhost:3000"})
 public class FieldController {
 
     @Autowired

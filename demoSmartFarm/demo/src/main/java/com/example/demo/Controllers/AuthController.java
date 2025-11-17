@@ -10,7 +10,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = {"http://173.249.48.25", "http://173.249.48.25:80", "http://localhost:3000"})
 public class AuthController {
 
     private final AccountService accountService;

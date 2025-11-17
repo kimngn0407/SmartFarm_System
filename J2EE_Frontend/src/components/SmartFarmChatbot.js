@@ -17,6 +17,11 @@ const SmartFarmChatbot = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [chatbotUrl, setChatbotUrl] = useState(null);
   const [iframeError, setIframeError] = useState(false);
+  const [position, setPosition] = useState({ x: 20, y: 20 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [lastActivityTime, setLastActivityTime] = useState(Date.now());
+  const chatbotRef = React.useRef(null);
   
   // URL của chatbot - Hardcode VPS IP để tránh lỗi
   // Luôn dùng VPS port 9002, không dùng Vercel
@@ -60,20 +65,84 @@ const SmartFarmChatbot = () => {
 
   const toggleMinimize = () => {
     setIsMinimized(!isMinimized);
+    setLastActivityTime(Date.now());
   };
 
-  // Responsive dimensions
+  // Auto-minimize after 10 seconds of inactivity
+  useEffect(() => {
+    if (!isOpen || isMinimized) return;
+    
+    const checkInactivity = setInterval(() => {
+      const timeSinceLastActivity = Date.now() - lastActivityTime;
+      if (timeSinceLastActivity >= 10000) {
+        setIsMinimized(true);
+      }
+    }, 1000);
+
+    return () => clearInterval(checkInactivity);
+  }, [isOpen, isMinimized, lastActivityTime]);
+
+  // Handle drag start
+  const handleMouseDown = (e) => {
+    if (e.target.closest('.chatbot-header')) {
+      setIsDragging(true);
+      const rect = chatbotRef.current?.getBoundingClientRect();
+      if (rect) {
+        setDragOffset({
+          x: e.clientX - rect.left,
+          y: e.clientY - rect.top,
+        });
+      }
+      setLastActivityTime(Date.now());
+    }
+  };
+
+  // Handle drag
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const handleMouseMove = (e) => {
+      const newX = e.clientX - dragOffset.x;
+      const newY = e.clientY - dragOffset.y;
+      
+      // Constrain to viewport
+      const maxX = window.innerWidth - (isMobile ? window.innerWidth : 450);
+      const maxY = window.innerHeight - (isMinimized ? 60 : 700);
+      
+      setPosition({
+        x: Math.max(0, Math.min(newX, maxX)),
+        y: Math.max(0, Math.min(newY, maxY)),
+      });
+      setLastActivityTime(Date.now());
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, dragOffset, isMobile, isMinimized]);
+
+  // Responsive dimensions with draggable position
   const chatbotStyle = {
     // Desktop
-    width: isMobile ? '100vw' : '450px',
+    width: isMobile ? '100vw' : isMinimized ? '200px' : '450px',
     height: isMobile ? '100vh' : isMinimized ? '60px' : '700px',
     maxWidth: isMobile ? '100vw' : 'calc(100vw - 40px)',
     maxHeight: isMobile ? '100vh' : 'calc(100vh - 100px)',
     
-    // Position
+    // Position - draggable
     position: 'fixed',
-    bottom: isMobile ? 0 : 20,
-    right: isMobile ? 0 : 20,
+    left: isMobile ? 0 : `${position.x}px`,
+    bottom: isMobile ? 0 : 'auto',
+    top: isMobile ? 0 : `${position.y}px`,
+    right: isMobile ? 0 : 'auto',
     
     // Style
     borderRadius: isMobile ? 0 : '16px',
@@ -81,9 +150,10 @@ const SmartFarmChatbot = () => {
     zIndex: 9999,
     overflow: 'hidden',
     background: 'white',
+    cursor: isDragging ? 'grabbing' : 'default',
     
     // Animation
-    transition: 'all 0.3s ease-in-out',
+    transition: isDragging ? 'none' : 'all 0.3s ease-in-out',
   };
 
   return (
@@ -94,13 +164,16 @@ const SmartFarmChatbot = () => {
           <Box>
             <Tooltip title="🌾 Hỏi trợ lý AI nông nghiệp" placement="left" arrow>
               <IconButton
-                onClick={toggleChatbot}
+                onClick={() => {
+                  toggleChatbot();
+                  setLastActivityTime(Date.now());
+                }}
                 sx={{
                   position: 'fixed',
                   bottom: isMobile ? 16 : 24,
                   right: isMobile ? 16 : 24,
-                  width: isMobile ? 56 : 64,
-                  height: isMobile ? 56 : 64,
+                  width: isMobile ? 56 : 60,
+                  height: isMobile ? 56 : 60,
                   
                   // Gradient xanh lá SmartFarm
                   background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
@@ -143,9 +216,11 @@ const SmartFarmChatbot = () => {
 
       {/* Chatbot container với animation */}
       <Slide direction="up" in={isOpen} mountOnEnter unmountOnExit>
-        <div style={chatbotStyle}>
-          {/* Header bar */}
+        <div ref={chatbotRef} style={chatbotStyle}>
+          {/* Header bar - draggable */}
           <Box
+            className="chatbot-header"
+            onMouseDown={handleMouseDown}
             sx={{
               display: 'flex',
               alignItems: 'center',
@@ -154,6 +229,8 @@ const SmartFarmChatbot = () => {
               background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
               color: 'white',
               borderRadius: isMobile ? 0 : '16px 16px 0 0',
+              cursor: isDragging ? 'grabbing' : 'grab',
+              userSelect: 'none',
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -211,7 +288,10 @@ const SmartFarmChatbot = () => {
               onLoad={() => {
                 console.log('✅ Chatbot iframe loaded from:', chatbotUrl);
                 setIframeError(false);
+                setLastActivityTime(Date.now());
               }}
+              onMouseMove={() => setLastActivityTime(Date.now())}
+              onFocus={() => setLastActivityTime(Date.now())}
             />
           )}
           
