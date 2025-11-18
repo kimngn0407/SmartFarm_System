@@ -131,6 +131,11 @@
 			<artifactId>spring-boot-devtools</artifactId>
 			<scope>runtime</scope>
 		</dependency>
+		<!-- Apache HttpClient 5 for RestTemplate with HttpComponentsClientHttpRequestFactory -->
+		<dependency>
+			<groupId>org.apache.httpcomponents.client5</groupId>
+			<artifactId>httpclient5</artifactId>
+		</dependency>
 
 		<!-- Lombok (Tùy chọn) -->
 		<dependency>
