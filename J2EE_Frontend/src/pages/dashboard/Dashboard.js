@@ -50,18 +50,24 @@ const Dashboard = () => {
     const now = new Date();
     const from = new Date(now.getTime() - hours * 60 * 60 * 1000);
     
+    console.log(`🔍 Fetching sensor data for ${sensorIds.length} sensors, from ${from.toISOString()} to ${now.toISOString()}`);
+    
     const allData = [];
     for (const sensorId of sensorIds) {
       try {
         const data = await sensorService.getSensorDataByTimeRange(sensorId, from, now);
+        console.log(`✅ Sensor ${sensorId}: Got ${data.length} data points`, data.length > 0 ? data[0] : 'No data');
         allData.push(...data.map(item => ({
           ...item,
           sensorId: item.sensorId || sensorId
         })));
       } catch (error) {
-        console.error(`Error fetching data for sensor ${sensorId}:`, error);
+        console.error(`❌ Error fetching data for sensor ${sensorId}:`, error);
+        console.error(`   Error details:`, error.response?.data || error.message);
       }
     }
+    
+    console.log(`📊 Total data points collected: ${allData.length}`);
     
     // Sắp xếp theo thời gian
     allData.sort((a, b) => new Date(a.time) - new Date(b.time));
@@ -174,6 +180,8 @@ const Dashboard = () => {
         
         // 5. Lấy dữ liệu sensor thật từ IoT
         console.log('🔍 Fetching real sensor data from IoT...');
+        console.log(`📋 Total sensors: ${allSensors.length}`);
+        console.log('📋 Sensor types:', allSensors.map(s => ({ id: s.id, type: s.type, name: s.sensorName })));
         
         // Tìm sensors theo type
         const tempSensors = allSensors.filter(s => 
@@ -189,6 +197,11 @@ const Dashboard = () => {
           s.type && (s.type.toLowerCase().includes('light') || s.type.toLowerCase().includes('lumin'))
         );
         
+        console.log(`🌡️ Temperature sensors: ${tempSensors.length}`, tempSensors.map(s => s.id));
+        console.log(`💧 Humidity sensors: ${humSensors.length}`, humSensors.map(s => s.id));
+        console.log(`🌱 Soil sensors: ${soilSensors.length}`, soilSensors.map(s => s.id));
+        console.log(`💡 Light sensors: ${lightSensors.length}`, lightSensors.map(s => s.id));
+        
         // Lấy dữ liệu 12h gần nhất
         const tempSensorIds = tempSensors.map(s => s.id);
         const humSensorIds = humSensors.map(s => s.id);
@@ -202,10 +215,27 @@ const Dashboard = () => {
           lightSensorIds.length > 0 ? fetchRealSensorData(lightSensorIds, 12) : Promise.resolve([])
         ]);
         
+        console.log('📊 Data collected:', {
+          temp: tempData.length,
+          hum: humData.length,
+          soil: soilData.length,
+          light: lightData.length
+        });
+        
+        if (tempData.length > 0) console.log('🌡️ Sample temp data:', tempData[0]);
+        if (humData.length > 0) console.log('💧 Sample hum data:', humData[0]);
+        if (soilData.length > 0) console.log('🌱 Sample soil data:', soilData[0]);
+        
         // Tính toán thống kê
         const tempStats = calculateStats(tempData);
         const humStats = calculateStats(humData);
         const soilStats = calculateStats(soilData);
+        
+        console.log('📈 Stats calculated:', {
+          temp: { avg: tempStats.avg, min: tempStats.min, max: tempStats.max, count: tempStats.values.length },
+          hum: { avg: humStats.avg, min: humStats.min, max: humStats.max, count: humStats.values.length },
+          soil: { avg: soilStats.avg, min: soilStats.min, max: soilStats.max, count: soilStats.values.length }
+        });
         
         // Chuẩn bị dữ liệu cho chart
         // Tạo labels từ dữ liệu thật hoặc mặc định
