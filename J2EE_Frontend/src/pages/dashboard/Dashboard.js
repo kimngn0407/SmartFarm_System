@@ -183,30 +183,19 @@ const Dashboard = () => {
         console.log(`📋 Total sensors: ${allSensors.length}`);
         console.log('📋 Sensor types:', allSensors.map(s => ({ id: s.id, type: s.type, name: s.sensorName })));
         
-        // Tìm sensors theo type
-        const tempSensors = allSensors.filter(s => 
-          s.type && (s.type.toLowerCase().includes('temperature') || s.type.toLowerCase().includes('temp'))
-        );
-        const humSensors = allSensors.filter(s => 
-          s.type && (s.type.toLowerCase().includes('humidity') || s.type.toLowerCase().includes('humid'))
-        );
-        const soilSensors = allSensors.filter(s => 
-          s.type && (s.type.toLowerCase().includes('soil') || s.type.toLowerCase().includes('moisture'))
-        );
-        const lightSensors = allSensors.filter(s => 
-          s.type && (s.type.toLowerCase().includes('light') || s.type.toLowerCase().includes('lumin'))
-        );
+        // Flask API lưu dữ liệu IoT vào PostgreSQL với sensor_id cố định:
+        // TEMP_SENSOR_ID = 7, HUMID_SENSOR_ID = 8, SOIL_SENSOR_ID = 9, LIGHT_SENSOR_ID = 10
+        // Dùng trực tiếp các ID này để lấy dữ liệu từ database
+        const tempSensorIds = [7]; // TEMP_SENSOR_ID từ Flask API
+        const humSensorIds = [8]; // HUMID_SENSOR_ID từ Flask API
+        const soilSensorIds = [9]; // SOIL_SENSOR_ID từ Flask API
+        const lightSensorIds = [10]; // LIGHT_SENSOR_ID từ Flask API
         
-        console.log(`🌡️ Temperature sensors: ${tempSensors.length}`, tempSensors.map(s => s.id));
-        console.log(`💧 Humidity sensors: ${humSensors.length}`, humSensors.map(s => s.id));
-        console.log(`🌱 Soil sensors: ${soilSensors.length}`, soilSensors.map(s => s.id));
-        console.log(`💡 Light sensors: ${lightSensors.length}`, lightSensors.map(s => s.id));
-        
-        // Lấy dữ liệu 12h gần nhất
-        const tempSensorIds = tempSensors.map(s => s.id);
-        const humSensorIds = humSensors.map(s => s.id);
-        const soilSensorIds = soilSensors.map(s => s.id);
-        const lightSensorIds = lightSensors.map(s => s.id);
+        console.log(`📡 Using Flask API sensor IDs for IoT data:`);
+        console.log(`🌡️ Temperature: sensor_id = 7`);
+        console.log(`💧 Humidity: sensor_id = 8`);
+        console.log(`🌱 Soil: sensor_id = 9`);
+        console.log(`💡 Light: sensor_id = 10`);
         
         const [tempData, humData, soilData, lightData] = await Promise.all([
           tempSensorIds.length > 0 ? fetchRealSensorData(tempSensorIds, 12) : Promise.resolve([]),
@@ -556,9 +545,9 @@ const Dashboard = () => {
           <Typography variant="h6" align="center" sx={{ mb: 2 }}>Đang tải dữ liệu hệ thống...</Typography>
       )}
   
-      <Grid container spacing={3} mb={2}>
+      <Grid container spacing={3} mb={2} sx={{ display: 'flex', flexWrap: 'wrap' }}>
         {quickStatsData.map((stat, idx) => (
-          <Grid item xs={12} sm={6} md={4} key={stat.label}>
+          <Grid item xs={12} sm={6} md={4} lg={true} key={stat.label} sx={{ flex: { lg: '1 1 0' }, minWidth: { lg: '18%', xs: '100%' } }}>
             <Paper 
               sx={{ 
                 p: 2, 
