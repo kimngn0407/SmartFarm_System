@@ -47,7 +47,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import WarningIcon from '@mui/icons-material/Warning';
 import BugReportIcon from '@mui/icons-material/BugReport';
 import profileService from '../../services/profileService';
-import { testAllEndpoints } from '../../utils/apiTest';
+// import { testAllEndpoints } from '../../utils/apiTest'; // File không tồn tại
 import ApiStatusIndicator from '../../components/common/ApiStatusIndicator';
 import FallbackModeInfo from '../../components/common/FallbackModeInfo';
 
@@ -648,7 +648,8 @@ const Profile = () => {
                           startIcon={<BugReportIcon />}
                           onClick={() => {
                             console.log('Testing all API endpoints...');
-                            testAllEndpoints();
+                            // testAllEndpoints(); // Function không tồn tại
+                            alert('API testing feature is not available');
                           }}
                           sx={{
                             borderColor: '#ff9800',
