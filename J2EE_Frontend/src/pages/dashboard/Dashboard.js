@@ -80,15 +80,15 @@ const Dashboard = () => {
       const recentData = allData.filter(item => new Date(item.time) >= twelveHoursAgo);
       
       // Nếu có dữ liệu trong 12h, dùng dữ liệu đó
-      // Nếu không, lấy 12 điểm gần nhất
-      if (recentData.length > 0) {
+      // Nếu không, lấy TẤT CẢ dữ liệu có sẵn (để chart có thể vẽ đường)
+      if (recentData.length >= 2) {
         console.log(`📅 Using ${recentData.length} data points from last 12 hours`);
         return recentData;
       } else {
-        // Lấy 12 điểm gần nhất
-        const last12Points = allData.slice(-12);
-        console.log(`📅 No data in last 12h, using last ${last12Points.length} available data points`);
-        return last12Points;
+        // Lấy tất cả dữ liệu có sẵn (tối đa 28 điểm để chart vẽ được)
+        const allAvailableData = allData.slice(-28);
+        console.log(`📅 No data in last 12h (only ${recentData.length} points), using all ${allAvailableData.length} available data points`);
+        return allAvailableData;
       }
     }
     
