@@ -23,14 +23,20 @@ const ChartContainer = ({ title, children, height = 350, sx = {} }) => {
       }}
     >
       {title && (
-        <Typography
-          variant="h6"
-          gutterBottom
-          fontWeight="bold"
-          sx={{ mb: 2, fontSize: { xs: '1rem', md: '1.25rem' } }}
-        >
-          {title}
-        </Typography>
+        typeof title === 'string' ? (
+          <Typography
+            variant="h6"
+            gutterBottom
+            fontWeight="bold"
+            sx={{ mb: 2, fontSize: { xs: '1rem', md: '1.25rem' } }}
+          >
+            {title}
+          </Typography>
+        ) : (
+          <Box sx={{ mb: 2 }}>
+            {title}
+          </Box>
+        )
       )}
       <Box
         sx={{
@@ -47,6 +53,7 @@ const ChartContainer = ({ title, children, height = 350, sx = {} }) => {
 };
 
 export default ChartContainer;
+
 
 
 

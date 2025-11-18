@@ -44,6 +44,12 @@ const Dashboard = () => {
   const [soilArr, setSoilArr] = useState([]);
   const [timeLabels, setTimeLabels] = useState([]);
   const [farmNames, setFarmNames] = useState([]);
+  const [dataSource, setDataSource] = useState({
+    temp: 'unknown', // 'iot' | 'sample' | 'unknown'
+    hum: 'unknown',
+    soil: 'unknown',
+    light: 'unknown'
+  });
 
   // Hàm lấy dữ liệu sensor thật từ API
   const fetchRealSensorData = async (sensorIds, hours = 12) => {
@@ -254,30 +260,45 @@ const Dashboard = () => {
         // Nếu có dữ liệu thật, dùng dữ liệu thật
         // Nếu không có, tạo sample data để chart hiển thị (12 điểm)
         let tempValues, humValues, soilValues;
+        const newDataSource = { ...dataSource };
         
         if (tempStats.values.length > 0) {
           tempValues = tempStats.values;
+          newDataSource.temp = 'iot';
+          console.log('✅ 🌡️ Temperature chart: Using IoT data (' + tempStats.values.length + ' points)');
         } else {
           // Tạo sample data: 12 điểm với giá trị trung bình
           const baseTemp = 25; // Nhiệt độ mẫu
           tempValues = Array.from({ length: 12 }, () => baseTemp + (Math.random() - 0.5) * 5);
+          newDataSource.temp = 'sample';
+          console.warn('⚠️ 🌡️ Temperature chart: Using SAMPLE data (no IoT data available)');
         }
         
         if (humStats.values.length > 0) {
           humValues = humStats.values;
+          newDataSource.hum = 'iot';
+          console.log('✅ 💧 Humidity chart: Using IoT data (' + humStats.values.length + ' points)');
         } else {
           // Tạo sample data: 12 điểm với giá trị trung bình
           const baseHum = 70; // Độ ẩm mẫu
           humValues = Array.from({ length: 12 }, () => baseHum + (Math.random() - 0.5) * 10);
+          newDataSource.hum = 'sample';
+          console.warn('⚠️ 💧 Humidity chart: Using SAMPLE data (no IoT data available)');
         }
         
         if (soilStats.values.length > 0) {
           soilValues = soilStats.values;
+          newDataSource.soil = 'iot';
+          console.log('✅ 🌱 Soil moisture chart: Using IoT data (' + soilStats.values.length + ' points)');
         } else {
           // Tạo sample data: 12 điểm với giá trị trung bình
           const baseSoil = 50; // Độ ẩm đất mẫu
           soilValues = Array.from({ length: 12 }, () => baseSoil + (Math.random() - 0.5) * 15);
+          newDataSource.soil = 'sample';
+          console.warn('⚠️ 🌱 Soil moisture chart: Using SAMPLE data (no IoT data available)');
         }
+        
+        setDataSource(newDataSource);
         
         // Đảm bảo số lượng labels và data khớp nhau
         const labelCount = timeLabelsData.length;
@@ -307,13 +328,24 @@ const Dashboard = () => {
           }
         }
         
+        const hasRealData = tempStats.values.length > 0 || humStats.values.length > 0 || soilStats.values.length > 0;
         console.log('📊 Chart data prepared:', {
           labels: labelCount,
           temp: tempValues.length,
           hum: humValues.length,
           soil: soilValues.length,
-          hasRealData: tempStats.values.length > 0 || humStats.values.length > 0 || soilStats.values.length > 0
+          hasRealData,
+          dataSource: newDataSource
         });
+        
+        if (hasRealData) {
+          console.log('✅ ✅ ✅ CHART IS USING IOT DATA ✅ ✅ ✅');
+          console.log('   - Temperature:', newDataSource.temp === 'iot' ? '✅ IoT' : '❌ Sample');
+          console.log('   - Humidity:', newDataSource.hum === 'iot' ? '✅ IoT' : '❌ Sample');
+          console.log('   - Soil:', newDataSource.soil === 'iot' ? '✅ IoT' : '❌ Sample');
+        } else {
+          console.warn('⚠️ ⚠️ ⚠️ CHART IS USING SAMPLE DATA ⚠️ ⚠️ ⚠️');
+        }
         
         setTempArr(tempValues);
         setHumArr(humValues);
@@ -602,7 +634,24 @@ const Dashboard = () => {
       <Grid container spacing={3} mb={2}>
         <Grid item xs={12}>
           <ChartContainer 
-            title="Biểu đồ nhiệt độ, độ ẩm không khí & độ ẩm đất 12 giờ gần nhất"
+            title={
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography variant="h6">Biểu đồ nhiệt độ, độ ẩm không khí & độ ẩm đất 12 giờ gần nhất</Typography>
+                {dataSource.temp === 'iot' || dataSource.hum === 'iot' || dataSource.soil === 'iot' ? (
+                  <StatusBadge 
+                    status="success" 
+                    label="Dữ liệu IoT" 
+                    sx={{ ml: 1 }}
+                  />
+                ) : dataSource.temp === 'sample' || dataSource.hum === 'sample' || dataSource.soil === 'sample' ? (
+                  <StatusBadge 
+                    status="warning" 
+                    label="Dữ liệu mẫu" 
+                    sx={{ ml: 1 }}
+                  />
+                ) : null}
+              </Box>
+            }
             height={350}
           >
             {loading ? (
