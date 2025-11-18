@@ -64,17 +64,32 @@ const getSensorDataByTimeRange = async (sensorId, from, to) => {
     try {
         const fromISO = from.toISOString();
         const toISO = to.toISOString();
-        const response = await axios.get(`${API_BASE_URL}/api/sensor-data`, {
-            params: {
-                sensorId: sensorId,
-                from: fromISO,
-                to: toISO
-            },
+        const url = `${API_BASE_URL}/api/sensor-data`;
+        const params = {
+            sensorId: sensorId,
+            from: fromISO,
+            to: toISO
+        };
+        
+        console.log(`📡 API Request: ${url}`, params);
+        
+        const response = await axios.get(url, {
+            params: params,
             headers: getAuthHeader()
         });
+        
+        console.log(`✅ API Response for sensor ${sensorId}:`, {
+            status: response.status,
+            dataLength: response.data?.length || 0,
+            data: response.data
+        });
+        
         return response.data || [];
     } catch (error) {
-        console.error(`Error fetching sensor data for sensor ${sensorId}:`, error);
+        console.error(`❌ Error fetching sensor data for sensor ${sensorId}:`, error);
+        console.error(`   Error response:`, error.response?.data);
+        console.error(`   Error status:`, error.response?.status);
+        console.error(`   Error config:`, error.config);
         return [];
     }
 };
