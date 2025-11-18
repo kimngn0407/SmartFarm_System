@@ -10,7 +10,7 @@ import { Chip } from '@mui/material';
  * - Critical: #dc3545 (đỏ)
  * - Info: #17a2b8 (xanh dương)
  */
-const StatusBadge = ({ status, size = 'small', variant = 'filled' }) => {
+const StatusBadge = ({ status, label, size = 'small', variant = 'filled' }) => {
   const getStatusConfig = (statusValue) => {
     const normalizedStatus = String(statusValue || '').toUpperCase().trim();
     
@@ -18,6 +18,7 @@ const StatusBadge = ({ status, size = 'small', variant = 'filled' }) => {
       case 'GOOD':
       case 'ACTIVE':
       case 'HOẠT ĐỘNG':
+      case 'SUCCESS':
         return {
           label: 'Good',
           color: '#28a745',
@@ -66,7 +67,7 @@ const StatusBadge = ({ status, size = 'small', variant = 'filled' }) => {
 
   return (
     <Chip
-      label={config.label}
+      label={label || config.label}
       size={size}
       variant={variant}
       sx={{
@@ -88,6 +89,7 @@ const StatusBadge = ({ status, size = 'small', variant = 'filled' }) => {
 };
 
 export default StatusBadge;
+
 
 
 
