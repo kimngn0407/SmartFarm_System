@@ -6,7 +6,7 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "Sensor_data")
+@Table(name = "sensor_data")
 @Data
 public class SensorDataEntity {
     @Id
