@@ -6,17 +6,16 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.awt.print.Pageable;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 @Repository
 public interface SensorDataRepository extends JpaRepository<SensorDataEntity, Long> {
-    List<SensorDataEntity> findBySensorIdAndTimeBetween(Long sensorId, LocalDateTime from, LocalDateTime to);
+    // Query trực tiếp theo sensor_id trong bảng sensor_data (native query để tránh join với Sensor table)
+    @Query(value = "SELECT * FROM sensor_data WHERE sensor_id = :sensorId AND time BETWEEN :from AND :to ORDER BY time ASC", nativeQuery = true)
+    List<SensorDataEntity> findBySensorIdAndTimeBetween(@Param("sensorId") Long sensorId, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 
-    List<SensorDataEntity> findTop5BySensorIdOrderByTimeDesc(Long sensorId);
-
-
+    @Query(value = "SELECT * FROM sensor_data WHERE sensor_id = :sensorId ORDER BY time DESC LIMIT 5", nativeQuery = true)
+    List<SensorDataEntity> findTop5BySensorIdOrderByTimeDesc(@Param("sensorId") Long sensorId);
 
 }
