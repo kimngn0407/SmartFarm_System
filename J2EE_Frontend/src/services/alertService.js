@@ -7,7 +7,7 @@ const getAuthHeader = () => {
 };
 
 // Get all alerts
-const getAllAlerts = () => axios.get(`${API_BASE_URL}/api/alerts`);
+const getAllAlerts = () => axios.get(`${API_BASE_URL}/api/alerts`, { headers: getAuthHeader() });
 
 // Get alerts by field
 const getAlertsByField = (fieldId) => axios.get(`${API_BASE_URL}/api/alerts/field/${fieldId}`, { headers: getAuthHeader() });

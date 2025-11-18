@@ -160,6 +160,44 @@ const MenuBar = () => {
     const [userRole, setUserRole] = useState('');       // User's role (admin/user)
 
     /**
+     * Menu Groups Configuration với collapsible
+     */
+    const menuGroups = [
+        {
+            id: 'quan-ly-nong-trai',
+            title: 'Quản lý Nông trại',
+            items: [
+                { text: 'Farm Manager', icon: <FarmIcon />, path: '/farm', id: 'farm' },
+                { text: 'Field Manager', icon: <FieldIcon />, path: '/field', id: 'field' },
+                { text: 'Sensor Manager', icon: <SensorIcon />, path: '/sensor', id: 'sensor' },
+                { text: 'Irrigation & Fertilization', icon: <WaterIcon />, path: '/irrigation', id: 'irrigation' },
+            ]
+        },
+        {
+            id: 'cay-trong-canh-tac',
+            title: 'Cây trồng & Canh tác',
+            items: [
+                { text: 'Crop Manager', icon: <CropIcon />, path: '/crop', id: 'crop' },
+                { text: 'Pest Detection', icon: <PestIcon />, path: '/pest-detection', id: 'pest-detection' },
+                { text: 'Harvest & Revenue', icon: <RevenueIcon />, path: '/harvest', id: 'harvest' },
+            ]
+        },
+        {
+            id: 'he-thong',
+            title: 'Hệ thống',
+            items: [
+                { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard', id: 'dashboard' },
+                { text: 'Alert Screen', icon: <AlertIcon />, path: '/alert', id: 'alert' },
+                { text: 'User Profile', icon: <UserProfileIcon />, path: '/profile', id: 'profile' },
+                { text: 'System Settings', icon: <SettingsIcon />, path: '/settings', id: 'settings' },
+            ]
+        },
+    ];
+
+    // Flatten menuGroups để tạo menuItems array
+    const menuItems = menuGroups.flatMap(group => group.items);
+
+    /**
      * useEffect - Handles route change và user data loading
      * 
      * CHỨC NĂNG:
@@ -225,49 +263,6 @@ const MenuBar = () => {
 
         fetchUser();
     }, [location.pathname]); // Re-run khi route changes
-
-    /**
-     * Menu Items Configuration
-     * 
-     * STRUCTURE: Mỗi item có:
-     * - text: Display text
-     * - icon: Material-UI icon component
-     * - path: Router path
-     * - id: Unique identifier cho selected state
-    /**
-     * Menu Groups Configuration với collapsible
-     */
-    const menuGroups = [
-        {
-            id: 'quan-ly-nong-trai',
-            title: 'Quản lý Nông trại',
-            items: [
-                { text: 'Farm Manager', icon: <FarmIcon />, path: '/farm', id: 'farm' },
-                { text: 'Field Manager', icon: <FieldIcon />, path: '/field', id: 'field' },
-                { text: 'Sensor Manager', icon: <SensorIcon />, path: '/sensor', id: 'sensor' },
-                { text: 'Irrigation & Fertilization', icon: <WaterIcon />, path: '/irrigation', id: 'irrigation' },
-            ]
-        },
-        {
-            id: 'cay-trong-canh-tac',
-            title: 'Cây trồng & Canh tác',
-            items: [
-                { text: 'Crop Manager', icon: <CropIcon />, path: '/crop', id: 'crop' },
-                { text: 'Pest Detection', icon: <PestIcon />, path: '/pest-detection', id: 'pest-detection' },
-                { text: 'Harvest & Revenue', icon: <RevenueIcon />, path: '/harvest', id: 'harvest' },
-            ]
-        },
-        {
-            id: 'he-thong',
-            title: 'Hệ thống',
-            items: [
-                { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard', id: 'dashboard' },
-                { text: 'Alert Screen', icon: <AlertIcon />, path: '/alert', id: 'alert' },
-                { text: 'User Profile', icon: <UserProfileIcon />, path: '/profile', id: 'profile' },
-                { text: 'System Settings', icon: <SettingsIcon />, path: '/settings', id: 'settings' },
-            ]
-        },
-    ];
 
     const handleGroupToggle = (groupId) => {
         setExpandedGroups(prev => ({
