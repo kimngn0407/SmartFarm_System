@@ -48,7 +48,8 @@ const Dashboard = () => {
   // Hàm lấy dữ liệu sensor thật từ API
   const fetchRealSensorData = async (sensorIds, hours = 12) => {
     const now = new Date();
-    const from = new Date(now.getTime() - hours * 60 * 60 * 1000);
+    // Query từ 30 ngày trước để đảm bảo có dữ liệu (vì có thể dữ liệu cũ)
+    const from = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     
     console.log(`🔍 Fetching sensor data for ${sensorIds.length} sensors, from ${from.toISOString()} to ${now.toISOString()}`);
     
@@ -71,6 +72,26 @@ const Dashboard = () => {
     
     // Sắp xếp theo thời gian
     allData.sort((a, b) => new Date(a.time) - new Date(b.time));
+    
+    // Lấy 12h gần nhất từ dữ liệu có sẵn (nếu có)
+    if (allData.length > 0) {
+      const latestTime = new Date(allData[allData.length - 1].time);
+      const twelveHoursAgo = new Date(latestTime.getTime() - 12 * 60 * 60 * 1000);
+      const recentData = allData.filter(item => new Date(item.time) >= twelveHoursAgo);
+      
+      // Nếu có dữ liệu trong 12h, dùng dữ liệu đó
+      // Nếu không, lấy 12 điểm gần nhất
+      if (recentData.length > 0) {
+        console.log(`📅 Using ${recentData.length} data points from last 12 hours`);
+        return recentData;
+      } else {
+        // Lấy 12 điểm gần nhất
+        const last12Points = allData.slice(-12);
+        console.log(`📅 No data in last 12h, using last ${last12Points.length} available data points`);
+        return last12Points;
+      }
+    }
+    
     return allData;
   };
 
