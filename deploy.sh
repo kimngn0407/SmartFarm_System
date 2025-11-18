@@ -1,140 +1,109 @@
 #!/bin/bash
 
-# 🚀 SmartFarm Deployment Script
-# Tự động deploy SmartFarm lên VPS
+# Script deploy SmartFarm lên VPS
+# Sử dụng: ./deploy.sh
 
-set -e  # Exit on error
+set -e
 
-echo "🌾 SmartFarm Deployment Script"
-echo "================================"
-echo ""
+echo "🚀 Bắt đầu deploy SmartFarm lên VPS..."
 
-# Colors
-RED='\033[0;31m'
+# Màu sắc cho output
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-# Check if running as root
-if [ "$EUID" -ne 0 ]; then 
-    echo -e "${RED}❌ Please run as root (use sudo)${NC}"
+# Kiểm tra Docker và Docker Compose
+echo -e "${YELLOW}📦 Kiểm tra Docker và Docker Compose...${NC}"
+if ! command -v docker &> /dev/null; then
+    echo -e "${RED}❌ Docker chưa được cài đặt!${NC}"
     exit 1
 fi
 
-# Check Docker
-echo -e "${YELLOW}📦 Checking Docker...${NC}"
-if ! command -v docker &> /dev/null; then
-    echo -e "${YELLOW}Docker not found. Installing...${NC}"
-    curl -fsSL https://get.docker.com -o get-docker.sh
-    sh get-docker.sh
-    systemctl start docker
-    systemctl enable docker
-    echo -e "${GREEN}✅ Docker installed${NC}"
-else
-    echo -e "${GREEN}✅ Docker is installed${NC}"
+if ! command -v docker-compose &> /dev/null; then
+    echo -e "${RED}❌ Docker Compose chưa được cài đặt!${NC}"
+    exit 1
 fi
 
-# Check Docker Compose
-if ! command -v docker compose &> /dev/null; then
-    echo -e "${YELLOW}Docker Compose not found. Installing...${NC}"
-    apt update
-    apt install docker-compose-plugin -y
-    echo -e "${GREEN}✅ Docker Compose installed${NC}"
-else
-    echo -e "${GREEN}✅ Docker Compose is installed${NC}"
-fi
+echo -e "${GREEN}✅ Docker và Docker Compose đã sẵn sàng${NC}"
 
-# Check .env file
-echo -e "${YELLOW}📝 Checking .env file...${NC}"
-if [ ! -f .env ]; then
-    echo -e "${YELLOW}Creating .env file from template...${NC}"
-    cat > .env << EOF
-# Database
-POSTGRES_DB=SmartFarm1
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=$(openssl rand -base64 32)
+# Dừng các container cũ (nếu có)
+echo -e "${YELLOW}🛑 Dừng các container cũ...${NC}"
+docker-compose down || true
 
-# JWT
-JWT_SECRET=$(openssl rand -base64 32)
-JWT_EXPIRATION=86400000
+# Xóa images cũ (optional - comment nếu muốn giữ cache)
+# echo -e "${YELLOW}🗑️  Xóa images cũ...${NC}"
+# docker-compose rm -f || true
 
-# VPS IP - CHANGE THIS!
-FRONTEND_ORIGINS=http://YOUR_VPS_IP,http://YOUR_VPS_IP:80,http://localhost:3000
+# Build và start các services
+echo -e "${YELLOW}🔨 Build và start các services...${NC}"
+docker-compose build --no-cache
 
-# Google Gemini API
-GOOGLE_GENAI_API_KEY=your-google-gemini-api-key
+echo -e "${YELLOW}🚀 Khởi động các services...${NC}"
+docker-compose up -d
 
-# Next.js API URL
-NEXT_PUBLIC_API_URL=http://YOUR_VPS_IP:8080
-EOF
-    echo -e "${GREEN}✅ .env file created${NC}"
-    echo -e "${RED}⚠️  IMPORTANT: Edit .env file and set YOUR_VPS_IP!${NC}"
-    echo -e "${YELLOW}Press Enter to continue after editing .env...${NC}"
-    read
-else
-    echo -e "${GREEN}✅ .env file exists${NC}"
-fi
-
-# Stop existing containers
-echo -e "${YELLOW}🛑 Stopping existing containers...${NC}"
-docker compose down 2>/dev/null || true
-
-# Build images
-echo -e "${YELLOW}🏗️  Building Docker images...${NC}"
-echo -e "${YELLOW}This may take 10-20 minutes on first build...${NC}"
-docker compose build --no-cache
-
-# Start services
-echo -e "${YELLOW}🚀 Starting services...${NC}"
-docker compose up -d
-
-# Wait for services to be healthy
-echo -e "${YELLOW}⏳ Waiting for services to start...${NC}"
+# Đợi các services khởi động
+echo -e "${YELLOW}⏳ Đợi các services khởi động (30 giây)...${NC}"
 sleep 30
 
-# Check services
-echo -e "${YELLOW}✅ Checking services status...${NC}"
-docker compose ps
+# Kiểm tra trạng thái các services
+echo -e "${YELLOW}📊 Kiểm tra trạng thái các services...${NC}"
+docker-compose ps
 
-# Check health
-echo -e "${YELLOW}🏥 Checking service health...${NC}"
+# Kiểm tra health của các services
+echo -e "${YELLOW}🏥 Kiểm tra health của các services...${NC}"
 
-# Check backend
-if curl -f http://localhost:8080/actuator/health > /dev/null 2>&1; then
-    echo -e "${GREEN}✅ Backend is healthy${NC}"
-else
-    echo -e "${RED}❌ Backend health check failed${NC}"
-fi
-
-# Check frontend
-if curl -f http://localhost:80 > /dev/null 2>&1; then
-    echo -e "${GREEN}✅ Frontend is healthy${NC}"
-else
-    echo -e "${RED}❌ Frontend health check failed${NC}"
-fi
-
-# Check database
+# Check PostgreSQL
 if docker exec smartfarm-postgres pg_isready -U postgres > /dev/null 2>&1; then
-    echo -e "${GREEN}✅ Database is healthy${NC}"
+    echo -e "${GREEN}✅ PostgreSQL: Healthy${NC}"
 else
-    echo -e "${RED}❌ Database health check failed${NC}"
+    echo -e "${RED}❌ PostgreSQL: Unhealthy${NC}"
 fi
 
-# Get VPS IP
-VPS_IP=$(curl -s ifconfig.me || curl -s ipinfo.io/ip || hostname -I | awk '{print $1}')
+# Check Backend
+if curl -f http://localhost:8080/actuator/health > /dev/null 2>&1; then
+    echo -e "${GREEN}✅ Backend API: Healthy${NC}"
+else
+    echo -e "${YELLOW}⏳ Backend API: Đang khởi động...${NC}"
+fi
+
+# Check Frontend
+if curl -f http://localhost/ > /dev/null 2>&1; then
+    echo -e "${GREEN}✅ Frontend: Healthy${NC}"
+else
+    echo -e "${YELLOW}⏳ Frontend: Đang khởi động...${NC}"
+fi
+
+# Check Crop Service
+if curl -f http://localhost:5000/health > /dev/null 2>&1; then
+    echo -e "${GREEN}✅ Crop Service: Healthy${NC}"
+else
+    echo -e "${YELLOW}⏳ Crop Service: Đang khởi động...${NC}"
+fi
+
+# Check Pest Service
+if curl -f http://localhost:5001/health > /dev/null 2>&1; then
+    echo -e "${GREEN}✅ Pest Service: Healthy${NC}"
+else
+    echo -e "${YELLOW}⏳ Pest Service: Đang khởi động...${NC}"
+fi
 
 echo ""
-echo -e "${GREEN}🎉 Deployment completed!${NC}"
+echo -e "${GREEN}🎉 Deploy hoàn tất!${NC}"
 echo ""
-echo "📊 Services:"
-echo "  - Frontend:    http://${VPS_IP}"
-echo "  - Backend API: http://${VPS_IP}:8080"
-echo "  - Chatbot:     http://${VPS_IP}:9002"
+echo "📋 Thông tin truy cập:"
+echo "  - Frontend: http://173.249.48.25"
+echo "  - Backend API: http://173.249.48.25:8080"
+echo "  - Chatbot: http://173.249.48.25:9002"
 echo ""
-echo "📝 Useful commands:"
-echo "  - View logs:    docker compose logs -f"
-echo "  - Stop all:     docker compose down"
-echo "  - Restart:      docker compose restart"
-echo "  - Status:       docker compose ps"
+echo "📝 Xem logs:"
+echo "  - docker-compose logs -f [service_name]"
+echo "  - docker-compose logs -f backend"
+echo "  - docker-compose logs -f frontend"
 echo ""
+echo "🛑 Dừng services:"
+echo "  - docker-compose down"
+echo ""
+echo "🔄 Restart services:"
+echo "  - docker-compose restart [service_name]"
 

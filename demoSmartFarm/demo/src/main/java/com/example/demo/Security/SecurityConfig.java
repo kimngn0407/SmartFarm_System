@@ -44,9 +44,6 @@ public class SecurityConfig {
                         .requestMatchers("/api/email/test/**").permitAll()
                         .requestMatchers("/ws/**", "/app/**", "/topic/**").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
-                        // Dashboard sensor data endpoint - public để frontend có thể gọi
-                        .requestMatchers("/api/sensor-data/dashboard").permitAll()
-                        .requestMatchers("/api/sensor-data/latest/type/**").permitAll()
                         // Tất cả các endpoints khác cần authentication
                         .anyRequest().authenticated()
                 )

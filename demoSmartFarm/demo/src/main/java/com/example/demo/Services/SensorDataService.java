@@ -6,6 +6,9 @@ import com.example.demo.Entities.SensorEntity;
 import com.example.demo.Repositories.SensorDataRepository;
 import com.example.demo.Repositories.SensorRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
+
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -60,75 +63,6 @@ public class SensorDataService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Lấy dữ liệu sensor theo fieldId và type trong khoảng thời gian
-     */
-    public List<com.example.demo.DTO.DashboardSensorDataDTO> getSensorDataByFieldAndType(
-            Long fieldId, String type, LocalDateTime from, LocalDateTime to) {
-        List<SensorDataEntity> dataList = sensorDataRepository.findByFieldIdAndTypeAndTimeBetween(
-                fieldId, type, from, to);
-        return dataList.stream()
-                .map(data -> {
-                    com.example.demo.DTO.DashboardSensorDataDTO dto = new com.example.demo.DTO.DashboardSensorDataDTO();
-                    dto.setTime(data.getTime());
-                    dto.setValue(data.getValue().doubleValue());
-                    dto.setType(data.getSensor().getType());
-                    dto.setFieldId(data.getSensor().getFieldId());
-                    if (data.getSensor().getField() != null) {
-                        dto.setFieldName(data.getSensor().getField().getFieldName());
-                    }
-                    return dto;
-                })
-                .collect(Collectors.toList());
-    }
 
-    /**
-     * Lấy dữ liệu sensor theo type (tất cả fields) trong khoảng thời gian
-     */
-    public List<com.example.demo.DTO.DashboardSensorDataDTO> getSensorDataByType(
-            String type, LocalDateTime from, LocalDateTime to) {
-        List<SensorDataEntity> dataList = sensorDataRepository.findByTypeAndTimeBetween(type, from, to);
-        return dataList.stream()
-                .map(data -> {
-                    com.example.demo.DTO.DashboardSensorDataDTO dto = new com.example.demo.DTO.DashboardSensorDataDTO();
-                    dto.setTime(data.getTime());
-                    dto.setValue(data.getValue().doubleValue());
-                    dto.setType(data.getSensor().getType());
-                    dto.setFieldId(data.getSensor().getFieldId());
-                    if (data.getSensor().getField() != null) {
-                        dto.setFieldName(data.getSensor().getField().getFieldName());
-                    }
-                    return dto;
-                })
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Lấy giá trị trung bình theo type trong khoảng thời gian
-     */
-    public Double getAverageValueByType(String type, LocalDateTime from, LocalDateTime to) {
-        Double avg = sensorDataRepository.getAverageValueByTypeAndTimeBetween(type, from, to);
-        return avg != null ? avg : 0.0;
-    }
-
-    /**
-     * Lấy dữ liệu mới nhất theo type (cho dashboard)
-     */
-    public List<com.example.demo.DTO.DashboardSensorDataDTO> getLatestDataByType(String type, int limit) {
-        List<SensorDataEntity> dataList = sensorDataRepository.findLatestByType(type, limit);
-        return dataList.stream()
-                .map(data -> {
-                    com.example.demo.DTO.DashboardSensorDataDTO dto = new com.example.demo.DTO.DashboardSensorDataDTO();
-                    dto.setTime(data.getTime());
-                    dto.setValue(data.getValue().doubleValue());
-                    dto.setType(data.getSensor().getType());
-                    dto.setFieldId(data.getSensor().getFieldId());
-                    if (data.getSensor().getField() != null) {
-                        dto.setFieldName(data.getSensor().getField().getFieldName());
-                    }
-                    return dto;
-                })
-                .collect(Collectors.toList());
-    }
 
 }

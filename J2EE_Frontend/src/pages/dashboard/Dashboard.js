@@ -64,37 +64,56 @@ const Dashboard = () => {
     }
   };
 
-  // Dữ liệu mô phỏng 
-  const mockData = {
-    fields: [
-      { id: 1, name: 'Field 1', status: 'Good' },
-      { id: 2, name: 'Field 2', status: 'Warning' },
-      { id: 3, name: 'Field 3', status: 'Critical' },
-      { id: 4, name: 'Field 4', status: 'Good' },
-    ],
-    alerts: [
-      { id: 1, fieldId: 2, message: 'Nhiệt độ cao bất thường', timestamp: new Date(Date.now() - 1000 * 60 * 30) },
-      { id: 2, fieldId: 3, message: 'Độ ẩm vượt ngưỡng cho phép', timestamp: new Date(Date.now() - 1000 * 60 * 45) },
-      { id: 3, fieldId: 3, message: 'Ánh sáng quá mạnh', timestamp: new Date(Date.now() - 1000 * 60 * 60) },
-      { id: 4, fieldId: 1, message: 'Cảm biến nhiệt độ không phản hồi', timestamp: new Date(Date.now() - 1000 * 60 * 90) },
-      { id: 5, fieldId: 2, message: 'Cảm biến độ ẩm cần bảo trì', timestamp: new Date(Date.now() - 1000 * 60 * 120) },
-      { id: 6, fieldId: 4, message: 'Độ ẩm đất thấp bất thường', timestamp: new Date(Date.now() - 1000 * 60 * 10) },
-    ]
+  // Hàm lấy dữ liệu sensor thật từ API
+  const fetchRealSensorData = async (sensorIds, hours = 12) => {
+    const now = new Date();
+    const from = new Date(now.getTime() - hours * 60 * 60 * 1000);
+    
+    const allData = [];
+    for (const sensorId of sensorIds) {
+      try {
+        const data = await sensorService.getSensorDataByTimeRange(sensorId, from, now);
+        allData.push(...data.map(item => ({
+          ...item,
+          sensorId: item.sensorId || sensorId
+        })));
+      } catch (error) {
+        console.error(`Error fetching data for sensor ${sensorId}:`, error);
+      }
+    }
+    
+    // Sắp xếp theo thời gian
+    allData.sort((a, b) => new Date(a.time) - new Date(b.time));
+    return allData;
   };
 
-  // Tạo dữ liệu mô phỏng 
-  function generateMockSensorData(type, base, fluctuation) {
-    // type: 'Temperature' | 'Humidity' | 'SoilMoisture'
-    // base: giá trị trung bình, fluctuation: biên độ dao động
-    let arr = [];
-    for (let i = 0; i < 12; i++) {
-      let value = base + (Math.random() - 0.5) * fluctuation;
-      if (type === 'Temperature') value = Math.round(value * 10) / 10;
-      else value = Math.round(value * 10) / 10;
-      arr.push(value);
+  // Hàm tính toán thống kê từ dữ liệu thật
+  const calculateStats = (data) => {
+    if (!data || data.length === 0) {
+      return {
+        avg: 0,
+        min: 0,
+        max: 0,
+        values: [],
+        times: []
+      };
     }
-    return arr;
-  }
+    
+    const values = data.map(d => Number(d.value)).filter(v => !isNaN(v));
+    if (values.length === 0) {
+      return { avg: 0, min: 0, max: 0, values: [], times: [] };
+    }
+    
+    const avg = values.reduce((a, b) => a + b, 0) / values.length;
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    const times = data.map(d => {
+      const date = new Date(d.time);
+      return date.getHours().toString().padStart(2, '0') + ':' + date.getMinutes().toString().padStart(2, '0');
+    });
+    
+    return { avg, min, max, values, times };
+  };
 
   // Tạo mốc giờ cho 12 tiếng 
   function getLast12HoursLabels() {
@@ -115,6 +134,7 @@ const Dashboard = () => {
       let farmNamesArr = [];
       let allFields = [];
       let fieldStatusCounts = { Good: 0, Warning: 0, Critical: 0 };
+      let allSensors = [];
       
       try {
         // 1. Lấy tất cả farms
@@ -125,20 +145,14 @@ const Dashboard = () => {
         console.log('✅ Farms data:', farms);
         farmNamesArr = farms.map(f => f.farmName);
         
-        // 2. Lấy TẤT CẢ SENSORS 1 LẦN (thay vì từng field)
+        // 2. Lấy TẤT CẢ SENSORS
         try {
-          const allSensorsResponse = await sensorService.getSensorList();
-          totalSensors = allSensorsResponse.length || 0;
+          allSensors = await sensorService.getSensorList();
+          totalSensors = allSensors.length || 0;
           console.log('✅ Total sensors:', totalSensors);
-          console.log('✅ Sensors response:', allSensorsResponse);
+          console.log('✅ Sensors response:', allSensors);
         } catch (sensorError) {
           console.error('❌ Error fetching sensors:', sensorError);
-          console.error('❌ Sensor error details:', {
-            message: sensorError.message,
-            response: sensorError.response?.data,
-            status: sensorError.response?.status,
-            config: sensorError.config
-          });
           totalSensors = 0;
         }
         
@@ -151,12 +165,6 @@ const Dashboard = () => {
             allFields = allFields.concat(fieldsResponse.data);
           } catch (error) {
             console.error('❌ Error fetching fields for farm', farm.id, error);
-            console.error('❌ Field error details:', {
-              message: error.message,
-              response: error.response?.data,
-              status: error.response?.status,
-              config: error.config
-            });
           }
         }));
         
@@ -183,92 +191,102 @@ const Dashboard = () => {
           }
         }));
         
-        // 5. Lấy nhiệt độ Đà Lạt
-        await fetchDalatTemperature();
+        // 5. Lấy dữ liệu sensor thật từ IoT
+        console.log('🔍 Fetching real sensor data from IoT...');
         
-      } catch (error) {
-        console.error('❌ Error in fetchData:', error);
-      }
-
-      // ✅ LẤY DỮ LIỆU IoT THẬT TỪ API
-      try {
-        console.log('📊 Fetching real IoT sensor data...');
-        const dashboardData = await sensorService.getDashboardSensorData(12);
-        console.log('✅ Dashboard data received:', dashboardData);
+        // Tìm sensors theo type
+        const tempSensors = allSensors.filter(s => 
+          s.type && (s.type.toLowerCase().includes('temperature') || s.type.toLowerCase().includes('temp'))
+        );
+        const humSensors = allSensors.filter(s => 
+          s.type && (s.type.toLowerCase().includes('humidity') || s.type.toLowerCase().includes('humid'))
+        );
+        const soilSensors = allSensors.filter(s => 
+          s.type && (s.type.toLowerCase().includes('soil') || s.type.toLowerCase().includes('moisture'))
+        );
+        const lightSensors = allSensors.filter(s => 
+          s.type && (s.type.toLowerCase().includes('light') || s.type.toLowerCase().includes('lumin'))
+        );
         
-        // Xử lý dữ liệu nhiệt độ
-        const tempData = dashboardData.temperature || [];
-        const tempValues = tempData.map(item => item.value || 0);
-        const tempTimes = tempData.map(item => {
-          const d = new Date(item.time);
-          return d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
-        });
+        // Lấy dữ liệu 12h gần nhất
+        const tempSensorIds = tempSensors.map(s => s.id);
+        const humSensorIds = humSensors.map(s => s.id);
+        const soilSensorIds = soilSensors.map(s => s.id);
+        const lightSensorIds = lightSensors.map(s => s.id);
         
-        // Xử lý dữ liệu độ ẩm
-        const humData = dashboardData.humidity || [];
-        const humValues = humData.map(item => item.value || 0);
-        
-        // Xử lý dữ liệu độ ẩm đất
-        const soilData = dashboardData.soilMoisture || [];
-        const soilValues = soilData.map(item => item.value || 0);
-        
-        // Nếu có dữ liệu thật, dùng dữ liệu thật
-        if (tempValues.length > 0) {
-          setTempArr(tempValues);
-          setTimeLabels(tempTimes);
-        } else {
-          // Fallback về mock data nếu không có dữ liệu
-          const tempInit = generateMockSensorData('Temperature', 30, 3);
-          const labelsInit = getLast12HoursLabels();
-          setTempArr(tempInit);
-          setTimeLabels(labelsInit);
-        }
-        
-        if (humValues.length > 0) {
-          setHumArr(humValues);
-        } else {
-          const humInit = generateMockSensorData('Humidity', 75, 10);
-          setHumArr(humInit);
-        }
-        
-        if (soilValues.length > 0) {
-          setSoilArr(soilValues);
-        } else {
-          const soilInit = generateMockSensorData('SoilMoisture', 55, 15);
-          setSoilArr(soilInit);
-        }
-        
-        // Tính toán stats từ dữ liệu thật
-        const avgTemperature = dashboardData.avgTemperature || 
-          (tempValues.length > 0 ? tempValues.reduce((a,b)=>a+b,0)/tempValues.length : 0);
-        const avgHumidity = dashboardData.avgHumidity || 
-          (humValues.length > 0 ? humValues.reduce((a,b)=>a+b,0)/humValues.length : 0);
-        const avgSoil = dashboardData.avgSoilMoisture || 
-          (soilValues.length > 0 ? soilValues.reduce((a,b)=>a+b,0)/soilValues.length : 0);
-        
-        const minTemp = tempValues.length > 0 ? Math.min(...tempValues) : 0;
-        const maxTemp = tempValues.length > 0 ? Math.max(...tempValues) : 0;
-        const avgSoil12h = soilValues.length > 0 ? 
-          soilValues.slice(-12).reduce((a,b)=>a+b,0) / Math.min(12, soilValues.length) : 0;
+        const [tempData, humData, soilData, lightData] = await Promise.all([
+          tempSensorIds.length > 0 ? fetchRealSensorData(tempSensorIds, 12) : Promise.resolve([]),
+          humSensorIds.length > 0 ? fetchRealSensorData(humSensorIds, 12) : Promise.resolve([]),
+          soilSensorIds.length > 0 ? fetchRealSensorData(soilSensorIds, 12) : Promise.resolve([]),
+          lightSensorIds.length > 0 ? fetchRealSensorData(lightSensorIds, 12) : Promise.resolve([])
+        ]);
         
         // Lấy dữ liệu 24h cho độ ẩm
+        const hum24hData = humSensorIds.length > 0 ? await fetchRealSensorData(humSensorIds, 24) : [];
+        
+        // Tính toán thống kê
+        const tempStats = calculateStats(tempData);
+        const humStats = calculateStats(humData);
+        const soilStats = calculateStats(soilData);
+        const hum24hStats = calculateStats(hum24hData);
+        
+        // Chuẩn bị dữ liệu cho chart
+        // Nếu có dữ liệu thật, dùng dữ liệu thật, nếu không có thì dùng mặc định
+        const tempValues = tempStats.values.length > 0 ? tempStats.values : [0];
+        const humValues = humStats.values.length > 0 ? humStats.values : [0];
+        const soilValues = soilStats.values.length > 0 ? soilStats.values : [0];
+        const hum24hValues = hum24hStats.values.length > 0 ? hum24hStats.values : [];
+        
+        // Tạo labels từ dữ liệu thật hoặc mặc định
+        const timeLabelsData = tempStats.times.length > 0 ? tempStats.times : getLast12HoursLabels();
+        
+        setTempArr(tempValues);
+        setHumArr(humValues);
+        setSoilArr(soilValues);
+        setTimeLabels(timeLabelsData);
+        setHumidity24h(hum24hValues.length > 0 ? hum24hValues : [0]);
+        
+        // Tính toán stats
+        const avgTemperature = tempStats.avg || 0;
+        const avgHumidity = humStats.avg || 0;
+        const avgSoil = soilStats.avg || 0;
+        const minTemp = tempStats.min || 0;
+        const maxTemp = tempStats.max || 0;
+        const avgSoil12h = soilStats.avg || 0;
+        
+        // 6. Lấy cảnh báo thật
+        let realAlerts = [];
         try {
-          const dashboard24h = await sensorService.getDashboardSensorData(24);
-          const hum24hData = dashboard24h.humidity || [];
-          if (hum24hData.length > 0) {
-            setHumidity24h(hum24hData.map(item => item.value || 0));
-          } else {
-            const hum24h = generateMockSensorData('Humidity', 75, 10).slice(-24);
-            setHumidity24h(hum24h);
-          }
-        } catch (err) {
-          console.error('Error fetching 24h data:', err);
-          const hum24h = generateMockSensorData('Humidity', 75, 10).slice(-24);
-          setHumidity24h(hum24h);
+          const alertsResponse = await alertService.getAllAlerts();
+          realAlerts = alertsResponse.data || [];
+          // Sắp xếp theo thời gian mới nhất
+          realAlerts.sort((a, b) => new Date(b.timestamp || b.time) - new Date(a.timestamp || a.time));
+          realAlerts = realAlerts.slice(0, 5);
+        } catch (alertError) {
+          console.error('Error fetching alerts:', alertError);
         }
         
-        // Count offline sensors (mock - in real app, check sensor status)
-        const offlineSensors = Math.floor(totalSensors * 0.1); // 10% offline
+        // 7. Lấy nhiệt độ Đà Lạt
+        await fetchDalatTemperature();
+        
+        // Count offline sensors (kiểm tra sensors không có dữ liệu trong 1h gần nhất)
+        let offlineSensors = 0;
+        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+        for (const sensor of allSensors) {
+          try {
+            const latestData = await sensorService.getLatestSensorData(sensor.id);
+            if (latestData.length === 0) {
+              offlineSensors++;
+            } else {
+              const lastTime = new Date(latestData[0].time);
+              if (lastTime < oneHourAgo) {
+                offlineSensors++;
+              }
+            }
+          } catch (error) {
+            offlineSensors++;
+          }
+        }
         
         setStats({ 
           totalSensors, 
@@ -282,101 +300,95 @@ const Dashboard = () => {
           offlineSensors,
           avgSoil12h: avgSoil12h.toFixed(1),
         });
+        setRecentAlerts(realAlerts);
+        setFarmNames(farmNamesArr);
+        setLoading(false);
         
-        // Lấy alerts thật từ API (nếu có)
-        const sortedAlerts = mockData.alerts.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-        const topRecentAlerts = sortedAlerts.slice(0, 5);
-        setRecentAlerts(topRecentAlerts);
+        console.log('✅ Dashboard data loaded successfully');
+        console.log('  - Temperature data points:', tempData.length);
+        console.log('  - Humidity data points:', humData.length);
+        console.log('  - Soil data points:', soilData.length);
         
-      } catch (sensorError) {
-        console.error('❌ Error fetching sensor data, using mock data:', sensorError);
-        // Fallback về mock data nếu API lỗi
-        const tempInit = generateMockSensorData('Temperature', 30, 3);
-        const humInit = generateMockSensorData('Humidity', 75, 10);
-        const soilInit = generateMockSensorData('SoilMoisture', 55, 15);
-        const labelsInit = getLast12HoursLabels();
-        setTempArr(tempInit);
-        setHumArr(humInit);
-        setSoilArr(soilInit);
-        setTimeLabels(labelsInit);
-        const avgTemperature = tempInit.reduce((a,b)=>a+b,0)/tempInit.length;
-        const avgHumidity = humInit.reduce((a,b)=>a+b,0)/humInit.length;
-        const avgSoil = soilInit.reduce((a,b)=>a+b,0)/soilInit.length;
-        const minTemp = Math.min(...tempInit);
-        const maxTemp = Math.max(...tempInit);
-        const avgSoil12h = soilInit.slice(-12).reduce((a,b)=>a+b,0) / Math.min(12, soilInit.length);
-        
-        const hum24h = generateMockSensorData('Humidity', 75, 10).slice(-24);
-        setHumidity24h(hum24h);
-        
-        const sortedAlerts = mockData.alerts.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-        const topRecentAlerts = sortedAlerts.slice(0, 5);
-        const offlineSensors = Math.floor(totalSensors * 0.1);
-        
-        setStats({ 
-          totalSensors, 
-          totalAlerts, 
-          avgTemperature: avgTemperature.toFixed(1), 
-          avgHumidity: avgHumidity.toFixed(1), 
-          avgSoil: avgSoil12h.toFixed(1), 
-          fieldStatusCounts,
-          minTemp: minTemp.toFixed(1),
-          maxTemp: maxTemp.toFixed(1),
-          offlineSensors,
-          avgSoil12h: avgSoil12h.toFixed(1),
-        });
-        setRecentAlerts(topRecentAlerts);
+      } catch (error) {
+        console.error('❌ Error in fetchData:', error);
+        setLoading(false);
       }
-      
-      setFarmNames(farmNamesArr);
-      setLoading(false);
     };
     fetchData();
   }, []);
 
-  // Real-time update mỗi 5 phút (lấy dữ liệu mới từ API)
+  // Real-time update mỗi 30 phút - lấy dữ liệu mới từ API
   useEffect(() => {
-    const interval = setInterval(async () => {
+    if (loading) return;
+    
+    const updateData = async () => {
       try {
-        console.log('🔄 Refreshing sensor data...');
-        const dashboardData = await sensorService.getDashboardSensorData(12);
+        // Lấy lại danh sách sensors
+        const allSensors = await sensorService.getSensorList();
         
-        // Cập nhật dữ liệu nếu có
-        if (dashboardData.temperature && dashboardData.temperature.length > 0) {
-          const tempValues = dashboardData.temperature.map(item => item.value || 0);
-          const tempTimes = dashboardData.temperature.map(item => {
-            const d = new Date(item.time);
-            return d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
-          });
-          setTempArr(tempValues);
-          setTimeLabels(tempTimes);
+        // Tìm sensors theo type
+        const tempSensors = allSensors.filter(s => 
+          s.type && (s.type.toLowerCase().includes('temperature') || s.type.toLowerCase().includes('temp'))
+        );
+        const humSensors = allSensors.filter(s => 
+          s.type && (s.type.toLowerCase().includes('humidity') || s.type.toLowerCase().includes('humid'))
+        );
+        const soilSensors = allSensors.filter(s => 
+          s.type && (s.type.toLowerCase().includes('soil') || s.type.toLowerCase().includes('moisture'))
+        );
+        
+        // Lấy dữ liệu 12h gần nhất
+        const tempSensorIds = tempSensors.map(s => s.id);
+        const humSensorIds = humSensors.map(s => s.id);
+        const soilSensorIds = soilSensors.map(s => s.id);
+        
+        const [tempData, humData, soilData] = await Promise.all([
+          tempSensorIds.length > 0 ? fetchRealSensorData(tempSensorIds, 12) : Promise.resolve([]),
+          humSensorIds.length > 0 ? fetchRealSensorData(humSensorIds, 12) : Promise.resolve([]),
+          soilSensorIds.length > 0 ? fetchRealSensorData(soilSensorIds, 12) : Promise.resolve([])
+        ]);
+        
+        // Tính toán stats
+        const tempStats = calculateStats(tempData);
+        const humStats = calculateStats(humData);
+        const soilStats = calculateStats(soilData);
+        
+        // Cập nhật state
+        if (tempStats.values.length > 0) {
+          setTempArr(tempStats.values);
+          setTimeLabels(tempStats.times.length > 0 ? tempStats.times : getLast12HoursLabels());
         }
-        
-        if (dashboardData.humidity && dashboardData.humidity.length > 0) {
-          const humValues = dashboardData.humidity.map(item => item.value || 0);
-          setHumArr(humValues);
+        if (humStats.values.length > 0) {
+          setHumArr(humStats.values);
         }
-        
-        if (dashboardData.soilMoisture && dashboardData.soilMoisture.length > 0) {
-          const soilValues = dashboardData.soilMoisture.map(item => item.value || 0);
-          setSoilArr(soilValues);
+        if (soilStats.values.length > 0) {
+          setSoilArr(soilStats.values);
         }
         
         // Cập nhật stats
-        if (dashboardData.avgTemperature || dashboardData.avgHumidity || dashboardData.avgSoilMoisture) {
-          setStats(prev => ({
-            ...prev,
-            avgTemperature: (dashboardData.avgTemperature || prev.avgTemperature).toFixed(1),
-            avgHumidity: (dashboardData.avgHumidity || prev.avgHumidity).toFixed(1),
-            avgSoil: (dashboardData.avgSoilMoisture || prev.avgSoil).toFixed(1),
-          }));
-        }
+        setStats(prev => ({
+          ...prev,
+          avgTemperature: tempStats.avg.toFixed(1),
+          avgHumidity: humStats.avg.toFixed(1),
+          avgSoil: soilStats.avg.toFixed(1),
+          minTemp: tempStats.min.toFixed(1),
+          maxTemp: tempStats.max.toFixed(1),
+          avgSoil12h: soilStats.avg.toFixed(1)
+        }));
+        
+        console.log('🔄 Real-time data updated');
       } catch (error) {
-        console.error('Error refreshing sensor data:', error);
+        console.error('Error updating real-time data:', error);
       }
-    }, 300000); // 5 phút
+    };
+    
+    // Cập nhật ngay lập tức
+    updateData();
+    
+    // Sau đó cập nhật mỗi 30 phút
+    const interval = setInterval(updateData, 30 * 60 * 1000); // 30 phút
     return () => clearInterval(interval);
-  }, []);
+  }, [loading]);
   useEffect(() => {
     if (tempArr.length === 0 || humArr.length === 0 || soilArr.length === 0 || timeLabels.length === 0) return;
     setChartData({
@@ -730,29 +742,37 @@ const Dashboard = () => {
               <List sx={{ flex: 1, overflowY: 'auto', maxHeight: '25vh' }}>
                 {recentAlerts
                   .filter(alert => {
-                    const msg = alert.message.toLowerCase();
+                    const msg = (alert.message || alert.description || '').toLowerCase();
                     return (
                       msg.includes('nhiệt độ') ||
                       msg.includes('độ ẩm đất') ||
-                      (msg.includes('độ ẩm') && !msg.includes('độ ẩm đất'))
+                      msg.includes('soil') ||
+                      (msg.includes('độ ẩm') && !msg.includes('độ ẩm đất')) ||
+                      msg.includes('humidity') ||
+                      msg.includes('light') ||
+                      msg.includes('ánh sáng')
                     );
                   })
                   .slice(0, 5)
                   .map((alert, idx) => {
+                    const alertMessage = alert.message || alert.description || 'Cảnh báo';
+                    const alertTime = alert.timestamp || alert.time || alert.createdAt || new Date();
+                    const fieldId = alert.fieldId || alert.field?.id;
+                    const fieldName = alert.field?.fieldName || alert.fieldName || (fieldId ? `Field ${fieldId}` : '');
                 
                     let sensorType = '';
                     let icon = null;
-                    const msg = alert.message.toLowerCase();
-                    if (msg.includes('nhiệt độ')) {
+                    const msg = alertMessage.toLowerCase();
+                    if (msg.includes('nhiệt độ') || msg.includes('temperature') || msg.includes('temp')) {
                       sensorType = 'Nhiệt độ';
                       icon = <ThermostatIcon color="warning" sx={{ mr: 1 }} />;
-                    } else if (msg.includes('độ ẩm đất')) {
+                    } else if (msg.includes('độ ẩm đất') || msg.includes('soil') || msg.includes('moisture')) {
                       sensorType = 'Độ ẩm đất';
                       icon = <SpaIcon color="success" sx={{ mr: 1 }} />;
-                    } else if (msg.includes('độ ẩm')) {
+                    } else if (msg.includes('độ ẩm') || msg.includes('humidity') || msg.includes('humid')) {
                       sensorType = 'Độ ẩm';
                       icon = <OpacityIcon color="info" sx={{ mr: 1 }} />;
-                    } else if (msg.includes('ánh sáng')) {
+                    } else if (msg.includes('ánh sáng') || msg.includes('light') || msg.includes('lumin')) {
                       sensorType = 'Ánh sáng';
                       icon = <LightModeIcon color="primary" sx={{ mr: 1 }} />;
                     } else {
@@ -760,21 +780,22 @@ const Dashboard = () => {
                       icon = <WarningAmberIcon color="error" sx={{ mr: 1 }} />;
                     }
                    
-                    const farmName = farmNames.length > 0 ? farmNames[Math.floor(Math.random() * farmNames.length)] : '';
                     return (
-                      <ListItem key={idx} divider
+                      <ListItem key={alert.id || idx} divider
                         secondaryAction={
-                          <Typography variant="caption" color="text.secondary" sx={{ minWidth: 80, textAlign: 'right' }}>{farmName}</Typography>
+                          <Typography variant="caption" color="text.secondary" sx={{ minWidth: 80, textAlign: 'right' }}>
+                            {fieldName}
+                          </Typography>
                         }
                       >
                         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 60 }}>
                           {icon}
-                          <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>{`Field ${idx + 1}`}</Typography>
+                          <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>{sensorType}</Typography>
                         </Box>
                         <ListItemText
-                          primary={alert.message}
-                          secondary={`${new Date(alert.timestamp).toLocaleString()}`}
-                          primaryTypographyProps={{ color: getAlertColor(alert.message), fontWeight: 500 }}
+                          primary={alertMessage}
+                          secondary={new Date(alertTime).toLocaleString('vi-VN')}
+                          primaryTypographyProps={{ color: getAlertColor(alertMessage), fontWeight: 500 }}
                         />
                       </ListItem>
                     );
