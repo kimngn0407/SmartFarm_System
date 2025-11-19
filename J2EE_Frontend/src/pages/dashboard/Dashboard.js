@@ -53,7 +53,7 @@ const Dashboard = () => {
     light: 'unknown'
   });
 
-  // Hàm lấy dữ liệu sensor thật từ API
+  // Hàm lấy dữ liệu sensor thật từ API và filter mỗi 15 phút
   const fetchRealSensorData = async (sensorIds, hours = 12) => {
     const now = new Date();
     // Query từ 30 ngày trước để đảm bảo có dữ liệu (vì có thể dữ liệu cũ)
@@ -82,25 +82,47 @@ const Dashboard = () => {
     allData.sort((a, b) => new Date(a.time) - new Date(b.time));
     
     // Lấy 12h gần nhất từ dữ liệu có sẵn (nếu có)
+    let recentData = [];
     if (allData.length > 0) {
       const latestTime = new Date(allData[allData.length - 1].time);
       const twelveHoursAgo = new Date(latestTime.getTime() - 12 * 60 * 60 * 1000);
-      const recentData = allData.filter(item => new Date(item.time) >= twelveHoursAgo);
+      recentData = allData.filter(item => new Date(item.time) >= twelveHoursAgo);
       
-      // Nếu có dữ liệu trong 12h, dùng dữ liệu đó
-      // Nếu không, lấy TẤT CẢ dữ liệu có sẵn (để chart có thể vẽ đường)
-      if (recentData.length >= 2) {
-        console.log(`📅 Using ${recentData.length} data points from last 12 hours`);
-        return recentData;
-      } else {
-        // Lấy tất cả dữ liệu có sẵn (tối đa 28 điểm để chart vẽ được)
-        const allAvailableData = allData.slice(-28);
-        console.log(`📅 No data in last 12h (only ${recentData.length} points), using all ${allAvailableData.length} available data points`);
-        return allAvailableData;
+      // Nếu không có dữ liệu trong 12h, lấy tất cả dữ liệu có sẵn
+      if (recentData.length < 2) {
+        recentData = allData.slice(-48); // Lấy tối đa 48 điểm
+        console.log(`📅 No data in last 12h, using all ${recentData.length} available data points`);
       }
     }
     
-    return allData;
+    // Filter data để chỉ lấy 1 điểm mỗi 15 phút
+    if (recentData.length > 0) {
+      const filteredData = [];
+      const intervalMinutes = 15; // 15 phút
+      let lastSelectedTime = null;
+      
+      for (const item of recentData) {
+        const itemTime = new Date(item.time);
+        
+        if (lastSelectedTime === null) {
+          // Lấy điểm đầu tiên
+          filteredData.push(item);
+          lastSelectedTime = itemTime;
+        } else {
+          // Chỉ lấy điểm nếu cách điểm trước đó >= 15 phút
+          const diffMinutes = (itemTime - lastSelectedTime) / (1000 * 60);
+          if (diffMinutes >= intervalMinutes) {
+            filteredData.push(item);
+            lastSelectedTime = itemTime;
+          }
+        }
+      }
+      
+      console.log(`⏱️ Filtered to ${filteredData.length} data points (1 point per ${intervalMinutes} minutes)`);
+      return filteredData;
+    }
+    
+    return recentData;
   };
 
   // Hàm tính toán thống kê từ dữ liệu thật
@@ -134,12 +156,18 @@ const Dashboard = () => {
     return { avg, min, max, values, times };
   };
 
-  // Tạo mốc giờ cho 12 tiếng 
+  // Tạo mốc giờ cho 12 tiếng, mỗi 15 phút một điểm (48 điểm)
   function getLast12HoursLabels() {
     const now = new Date();
     let labels = [];
-    for (let i = 11; i >= 0; i--) {
-      const d = new Date(now.getTime() - i * 60 * 60 * 1000);
+    // Làm tròn xuống đến phút chia hết cho 15
+    const roundedMinutes = Math.floor(now.getMinutes() / 15) * 15;
+    const roundedNow = new Date(now);
+    roundedNow.setMinutes(roundedMinutes, 0, 0);
+    
+    // Tạo 48 điểm (12 giờ * 4 điểm/giờ = 48 điểm)
+    for (let i = 47; i >= 0; i--) {
+      const d = new Date(roundedNow.getTime() - i * 15 * 60 * 1000);
       labels.push(d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0'));
     }
     return labels;
