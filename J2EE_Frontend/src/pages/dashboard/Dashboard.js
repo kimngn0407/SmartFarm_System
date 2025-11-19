@@ -81,17 +81,17 @@ const Dashboard = () => {
     // Sắp xếp theo thời gian
     allData.sort((a, b) => new Date(a.time) - new Date(b.time));
     
-    // Lấy 12h gần nhất từ dữ liệu có sẵn (nếu có)
+    // Lấy 6h gần nhất từ dữ liệu có sẵn (nếu có)
     let recentData = [];
     if (allData.length > 0) {
       const latestTime = new Date(allData[allData.length - 1].time);
-      const twelveHoursAgo = new Date(latestTime.getTime() - 12 * 60 * 60 * 1000);
-      recentData = allData.filter(item => new Date(item.time) >= twelveHoursAgo);
+      const sixHoursAgo = new Date(latestTime.getTime() - 6 * 60 * 60 * 1000);
+      recentData = allData.filter(item => new Date(item.time) >= sixHoursAgo);
       
-      // Nếu không có dữ liệu trong 12h, lấy tất cả dữ liệu có sẵn
+      // Nếu không có dữ liệu trong 6h, lấy tất cả dữ liệu có sẵn
       if (recentData.length < 2) {
-        recentData = allData.slice(-48); // Lấy tối đa 48 điểm
-        console.log(`📅 No data in last 12h, using all ${recentData.length} available data points`);
+        recentData = allData.slice(-24); // Lấy tối đa 24 điểm
+        console.log(`📅 No data in last 6h, using all ${recentData.length} available data points`);
       }
     }
     
@@ -159,8 +159,8 @@ const Dashboard = () => {
     return { avg, min, max, values, times };
   };
 
-  // Tạo mốc giờ cho 12 tiếng, mỗi 15 phút một điểm (48 điểm)
-  function getLast12HoursLabels() {
+  // Tạo mốc giờ cho 6 tiếng, mỗi 15 phút một điểm (24 điểm)
+  function getLast6HoursLabels() {
     const now = new Date();
     let labels = [];
     // Làm tròn xuống đến phút chia hết cho 15
@@ -168,8 +168,8 @@ const Dashboard = () => {
     const roundedNow = new Date(now);
     roundedNow.setMinutes(roundedMinutes, 0, 0);
     
-    // Tạo 48 điểm (12 giờ * 4 điểm/giờ = 48 điểm)
-    for (let i = 47; i >= 0; i--) {
+    // Tạo 24 điểm (6 giờ * 4 điểm/giờ = 24 điểm)
+    for (let i = 23; i >= 0; i--) {
       const d = new Date(roundedNow.getTime() - i * 15 * 60 * 1000);
       labels.push(d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0'));
     }
@@ -295,7 +295,7 @@ const Dashboard = () => {
         // Chuẩn bị dữ liệu cho chart
         // Luôn dùng labels từ thời gian hiện tại (local time) để đảm bảo hiển thị đúng giờ
         // Không dùng time từ data vì có thể có timezone khác
-        const timeLabelsData = getLast12HoursLabels();
+        const timeLabelsData = getLast6HoursLabels();
         
         // Nếu có dữ liệu thật, dùng dữ liệu thật
         // Nếu không có, tạo sample data để chart hiển thị (12 điểm)
@@ -508,7 +508,7 @@ const Dashboard = () => {
           s.type && (s.type.toLowerCase().includes('light') || s.type.toLowerCase().includes('lumin'))
         );
         
-        // Lấy dữ liệu 12h gần nhất - dùng sensor_id cố định từ Flask API
+        // Lấy dữ liệu 6h gần nhất - dùng sensor_id cố định từ Flask API
         const tempSensorIds = [7]; // TEMP_SENSOR_ID từ Flask API
         const humSensorIds = [8]; // HUMID_SENSOR_ID từ Flask API
         const soilSensorIds = [9]; // SOIL_SENSOR_ID từ Flask API
@@ -531,7 +531,7 @@ const Dashboard = () => {
         // Luôn dùng labels từ thời gian hiện tại để đảm bảo hiển thị đúng giờ
         if (tempStats.values.length > 0) {
           setTempArr(tempStats.values);
-          setTimeLabels(getLast12HoursLabels());
+          setTimeLabels(getLast6HoursLabels());
         }
         if (humStats.values.length > 0) {
           setHumArr(humStats.values);
@@ -543,7 +543,7 @@ const Dashboard = () => {
           setLightArr(lightStats.values);
           // Cập nhật time labels nếu chưa có - luôn dùng thời gian hiện tại
           if (timeLabels.length === 0) {
-            setTimeLabels(getLast12HoursLabels());
+            setTimeLabels(getLast6HoursLabels());
           }
         }
         
@@ -730,7 +730,7 @@ const Dashboard = () => {
           <ChartContainer 
             title={
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Typography variant="h6">Biểu đồ nhiệt độ, độ ẩm không khí, độ ẩm đất & ánh sáng 12 giờ gần nhất</Typography>
+                <Typography variant="h6">Biểu đồ nhiệt độ, độ ẩm không khí, độ ẩm đất & ánh sáng 6 giờ gần nhất</Typography>
                 {dataSource.temp === 'iot' || dataSource.hum === 'iot' || dataSource.soil === 'iot' || dataSource.light === 'iot' ? (
                   <StatusBadge 
                     status="success" 
