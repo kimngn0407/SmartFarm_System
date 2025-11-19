@@ -54,7 +54,7 @@ const Dashboard = () => {
   });
 
   // Hàm lấy dữ liệu sensor thật từ API và filter mỗi 15 phút
-  const fetchRealSensorData = async (sensorIds, hours = 12) => {
+  const fetchRealSensorData = async (sensorIds, hours = 6) => {
     const now = new Date();
     // Query từ 30 ngày trước để đảm bảo có dữ liệu (vì có thể dữ liệu cũ)
     const from = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -261,10 +261,10 @@ const Dashboard = () => {
         console.log(`💡 Light: sensor_id = 10`);
         
         const [tempData, humData, soilData, lightData] = await Promise.all([
-          tempSensorIds.length > 0 ? fetchRealSensorData(tempSensorIds, 12) : Promise.resolve([]),
-          humSensorIds.length > 0 ? fetchRealSensorData(humSensorIds, 12) : Promise.resolve([]),
-          soilSensorIds.length > 0 ? fetchRealSensorData(soilSensorIds, 12) : Promise.resolve([]),
-          lightSensorIds.length > 0 ? fetchRealSensorData(lightSensorIds, 12) : Promise.resolve([])
+          tempSensorIds.length > 0 ? fetchRealSensorData(tempSensorIds, 6) : Promise.resolve([]),
+          humSensorIds.length > 0 ? fetchRealSensorData(humSensorIds, 6) : Promise.resolve([]),
+          soilSensorIds.length > 0 ? fetchRealSensorData(soilSensorIds, 6) : Promise.resolve([]),
+          lightSensorIds.length > 0 ? fetchRealSensorData(lightSensorIds, 6) : Promise.resolve([])
         ]);
         
         console.log('📊 Data collected:', {
@@ -515,10 +515,10 @@ const Dashboard = () => {
         const lightSensorIds = [10]; // LIGHT_SENSOR_ID từ Flask API
         
         const [tempData, humData, soilData, lightData] = await Promise.all([
-          tempSensorIds.length > 0 ? fetchRealSensorData(tempSensorIds, 12) : Promise.resolve([]),
-          humSensorIds.length > 0 ? fetchRealSensorData(humSensorIds, 12) : Promise.resolve([]),
-          soilSensorIds.length > 0 ? fetchRealSensorData(soilSensorIds, 12) : Promise.resolve([]),
-          lightSensorIds.length > 0 ? fetchRealSensorData(lightSensorIds, 12) : Promise.resolve([])
+          tempSensorIds.length > 0 ? fetchRealSensorData(tempSensorIds, 6) : Promise.resolve([]),
+          humSensorIds.length > 0 ? fetchRealSensorData(humSensorIds, 6) : Promise.resolve([]),
+          soilSensorIds.length > 0 ? fetchRealSensorData(soilSensorIds, 6) : Promise.resolve([]),
+          lightSensorIds.length > 0 ? fetchRealSensorData(lightSensorIds, 6) : Promise.resolve([])
         ]);
         
         // Tính toán stats
