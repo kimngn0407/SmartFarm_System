@@ -148,17 +148,18 @@ const Dashboard = () => {
       
       for (const item of data) {
         // Parse time từ database (UTC) và chuyển sang GMT+7
-        // Database trả về string như "2025-11-19T02:24:40" (UTC)
-        // Cần convert sang GMT+7: cộng thêm 7 giờ
-        const itemTime = new Date(item.time);
-        // Nếu string không có 'Z', JavaScript sẽ parse như local time
-        // Để đảm bảo parse đúng UTC, thêm 'Z' nếu chưa có
+        // Backend trả về "2025-11-19T02:24:40" (không có timezone, nhưng thực tế là UTC)
+        // Để parse đúng UTC, thêm 'Z' vào string
         const timeStr = item.time.includes('Z') || item.time.includes('+') ? item.time : item.time + 'Z';
         const utcTime = new Date(timeStr);
-        // Convert UTC sang GMT+7: cộng 7 giờ
+        
+        // Convert UTC sang GMT+7: cộng 7 giờ vào UTC timestamp
         const gmt7Timestamp = utcTime.getTime() + 7 * 60 * 60 * 1000;
         const gmt7Time = new Date(gmt7Timestamp);
-        // Lấy giờ:phút từ GMT+7 time
+        
+        // Lấy giờ:phút GMT+7: dùng getUTCHours() vì timestamp đã được cộng 7h
+        // Ví dụ: UTC 02:24 -> GMT+7 09:24
+        // Timestamp sau khi cộng 7h sẽ có UTC hour = 9 (đúng GMT+7)
         const itemHour = gmt7Time.getUTCHours();
         const itemMin = gmt7Time.getUTCMinutes();
         
