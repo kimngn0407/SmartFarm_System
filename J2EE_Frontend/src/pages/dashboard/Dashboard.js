@@ -369,7 +369,7 @@ const Dashboard = () => {
         
         const hasRealData = tempStats.values.length > 0 || humStats.values.length > 0 || soilStats.values.length > 0 || lightStats.values.length > 0;
         console.log('📊 Chart data prepared:', {
-          labels: labelCount,
+          labels: timeLabelsData.length,
           temp: tempValues.length,
           hum: humValues.length,
           soil: soilValues.length,
@@ -563,6 +563,7 @@ const Dashboard = () => {
           backgroundColor: '#FFE0B2',
           tension: 0.4,
           yAxisID: 'y',
+          spanGaps: true, // Vẽ đường qua các giá trị null
         },
         {
           label: 'Độ ẩm không khí (%)',
@@ -571,6 +572,7 @@ const Dashboard = () => {
           backgroundColor: '#B3E5FC',
           tension: 0.4,
           yAxisID: 'y1',
+          spanGaps: true, // Vẽ đường qua các giá trị null
         },
         {
           label: 'Độ ẩm đất (%)',
@@ -579,14 +581,16 @@ const Dashboard = () => {
           backgroundColor: '#D7CCC8',
           tension: 0.4,
           yAxisID: 'y2',
+          spanGaps: true, // Vẽ đường qua các giá trị null
         },
         {
           label: 'Ánh sáng (%)',
-          data: lightArr.length > 0 ? lightArr : Array(timeLabels.length).fill(0),
+          data: lightArr.length > 0 ? lightArr : Array(timeLabels.length).fill(null),
           borderColor: '#FFD700',
           backgroundColor: '#FFF9C4',
           tension: 0.4,
           yAxisID: 'y3',
+          spanGaps: true, // Vẽ đường qua các giá trị null
         }
       ]
     });
