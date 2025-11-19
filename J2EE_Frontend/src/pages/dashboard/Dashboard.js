@@ -146,11 +146,14 @@ const Dashboard = () => {
     const min = Math.min(...values);
     const max = Math.max(...values);
     // Tạo time labels, đảm bảo không trùng lặp bằng cách làm tròn đến 15 phút
+    // Sử dụng local time (getHours, getMinutes) để hiển thị đúng timezone
     const times = data.map(d => {
       const date = new Date(d.time);
       // Làm tròn phút xuống đến bội số của 15
       const roundedMinutes = Math.floor(date.getMinutes() / 15) * 15;
-      return date.getHours().toString().padStart(2, '0') + ':' + roundedMinutes.toString().padStart(2, '0');
+      // Sử dụng local time methods để hiển thị đúng timezone
+      const hours = date.getHours();
+      return hours.toString().padStart(2, '0') + ':' + roundedMinutes.toString().padStart(2, '0');
     });
     
     return { avg, min, max, values, times };
