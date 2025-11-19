@@ -56,6 +56,9 @@ def find_arduino_port():
     return None
 
 def main():
+    # Declare global variables first (before using them)
+    global FLASK_URL, API_KEY
+    
     # Parse command line arguments
     parser = argparse.ArgumentParser(description='Smart Farm Arduino Forwarder')
     parser.add_argument('--port', type=str, help='Serial port (e.g., COM4, /dev/ttyUSB0)')
@@ -64,7 +67,6 @@ def main():
     args = parser.parse_args()
     
     # Use provided Flask URL and API key if specified
-    global FLASK_URL, API_KEY
     if args.flask_url:
         FLASK_URL = args.flask_url
     if args.api_key:
