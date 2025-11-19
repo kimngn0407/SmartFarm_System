@@ -552,7 +552,7 @@ const Dashboard = () => {
     return () => clearInterval(interval);
   }, [loading]);
   useEffect(() => {
-    if (tempArr.length === 0 || humArr.length === 0 || soilArr.length === 0 || timeLabels.length === 0) return;
+    if (timeLabels.length === 0) return; // Chỉ cần timeLabels, data có thể có null
     setChartData({
       labels: timeLabels,
       datasets: [
