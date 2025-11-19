@@ -164,7 +164,12 @@ const Dashboard = () => {
         }
         
         // Chấp nhận data trong khoảng ±15 phút (1 interval)
+        // Mở rộng lên ±30 phút nếu không có data trong ±15 phút
         if (diffMinutes <= 15 && diffMinutes < minDiff) {
+          minDiff = diffMinutes;
+          closestData = item;
+        } else if (diffMinutes <= 30 && minDiff > 15 && diffMinutes < minDiff) {
+          // Nếu không có data trong ±15 phút, chấp nhận data trong ±30 phút
           minDiff = diffMinutes;
           closestData = item;
         }
@@ -326,14 +331,25 @@ const Dashboard = () => {
           const minTime = new Date(Math.min(...dataTimes));
           const maxTime = new Date(Math.max(...dataTimes));
           
+          console.log(`📅 Data time range: ${minTime.toLocaleString('vi-VN')} to ${maxTime.toLocaleString('vi-VN')}`);
+          console.log(`📅 Data time range (ISO): ${minTime.toISOString()} to ${maxTime.toISOString()}`);
+          
           // Làm tròn minTime xuống đến 15 phút
           const minRounded = new Date(minTime);
           minRounded.setMinutes(Math.floor(minTime.getMinutes() / 15) * 15, 0, 0);
           
-          // Tạo labels từ minTime đến maxTime, mỗi 15 phút
+          // Tạo labels từ minTime đến maxTime, mỗi 15 phút, tối đa 24 labels
           timeLabelsData = [];
           const current = new Date(minRounded);
-          while (current <= maxTime && timeLabelsData.length < 24) {
+          const endTime = new Date(maxTime);
+          endTime.setMinutes(Math.ceil(maxTime.getMinutes() / 15) * 15, 0, 0);
+          
+          // Đảm bảo có ít nhất 6h data (24 labels)
+          const sixHoursLater = new Date(minRounded);
+          sixHoursLater.setHours(sixHoursLater.getHours() + 6);
+          const actualEndTime = endTime > sixHoursLater ? sixHoursLater : endTime;
+          
+          while (current <= actualEndTime && timeLabelsData.length < 24) {
             const hour = current.getHours();
             const min = current.getMinutes();
             timeLabelsData.push(`${hour.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}`);
@@ -344,17 +360,20 @@ const Dashboard = () => {
           if (timeLabelsData.length < 24) {
             const defaultLabels = getLast6HoursLabels();
             // Lấy các labels sau maxTime
-            const maxTimeStr = `${maxTime.getHours().toString().padStart(2, '0')}:${Math.floor(maxTime.getMinutes() / 15) * 15}`;
+            const maxTimeStr = `${actualEndTime.getHours().toString().padStart(2, '0')}:${actualEndTime.getMinutes().toString().padStart(2, '0')}`;
             const maxIndex = defaultLabels.indexOf(maxTimeStr);
-            if (maxIndex >= 0) {
+            if (maxIndex >= 0 && maxIndex < defaultLabels.length - 1) {
               const additionalLabels = defaultLabels.slice(maxIndex + 1, 24);
               timeLabelsData = [...timeLabelsData, ...additionalLabels].slice(0, 24);
             } else {
+              // Nếu không tìm thấy, dùng labels mặc định từ hiện tại
               timeLabelsData = defaultLabels;
             }
           }
           
-          console.log(`📅 Created time labels from data: ${timeLabelsData.length} labels (from ${minRounded.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} to ${maxTime.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })})`);
+          console.log(`📅 Created ${timeLabelsData.length} time labels from data`);
+          console.log(`📅 First 3 labels: ${timeLabelsData.slice(0, 3).join(', ')}`);
+          console.log(`📅 Last 3 labels: ${timeLabelsData.slice(-3).join(', ')}`);
         } else {
           // Không có data, dùng labels mặc định
           timeLabelsData = getLast6HoursLabels();
