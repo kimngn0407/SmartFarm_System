@@ -175,13 +175,13 @@ const Dashboard = () => {
           diffMinutes = 24 * 60 - diffMinutes;
         }
         
-        // Chấp nhận data trong khoảng ±15 phút (1 interval)
-        // Mở rộng lên ±30 phút nếu không có data trong ±15 phút
-        if (diffMinutes <= 15 && diffMinutes < minDiff) {
+        // Chấp nhận data trong khoảng ±30 phút (2 intervals)
+        // Mở rộng lên ±60 phút nếu không có data trong ±30 phút
+        if (diffMinutes <= 30 && diffMinutes < minDiff) {
           minDiff = diffMinutes;
           closestData = item;
-        } else if (diffMinutes <= 30 && minDiff > 15 && diffMinutes < minDiff) {
-          // Nếu không có data trong ±15 phút, chấp nhận data trong ±30 phút
+        } else if (diffMinutes <= 60 && minDiff > 30 && diffMinutes < minDiff) {
+          // Nếu không có data trong ±30 phút, chấp nhận data trong ±60 phút
           minDiff = diffMinutes;
           closestData = item;
         }
@@ -338,12 +338,12 @@ const Dashboard = () => {
         
         // Tạo time labels: có thể dùng từ thời điểm hiện tại hoặc từ data thực tế
         // Option 1: Từ thời điểm hiện tại (mặc định) - hiển thị 6h gần nhất từ khi mở web
-        // Option 2: Từ data thực tế - hiển thị 6h từ data có sẵn
+        // Luôn hiển thị 6 giờ từ thời điểm hiện tại (khi mở web) trở về trước
         let timeLabelsData;
         const allDataForLabels = [...tempData, ...humData, ...soilData, ...lightData];
         
-        // Có thể chọn: USE_DATA_TIME = true để dùng data thực tế, false để dùng thời gian hiện tại
-        const USE_DATA_TIME = true; // Đặt true để hiển thị data thực tế từ database
+        // Luôn dùng thời gian hiện tại để tạo labels (6 giờ từ bây giờ)
+        const USE_DATA_TIME = false; // Đặt false để luôn dùng thời gian hiện tại
         
         if (USE_DATA_TIME && allDataForLabels.length > 0) {
           // Option 2: Tạo từ data thực tế (GMT+7)
@@ -608,10 +608,10 @@ const Dashboard = () => {
           lightSensorIds.length > 0 ? fetchRealSensorData(lightSensorIds, 6) : Promise.resolve([])
         ]);
         
-        // Tạo time labels: dùng cùng logic với initial load
+        // Tạo time labels: luôn dùng thời gian hiện tại (6 giờ từ bây giờ)
         let timeLabelsData;
         const allDataForLabels = [...tempData, ...humData, ...soilData, ...lightData];
-        const USE_DATA_TIME = true; // Cùng flag với initial load
+        const USE_DATA_TIME = false; // Luôn dùng thời gian hiện tại
         
         if (USE_DATA_TIME && allDataForLabels.length > 0) {
           // Tạo từ data thực tế (GMT+7)
