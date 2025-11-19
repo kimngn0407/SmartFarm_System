@@ -277,26 +277,83 @@ const Dashboard = () => {
           }
         }));
         
-        // 4. Lấy trạng thái từng field và đếm alerts
+        // 4. Tính trạng thái field từ alerts (field.status trong DB có thể không được cập nhật)
         await Promise.all(allFields.map(async (field) => {
           try {
-            const fieldDetailResponse = await fieldService.getFieldById(field.id);
-            const fieldDetail = fieldDetailResponse.data;
-            
-            // Đếm trạng thái
-            if (fieldDetail.status === 'GOOD') fieldStatusCounts.Good++;
-            else if (fieldDetail.status === 'WARNING') fieldStatusCounts.Warning++;
-            else if (fieldDetail.status === 'CRITICAL') fieldStatusCounts.Critical++;
-            
-            // Đếm alerts
+            // Lấy alerts của field để tính status thật
+            let fieldStatus = 'GOOD'; // Mặc định là GOOD
             try {
               const alertsResponse = await alertService.getAlertsByField(field.id);
-              totalAlerts += alertsResponse.data.length;
+              const fieldAlerts = alertsResponse.data || [];
+              totalAlerts += fieldAlerts.length;
+              
+              // Tính status từ alerts: ưu tiên CRITICAL > WARNING > GOOD
+              // Tìm alert có status cao nhất (không chỉ mới nhất)
+              if (fieldAlerts.length > 0) {
+                // Hàm xác định priority của status (cao hơn = nghiêm trọng hơn)
+                const getStatusPriority = (alert) => {
+                  const alertStatus = (alert.status || '').toUpperCase();
+                  const alertMessage = (alert.message || '').toUpperCase();
+                  
+                  if (alertStatus === 'CRITICAL' || alertMessage.includes('CRITICAL')) {
+                    return 3; // Cao nhất
+                  } else if (alertStatus === 'WARNING' || alertMessage.includes('WARNING')) {
+                    return 2;
+                  } else if (alertStatus === 'GOOD' || alertMessage.includes('GOOD')) {
+                    return 1;
+                  }
+                  return 0; // Không xác định
+                };
+                
+                // Tìm alert có priority cao nhất
+                let highestPriorityAlert = fieldAlerts[0];
+                let highestPriority = getStatusPriority(highestPriorityAlert);
+                
+                for (const alert of fieldAlerts) {
+                  const priority = getStatusPriority(alert);
+                  if (priority > highestPriority) {
+                    highestPriority = priority;
+                    highestPriorityAlert = alert;
+                  }
+                }
+                
+                // Xác định field status từ alert có priority cao nhất
+                const alertStatus = (highestPriorityAlert.status || '').toUpperCase();
+                const alertMessage = (highestPriorityAlert.message || '').toUpperCase();
+                
+                if (alertStatus === 'CRITICAL' || alertMessage.includes('CRITICAL')) {
+                  fieldStatus = 'CRITICAL';
+                } else if (alertStatus === 'WARNING' || alertMessage.includes('WARNING')) {
+                  fieldStatus = 'WARNING';
+                } else if (alertStatus === 'GOOD' || alertMessage.includes('GOOD')) {
+                  fieldStatus = 'GOOD';
+                }
+                // Nếu không xác định được, giữ nguyên GOOD (mặc định)
+              }
             } catch (alertError) {
               console.error('Error fetching alerts for field', field.id, alertError);
+              // Nếu không lấy được alerts, thử dùng field.status từ fieldDetail
+              try {
+                const fieldDetailResponse = await fieldService.getFieldById(field.id);
+                const fieldDetail = fieldDetailResponse.data;
+                if (fieldDetail.status) {
+                  fieldStatus = fieldDetail.status;
+                }
+              } catch (fieldError) {
+                console.error('Error fetching field detail', field.id, fieldError);
+              }
+            }
+            
+            // Đếm trạng thái
+            if (fieldStatus === 'GOOD') {
+              fieldStatusCounts.Good++;
+            } else if (fieldStatus === 'WARNING') {
+              fieldStatusCounts.Warning++;
+            } else if (fieldStatus === 'CRITICAL') {
+              fieldStatusCounts.Critical++;
             }
           } catch (error) {
-            console.error('Error fetching field detail', field.id, error);
+            console.error('Error processing field', field.id, error);
           }
         }));
         
