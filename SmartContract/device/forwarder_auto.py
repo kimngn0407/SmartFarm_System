@@ -3,6 +3,8 @@ import json
 import requests
 import time
 import serial.tools.list_ports
+import argparse
+import sys
 
 # Flask API configuration - UPDATED FOR VPS
 FLASK_URL = "http://173.249.48.25:8000/api/sensors"  # VPS URL
@@ -54,12 +56,30 @@ def find_arduino_port():
     return None
 
 def main():
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description='Smart Farm Arduino Forwarder')
+    parser.add_argument('--port', type=str, help='Serial port (e.g., COM4, /dev/ttyUSB0)')
+    parser.add_argument('--flask-url', type=str, default=FLASK_URL, help='Flask API URL')
+    parser.add_argument('--api-key', type=str, default=API_KEY, help='API Key')
+    args = parser.parse_args()
+    
+    # Use provided Flask URL and API key if specified
+    global FLASK_URL, API_KEY
+    if args.flask_url:
+        FLASK_URL = args.flask_url
+    if args.api_key:
+        API_KEY = args.api_key
+    
     print("=" * 60)
     print("🔌 Smart Farm Arduino Forwarder - Auto Port Detection")
     print("=" * 60)
     
-    # Tự động tìm port
-    port = find_arduino_port()
+    # Tự động tìm port hoặc dùng port được chỉ định
+    if args.port:
+        port = args.port
+        print(f"📌 Using specified port: {port}")
+    else:
+        port = find_arduino_port()
     
     if not port:
         print("❌ Không tìm thấy Arduino!")
@@ -67,8 +87,10 @@ def main():
         print("   1. Arduino đã được cắm USB chưa?")
         print("   2. Driver USB đã được cài đặt chưa?")
         print("   3. Thử chạy lại script sau khi cắm USB")
-        input("\nNhấn Enter để thoát...")
-        return
+        # Chỉ dừng để input trên Windows (có stdin tương tác)
+        if sys.stdin.isatty() and sys.platform == 'win32':
+            input("\nNhấn Enter để thoát...")
+        sys.exit(1)
     
     print(f"\n🚀 Đang kết nối với {port}...")
     

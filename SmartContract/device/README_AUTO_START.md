@@ -4,6 +4,10 @@
 
 Thay vì phải chạy thủ công `forwarder.py` mỗi lần cắm USB Arduino, bạn có thể:
 
+> **📌 Lưu ý:** 
+> - **Windows (Local)**: Xem hướng dẫn bên dưới
+> - **Linux/VPS**: Xem [README_VPS_LINUX.md](README_VPS_LINUX.md) cho hướng dẫn systemd service và udev rules
+
 1. **Tự động phát hiện COM port** - Không cần chỉnh PORT trong code
 2. **Tự động chạy khi cắm USB** - Dùng Windows Task Scheduler
 3. **Tự động chạy lại khi mất kết nối** - Dùng script loop
