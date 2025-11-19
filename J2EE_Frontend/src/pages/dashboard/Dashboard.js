@@ -520,9 +520,28 @@ const Dashboard = () => {
           // Sắp xếp theo thời gian mới nhất
           realAlerts.sort((a, b) => new Date(b.timestamp || b.time) - new Date(a.timestamp || a.time));
           realAlerts = realAlerts.slice(0, 5);
+          setApiConnectionStatus('connected'); // API hoạt động tốt
         } catch (alertError) {
           console.error('Error fetching alerts:', alertError);
+          setApiConnectionStatus('error'); // API có lỗi
         }
+        
+        // 7. Tìm thời gian cập nhật mới nhất từ sensor data
+        let latestDataTime = null;
+        const allSensorData = [...tempData, ...humData, ...soilData, ...lightData];
+        if (allSensorData.length > 0) {
+          // Tìm data point mới nhất
+          const latestData = allSensorData.reduce((latest, current) => {
+            const currentTime = new Date(current.time);
+            const latestTime = latest ? new Date(latest.time) : null;
+            return !latestTime || currentTime > latestTime ? current : latest;
+          });
+          latestDataTime = new Date(latestData.time);
+        } else {
+          // Nếu không có data, dùng thời gian hiện tại
+          latestDataTime = new Date();
+        }
+        setLastUpdateTime(latestDataTime);
         
         // Count offline sensors (kiểm tra sensors không có dữ liệu trong 1h gần nhất)
         let offlineSensors = 0;
@@ -650,11 +669,28 @@ const Dashboard = () => {
           avgSoil12h: soilStats.avg.toFixed(1)
         }));
         
+        // Cập nhật thời gian cập nhật mới nhất
+        const allSensorData = [...tempData, ...humData, ...soilData, ...lightData];
+        if (allSensorData.length > 0) {
+          const latestData = allSensorData.reduce((latest, current) => {
+            const currentTime = new Date(current.time);
+            const latestTime = latest ? new Date(latest.time) : null;
+            return !latestTime || currentTime > latestTime ? current : latest;
+          });
+          setLastUpdateTime(new Date(latestData.time));
+        } else {
+          setLastUpdateTime(new Date());
+        }
+        
+        // Cập nhật trạng thái kết nối
+        setApiConnectionStatus('connected');
+        
         const now = new Date();
         const timeStr = now.toLocaleTimeString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', second: '2-digit' });
         console.log(`🔄 Real-time data updated at ${timeStr} (GMT+7)`);
       } catch (error) {
         console.error('❌ Error updating real-time data:', error);
+        setApiConnectionStatus('error');
       }
     };
     
