@@ -38,8 +38,11 @@ mkdir -p logs
 ### Bước 3: Chỉnh sửa ecosystem config
 
 ```bash
-# Chỉnh sửa ecosystem.config.js hoặc ecosystem.config.json
-nano ecosystem.config.js
+# Chỉnh sửa ecosystem.config.cjs (hoặc .json)
+# Lưu ý: Dùng .cjs vì package.json có "type": "module"
+nano ecosystem.config.cjs
+# hoặc
+nano ecosystem.config.json
 ```
 
 **Chỉnh các thông tin:**
@@ -53,8 +56,10 @@ nano ecosystem.config.js
 ```bash
 cd ~/projects/SmartFarm/SmartContract/device
 
-# Start với ecosystem config
-pm2 start ecosystem.config.js
+# Start với ecosystem config (dùng .cjs hoặc .json)
+pm2 start ecosystem.config.cjs
+# hoặc
+pm2 start ecosystem.config.json
 
 # Hoặc start trực tiếp
 pm2 start forwarder_auto.py --interpreter python3 --name arduino-forwarder
@@ -463,8 +468,8 @@ newgrp dialout
 # 3. Setup PM2
 cd ~/projects/SmartFarm/SmartContract/device
 mkdir -p logs
-nano ecosystem.config.js  # Chỉnh đường dẫn và config
-pm2 start ecosystem.config.js
+nano ecosystem.config.cjs  # Chỉnh đường dẫn và config (hoặc .json)
+pm2 start ecosystem.config.cjs  # hoặc ecosystem.config.json
 pm2 save
 pm2 startup  # Setup auto-start khi boot
 

@@ -45,18 +45,27 @@ echo -e "${GREEN}✅ Thư mục logs đã tạo${NC}"
 echo ""
 
 # 4. Chỉnh sửa ecosystem config
-echo "⚙️  4. Cấu hình ecosystem.config.js..."
-echo "   Đang kiểm tra ecosystem.config.js..."
+echo "⚙️  4. Cấu hình ecosystem config..."
+echo "   Đang kiểm tra ecosystem config..."
 
-if [ ! -f "device/ecosystem.config.js" ]; then
-    echo -e "${RED}❌ Không tìm thấy ecosystem.config.js${NC}"
+# Kiểm tra cả .cjs và .json
+CONFIG_FILE=""
+if [ -f "device/ecosystem.config.cjs" ]; then
+    CONFIG_FILE="device/ecosystem.config.cjs"
+elif [ -f "device/ecosystem.config.json" ]; then
+    CONFIG_FILE="device/ecosystem.config.json"
+elif [ -f "device/ecosystem.config.js" ]; then
+    CONFIG_FILE="device/ecosystem.config.js"
+else
+    echo -e "${RED}❌ Không tìm thấy ecosystem config file${NC}"
     exit 1
 fi
 
 # Lấy đường dẫn hiện tại
 CURRENT_DIR=$(pwd)
 echo "   Current directory: $CURRENT_DIR"
-echo "   Vui lòng chỉnh sửa device/ecosystem.config.js:"
+echo "   Config file: $CONFIG_FILE"
+echo "   Vui lòng chỉnh sửa $CONFIG_FILE:"
 echo "   - cwd: '$CURRENT_DIR/device'"
 echo "   - FLASK_URL: 'http://173.249.48.25:8000/api/sensors'"
 echo "   - API_KEY: 'MY_API_KEY' (phải khớp với flask-api/.env)"
@@ -64,7 +73,7 @@ echo ""
 read -p "   Đã chỉnh sửa chưa? (y/n): " -n 1 -r
 echo
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo "   Vui lòng chỉnh sửa ecosystem.config.js trước khi tiếp tục"
+    echo "   Vui lòng chỉnh sửa $CONFIG_FILE trước khi tiếp tục"
     exit 1
 fi
 echo ""
@@ -91,7 +100,14 @@ if pm2 list | grep -q "arduino-forwarder"; then
     pm2 restart arduino-forwarder
 else
     echo "   Đang start Arduino Forwarder..."
-    pm2 start ecosystem.config.js
+    # Dùng config file đã tìm thấy
+    if [ -f "ecosystem.config.cjs" ]; then
+        pm2 start ecosystem.config.cjs
+    elif [ -f "ecosystem.config.json" ]; then
+        pm2 start ecosystem.config.json
+    else
+        pm2 start ecosystem.config.js
+    fi
 fi
 
 # Save PM2 process list
@@ -140,10 +156,13 @@ fi
 
 # Test Oracle Node
 echo -n "   Oracle Node (port 5001): "
-if curl -s http://localhost:5001/oracle/health | grep -q "ok.*true"; then
+ORACLE_HEALTH=$(curl -s http://localhost:5001/oracle/health 2>/dev/null)
+if [ $? -eq 0 ] && echo "$ORACLE_HEALTH" | grep -q "ok.*true\|status.*running"; then
     echo -e "${GREEN}✅ OK${NC}"
 else
     echo -e "${RED}❌ FAILED${NC}"
+    echo "      Response: $ORACLE_HEALTH"
+    echo "      Kiểm tra: pm2 logs oracle-node"
 fi
 
 # Test Arduino Forwarder

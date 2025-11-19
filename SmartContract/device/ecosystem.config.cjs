@@ -1,4 +1,5 @@
 // PM2 Ecosystem Config cho Arduino Forwarder
+// Note: File này phải là .cjs vì package.json có "type": "module"
 module.exports = {
   apps: [
     {
