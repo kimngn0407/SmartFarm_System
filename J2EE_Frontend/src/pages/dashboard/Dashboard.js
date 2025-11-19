@@ -326,41 +326,53 @@ const Dashboard = () => {
         const allDataForLabels = [...tempData, ...humData, ...soilData, ...lightData];
         
         if (allDataForLabels.length > 0) {
-          // Tạo time labels từ data thực tế
-          const dataTimes = allDataForLabels.map(d => new Date(d.time));
-          const minTime = new Date(Math.min(...dataTimes));
-          const maxTime = new Date(Math.max(...dataTimes));
+          // Tạo time labels từ data thực tế (GMT+7)
+          const dataTimes = allDataForLabels.map(d => {
+            const dt = new Date(d.time);
+            // Đảm bảo sử dụng local time (GMT+7)
+            return dt;
+          });
+          const minTime = new Date(Math.min(...dataTimes.map(d => d.getTime())));
+          const maxTime = new Date(Math.max(...dataTimes.map(d => d.getTime())));
           
-          console.log(`📅 Data time range: ${minTime.toLocaleString('vi-VN')} to ${maxTime.toLocaleString('vi-VN')}`);
+          // Log với timezone GMT+7
+          const minTimeStr = minTime.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', second: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' });
+          const maxTimeStr = maxTime.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', second: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' });
+          console.log(`📅 Data time range (GMT+7): ${minTimeStr} to ${maxTimeStr}`);
           console.log(`📅 Data time range (ISO): ${minTime.toISOString()} to ${maxTime.toISOString()}`);
           
-          // Làm tròn minTime xuống đến 15 phút
-          const minRounded = new Date(minTime);
-          minRounded.setMinutes(Math.floor(minTime.getMinutes() / 15) * 15, 0, 0);
+          // Lấy giờ:phút local (GMT+7) từ minTime
+          const minHour = minTime.getHours(); // getHours() trả về local time
+          const minMin = minTime.getMinutes();
+          
+          // Làm tròn xuống đến 15 phút
+          const minRoundedMin = Math.floor(minMin / 15) * 15;
           
           // Tạo labels từ minTime, mở rộng về trước và sau để có đủ 6h (24 labels)
           timeLabelsData = [];
           
           // Bắt đầu từ 6h trước minTime (hoặc từ 00:00 nếu minTime < 6h)
-          const startTime = new Date(minRounded);
-          startTime.setHours(startTime.getHours() - 6);
-          if (startTime.getHours() < 0) {
-            startTime.setHours(0, 0, 0, 0);
-          }
+          let startHour = minHour - 6;
+          let startMin = minRoundedMin;
           
-          // Làm tròn startTime xuống đến 15 phút
-          startTime.setMinutes(Math.floor(startTime.getMinutes() / 15) * 15, 0, 0);
+          if (startHour < 0) {
+            startHour = 24 + startHour; // Qua nửa đêm
+          }
           
           // Tạo 24 labels từ startTime, mỗi 15 phút
-          const current = new Date(startTime);
+          let currentHour = startHour;
+          let currentMin = startMin;
+          
           for (let i = 0; i < 24; i++) {
-            const hour = current.getHours();
-            const min = current.getMinutes();
-            timeLabelsData.push(`${hour.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}`);
-            current.setMinutes(current.getMinutes() + 15);
+            timeLabelsData.push(`${currentHour.toString().padStart(2, '0')}:${currentMin.toString().padStart(2, '0')}`);
+            currentMin += 15;
+            if (currentMin >= 60) {
+              currentMin = 0;
+              currentHour = (currentHour + 1) % 24;
+            }
           }
           
-          console.log(`📅 Created ${timeLabelsData.length} time labels from data (starting from ${startTime.getHours().toString().padStart(2, '0')}:${startTime.getMinutes().toString().padStart(2, '0')})`);
+          console.log(`📅 Created ${timeLabelsData.length} time labels from data (GMT+7, starting from ${startHour.toString().padStart(2, '0')}:${startMin.toString().padStart(2, '0')})`);
           console.log(`📅 First 3 labels: ${timeLabelsData.slice(0, 3).join(', ')}`);
           console.log(`📅 Last 3 labels: ${timeLabelsData.slice(-3).join(', ')}`);
         } else {
