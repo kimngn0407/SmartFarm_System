@@ -293,8 +293,9 @@ const Dashboard = () => {
         });
         
         // Chuẩn bị dữ liệu cho chart
-        // Tạo labels từ dữ liệu thật hoặc mặc định
-        const timeLabelsData = tempStats.times.length > 0 ? tempStats.times : getLast12HoursLabels();
+        // Luôn dùng labels từ thời gian hiện tại (local time) để đảm bảo hiển thị đúng giờ
+        // Không dùng time từ data vì có thể có timezone khác
+        const timeLabelsData = getLast12HoursLabels();
         
         // Nếu có dữ liệu thật, dùng dữ liệu thật
         // Nếu không có, tạo sample data để chart hiển thị (12 điểm)
@@ -527,9 +528,10 @@ const Dashboard = () => {
         const lightStats = calculateStats(lightData);
         
         // Cập nhật state
+        // Luôn dùng labels từ thời gian hiện tại để đảm bảo hiển thị đúng giờ
         if (tempStats.values.length > 0) {
           setTempArr(tempStats.values);
-          setTimeLabels(tempStats.times.length > 0 ? tempStats.times : getLast12HoursLabels());
+          setTimeLabels(getLast12HoursLabels());
         }
         if (humStats.values.length > 0) {
           setHumArr(humStats.values);
@@ -539,9 +541,9 @@ const Dashboard = () => {
         }
         if (lightStats.values.length > 0) {
           setLightArr(lightStats.values);
-          // Cập nhật time labels nếu chưa có
+          // Cập nhật time labels nếu chưa có - luôn dùng thời gian hiện tại
           if (timeLabels.length === 0) {
-            setTimeLabels(lightStats.times.length > 0 ? lightStats.times : getLast12HoursLabels());
+            setTimeLabels(getLast12HoursLabels());
           }
         }
         
