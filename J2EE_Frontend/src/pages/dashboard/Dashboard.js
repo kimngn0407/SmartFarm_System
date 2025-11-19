@@ -512,23 +512,22 @@ const Dashboard = () => {
         const soilStats = calculateStats(soilData, timeLabelsData);
         const lightStats = calculateStats(lightData, timeLabelsData);
         
-        // Cập nhật state
-        // Luôn dùng labels từ thời gian hiện tại để đảm bảo hiển thị đúng giờ
-        if (tempStats.values.length > 0) {
-          setTempArr(tempStats.values);
-          setTimeLabels(getLast6HoursLabels());
+        // Cập nhật state - dùng mappedValues đã được map với time labels
+        if (tempStats.mappedValues && tempStats.mappedValues.some(v => v !== null)) {
+          setTempArr(tempStats.mappedValues);
+          setTimeLabels(timeLabelsData);
         }
-        if (humStats.values.length > 0) {
-          setHumArr(humStats.values);
+        if (humStats.mappedValues && humStats.mappedValues.some(v => v !== null)) {
+          setHumArr(humStats.mappedValues);
         }
-        if (soilStats.values.length > 0) {
-          setSoilArr(soilStats.values);
+        if (soilStats.mappedValues && soilStats.mappedValues.some(v => v !== null)) {
+          setSoilArr(soilStats.mappedValues);
         }
-        if (lightStats.values.length > 0) {
-          setLightArr(lightStats.values);
-          // Cập nhật time labels nếu chưa có - luôn dùng thời gian hiện tại
+        if (lightStats.mappedValues && lightStats.mappedValues.some(v => v !== null)) {
+          setLightArr(lightStats.mappedValues);
+          // Cập nhật time labels nếu chưa có
           if (timeLabels.length === 0) {
-            setTimeLabels(getLast6HoursLabels());
+            setTimeLabels(timeLabelsData);
           }
         }
         
