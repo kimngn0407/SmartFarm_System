@@ -18,6 +18,16 @@ const wallet   = new ethers.Wallet(PRIVATE_KEY, provider);
 const abi = ["function storeHash(uint256 time,string dataHash)"];
 const contract = new ethers.Contract(CONTRACT_ADDRESS, abi, wallet);
 
+app.get("/oracle/health", (req, res) => {
+  return res.json({ 
+    ok: true, 
+    status: "running",
+    port: Number(process.env.PORT || 5001),
+    contract: CONTRACT_ADDRESS ? "configured" : "not configured",
+    rpc: RPC_URL
+  });
+});
+
 app.post("/oracle/push", async (req, res) => {
   try {
     const { time, hash } = req.body; // hash là 0x... keccak256
