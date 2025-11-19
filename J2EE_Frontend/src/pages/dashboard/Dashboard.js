@@ -366,7 +366,6 @@ const Dashboard = () => {
           
           // Lấy giờ:phút GMT+7 từ minTime (đã convert)
           const minRoundedMin = Math.floor(minMin / 15) * 15;
-          const minRoundedMin = Math.floor(minMin / 15) * 15;
           
           // Bắt đầu từ 6h trước minTime
           let startHour = minHour - 6;
