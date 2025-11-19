@@ -148,12 +148,17 @@ const Dashboard = () => {
       
       for (const item of data) {
         // Parse time từ database (UTC) và chuyển sang GMT+7
+        // Database trả về string như "2025-11-19T02:24:40" (UTC)
+        // Cần convert sang GMT+7: cộng thêm 7 giờ
         const itemTime = new Date(item.time);
-        // Database lưu UTC, nhưng cần hiển thị GMT+7
-        // getHours() trả về local time của browser, nhưng data là UTC
-        // Cần convert UTC sang GMT+7
-        const utcTime = new Date(itemTime.toISOString());
-        const gmt7Time = new Date(utcTime.getTime() + 7 * 60 * 60 * 1000); // +7 hours
+        // Nếu string không có 'Z', JavaScript sẽ parse như local time
+        // Để đảm bảo parse đúng UTC, thêm 'Z' nếu chưa có
+        const timeStr = item.time.includes('Z') || item.time.includes('+') ? item.time : item.time + 'Z';
+        const utcTime = new Date(timeStr);
+        // Convert UTC sang GMT+7: cộng 7 giờ
+        const gmt7Timestamp = utcTime.getTime() + 7 * 60 * 60 * 1000;
+        const gmt7Time = new Date(gmt7Timestamp);
+        // Lấy giờ:phút từ GMT+7 time
         const itemHour = gmt7Time.getUTCHours();
         const itemMin = gmt7Time.getUTCMinutes();
         
@@ -182,7 +187,8 @@ const Dashboard = () => {
       }
       
       if (closestData) {
-        const utcTime = new Date(closestData.time);
+        const timeStr = closestData.time.includes('Z') || closestData.time.includes('+') ? closestData.time : closestData.time + 'Z';
+        const utcTime = new Date(timeStr);
         const gmt7Time = new Date(utcTime.getTime() + 7 * 60 * 60 * 1000);
         const itemHour = gmt7Time.getUTCHours();
         const itemMin = gmt7Time.getUTCMinutes();
@@ -198,7 +204,8 @@ const Dashboard = () => {
     // Debug: Log một số data points để kiểm tra
     if (data.length > 0) {
       console.log(`📋 Sample data times (GMT+7):`, data.slice(0, 3).map(d => {
-        const utcTime = new Date(d.time);
+        const timeStr = d.time.includes('Z') || d.time.includes('+') ? d.time : d.time + 'Z';
+        const utcTime = new Date(timeStr);
         const gmt7Time = new Date(utcTime.getTime() + 7 * 60 * 60 * 1000);
         return `${gmt7Time.getUTCHours().toString().padStart(2, '0')}:${gmt7Time.getUTCMinutes().toString().padStart(2, '0')}`;
       }));
@@ -341,8 +348,10 @@ const Dashboard = () => {
           // Option 2: Tạo từ data thực tế (GMT+7)
           // Database lưu UTC, cần convert sang GMT+7
           const dataTimes = allDataForLabels.map(d => {
-            const utcTime = new Date(d.time);
-            // Convert UTC sang GMT+7
+            // Đảm bảo parse đúng UTC
+            const timeStr = d.time.includes('Z') || d.time.includes('+') ? d.time : d.time + 'Z';
+            const utcTime = new Date(timeStr);
+            // Convert UTC sang GMT+7: cộng 7 giờ
             return new Date(utcTime.getTime() + 7 * 60 * 60 * 1000);
           });
           const minTime = new Date(Math.min(...dataTimes.map(d => d.getTime())));
