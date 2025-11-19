@@ -277,26 +277,61 @@ const Dashboard = () => {
           }
         }));
         
-        // 4. Lấy trạng thái từng field và đếm alerts
+        // 4. Tính trạng thái field từ alerts thật (không dùng field.status vì có thể không được cập nhật)
         await Promise.all(allFields.map(async (field) => {
           try {
-            const fieldDetailResponse = await fieldService.getFieldById(field.id);
-            const fieldDetail = fieldDetailResponse.data;
-            
-            // Đếm trạng thái
-            if (fieldDetail.status === 'GOOD') fieldStatusCounts.Good++;
-            else if (fieldDetail.status === 'WARNING') fieldStatusCounts.Warning++;
-            else if (fieldDetail.status === 'CRITICAL') fieldStatusCounts.Critical++;
-            
-            // Đếm alerts
+            // Lấy alerts của field để tính status thật
+            let fieldStatus = 'GOOD'; // Mặc định là GOOD
             try {
               const alertsResponse = await alertService.getAlertsByField(field.id);
-              totalAlerts += alertsResponse.data.length;
+              const fieldAlerts = alertsResponse.data || [];
+              totalAlerts += fieldAlerts.length;
+              
+              // Tính status từ alerts: ưu tiên CRITICAL > WARNING > GOOD
+              // Lấy alert mới nhất của field
+              if (fieldAlerts.length > 0) {
+                // Sắp xếp theo thời gian mới nhất
+                const sortedAlerts = [...fieldAlerts].sort((a, b) => {
+                  const timeA = new Date(a.timestamp || a.time || 0);
+                  const timeB = new Date(b.timestamp || b.time || 0);
+                  return timeB - timeA;
+                });
+                
+                // Lấy status từ alert mới nhất
+                const latestAlert = sortedAlerts[0];
+                const alertStatus = latestAlert.status || latestAlert.message || '';
+                const statusUpper = String(alertStatus).toUpperCase();
+                
+                // Xác định field status từ alert status
+                if (statusUpper.includes('CRITICAL') || statusUpper.includes('CRITICAL')) {
+                  fieldStatus = 'CRITICAL';
+                } else if (statusUpper.includes('WARNING') || statusUpper.includes('WARNING')) {
+                  fieldStatus = 'WARNING';
+                } else {
+                  fieldStatus = 'GOOD';
+                }
+              }
             } catch (alertError) {
               console.error('Error fetching alerts for field', field.id, alertError);
+              // Nếu không lấy được alerts, thử dùng field.status từ fieldDetail
+              try {
+                const fieldDetailResponse = await fieldService.getFieldById(field.id);
+                const fieldDetail = fieldDetailResponse.data;
+                if (fieldDetail.status) {
+                  fieldStatus = fieldDetail.status;
+                }
+              } catch (fieldError) {
+                console.error('Error fetching field detail', field.id, fieldError);
+              }
             }
+            
+            // Đếm trạng thái
+            if (fieldStatus === 'GOOD') fieldStatusCounts.Good++;
+            else if (fieldStatus === 'WARNING') fieldStatusCounts.Warning++;
+            else if (fieldStatus === 'CRITICAL') fieldStatusCounts.Critical++;
+            
           } catch (error) {
-            console.error('Error fetching field detail', field.id, error);
+            console.error('Error processing field', field.id, error);
           }
         }));
         
