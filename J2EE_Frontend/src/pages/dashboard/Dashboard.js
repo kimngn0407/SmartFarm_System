@@ -320,66 +320,26 @@ const Dashboard = () => {
         if (soilData.length > 0) console.log('🌱 Sample soil data:', soilData[0]);
         if (lightData.length > 0) console.log('💡 Sample light data:', lightData[0]);
         
-        // Tạo time labels từ data thực tế (nếu có) hoặc từ thời gian hiện tại
-        // Ưu tiên tạo từ data để đảm bảo có data hiển thị
-        let timeLabelsData;
-        const allDataForLabels = [...tempData, ...humData, ...soilData, ...lightData];
+        // Luôn tạo time labels từ thời điểm hiện tại trở về 6h trước (GMT+7)
+        // Đây là yêu cầu: hiển thị 6h gần nhất từ khi mở web
+        timeLabelsData = getLast6HoursLabels();
         
+        // Log data time range để debug (nếu có)
+        const allDataForLabels = [...tempData, ...humData, ...soilData, ...lightData];
         if (allDataForLabels.length > 0) {
-          // Tạo time labels từ data thực tế (GMT+7)
-          const dataTimes = allDataForLabels.map(d => {
-            const dt = new Date(d.time);
-            // Đảm bảo sử dụng local time (GMT+7)
-            return dt;
-          });
+          const dataTimes = allDataForLabels.map(d => new Date(d.time));
           const minTime = new Date(Math.min(...dataTimes.map(d => d.getTime())));
           const maxTime = new Date(Math.max(...dataTimes.map(d => d.getTime())));
           
-          // Log với timezone GMT+7
           const minTimeStr = minTime.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', second: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' });
           const maxTimeStr = maxTime.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', second: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' });
           console.log(`📅 Data time range (GMT+7): ${minTimeStr} to ${maxTimeStr}`);
-          console.log(`📅 Data time range (ISO): ${minTime.toISOString()} to ${maxTime.toISOString()}`);
-          
-          // Lấy giờ:phút local (GMT+7) từ minTime
-          const minHour = minTime.getHours(); // getHours() trả về local time
-          const minMin = minTime.getMinutes();
-          
-          // Làm tròn xuống đến 15 phút
-          const minRoundedMin = Math.floor(minMin / 15) * 15;
-          
-          // Tạo labels từ minTime, mở rộng về trước và sau để có đủ 6h (24 labels)
-          timeLabelsData = [];
-          
-          // Bắt đầu từ 6h trước minTime (hoặc từ 00:00 nếu minTime < 6h)
-          let startHour = minHour - 6;
-          let startMin = minRoundedMin;
-          
-          if (startHour < 0) {
-            startHour = 24 + startHour; // Qua nửa đêm
-          }
-          
-          // Tạo 24 labels từ startTime, mỗi 15 phút
-          let currentHour = startHour;
-          let currentMin = startMin;
-          
-          for (let i = 0; i < 24; i++) {
-            timeLabelsData.push(`${currentHour.toString().padStart(2, '0')}:${currentMin.toString().padStart(2, '0')}`);
-            currentMin += 15;
-            if (currentMin >= 60) {
-              currentMin = 0;
-              currentHour = (currentHour + 1) % 24;
-            }
-          }
-          
-          console.log(`📅 Created ${timeLabelsData.length} time labels from data (GMT+7, starting from ${startHour.toString().padStart(2, '0')}:${startMin.toString().padStart(2, '0')})`);
-          console.log(`📅 First 3 labels: ${timeLabelsData.slice(0, 3).join(', ')}`);
-          console.log(`📅 Last 3 labels: ${timeLabelsData.slice(-3).join(', ')}`);
-        } else {
-          // Không có data, dùng labels mặc định
-          timeLabelsData = getLast6HoursLabels();
-          console.log(`📅 No data available, using default time labels`);
+          console.log(`📅 Chart time range (GMT+7): Last 6 hours from current time`);
         }
+        
+        console.log(`📅 Created ${timeLabelsData.length} time labels (GMT+7, last 6 hours from now)`);
+        console.log(`📅 First 3 labels: ${timeLabelsData.slice(0, 3).join(', ')}`);
+        console.log(`📅 Last 3 labels: ${timeLabelsData.slice(-3).join(', ')}`);
         
         // Tính toán thống kê và map với time labels
         const tempStats = calculateStats(tempData, timeLabelsData);
