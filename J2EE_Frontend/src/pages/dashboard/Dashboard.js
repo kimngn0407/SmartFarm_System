@@ -125,38 +125,62 @@ const Dashboard = () => {
     return recentData;
   };
 
-  // Hàm tính toán thống kê từ dữ liệu thật
-  const calculateStats = (data) => {
+  // Hàm tính toán thống kê từ dữ liệu thật và map với time labels
+  const calculateStats = (data, timeLabels = []) => {
     if (!data || data.length === 0) {
       return {
         avg: 0,
         min: 0,
         max: 0,
         values: [],
-        times: []
+        times: [],
+        mappedValues: timeLabels.map(() => null) // Tạo array với null cho mỗi time label
       };
     }
     
     const values = data.map(d => Number(d.value)).filter(v => !isNaN(v));
     if (values.length === 0) {
-      return { avg: 0, min: 0, max: 0, values: [], times: [] };
+      return { avg: 0, min: 0, max: 0, values: [], times: [], mappedValues: timeLabels.map(() => null) };
     }
     
     const avg = values.reduce((a, b) => a + b, 0) / values.length;
     const min = Math.min(...values);
     const max = Math.max(...values);
-    // Tạo time labels, đảm bảo không trùng lặp bằng cách làm tròn đến 15 phút
-    // Sử dụng local time (getHours, getMinutes) để hiển thị đúng timezone
+    
+    // Tạo time labels từ data (để debug)
     const times = data.map(d => {
       const date = new Date(d.time);
-      // Làm tròn phút xuống đến bội số của 15
       const roundedMinutes = Math.floor(date.getMinutes() / 15) * 15;
-      // Sử dụng local time methods để hiển thị đúng timezone
       const hours = date.getHours();
       return hours.toString().padStart(2, '0') + ':' + roundedMinutes.toString().padStart(2, '0');
     });
     
-    return { avg, min, max, values, times };
+    // Map data values với time labels dựa trên thời gian thực tế
+    const mappedValues = timeLabels.map((label, index) => {
+      // Parse label thành thời gian (HH:MM)
+      const [labelHour, labelMin] = label.split(':').map(Number);
+      const labelTime = new Date();
+      labelTime.setHours(labelHour, labelMin, 0, 0);
+      
+      // Tìm data point gần nhất với label time (trong khoảng ±7.5 phút)
+      let closestData = null;
+      let minDiff = Infinity;
+      
+      for (const item of data) {
+        const itemTime = new Date(item.time);
+        const diffMinutes = Math.abs((itemTime - labelTime) / (1000 * 60));
+        
+        // Chấp nhận data trong khoảng ±7.5 phút (nửa interval)
+        if (diffMinutes <= 7.5 && diffMinutes < minDiff) {
+          minDiff = diffMinutes;
+          closestData = item;
+        }
+      }
+      
+      return closestData ? Number(closestData.value) : null;
+    });
+    
+    return { avg, min, max, values, times, mappedValues };
   };
 
   // Tạo mốc giờ cho 6 tiếng, mỗi 15 phút một điểm (24 điểm)
@@ -292,101 +316,56 @@ const Dashboard = () => {
           light: { avg: lightStats.avg, min: lightStats.min, max: lightStats.max, count: lightStats.values.length }
         });
         
-        // Chuẩn bị dữ liệu cho chart
-        // Luôn dùng labels từ thời gian hiện tại (local time) để đảm bảo hiển thị đúng giờ
-        // Không dùng time từ data vì có thể có timezone khác
-        const timeLabelsData = getLast6HoursLabels();
-        
-        // Nếu có dữ liệu thật, dùng dữ liệu thật
-        // Nếu không có, tạo sample data để chart hiển thị (12 điểm)
+        // Chuẩn bị dữ liệu cho chart - dùng mappedValues đã được map với time labels
         let tempValues, humValues, soilValues, lightValues;
         const newDataSource = { ...dataSource };
         
-        if (tempStats.values.length > 0) {
-          tempValues = tempStats.values;
+        // Dùng mappedValues nếu có, nếu không có data thì dùng null hoặc sample
+        if (tempStats.mappedValues && tempStats.mappedValues.some(v => v !== null)) {
+          tempValues = tempStats.mappedValues;
           newDataSource.temp = 'iot';
-          console.log('✅ 🌡️ Temperature chart: Using IoT data (' + tempStats.values.length + ' points)');
+          const dataCount = tempStats.mappedValues.filter(v => v !== null).length;
+          console.log('✅ 🌡️ Temperature chart: Using IoT data (' + dataCount + ' points mapped to ' + timeLabelsData.length + ' labels)');
         } else {
-          // Tạo sample data: 12 điểm với giá trị trung bình
-          const baseTemp = 25; // Nhiệt độ mẫu
-          tempValues = Array.from({ length: 12 }, () => baseTemp + (Math.random() - 0.5) * 5);
+          tempValues = timeLabelsData.map(() => null);
           newDataSource.temp = 'sample';
-          console.warn('⚠️ 🌡️ Temperature chart: Using SAMPLE data (no IoT data available)');
+          console.warn('⚠️ 🌡️ Temperature chart: No IoT data available');
         }
         
-        if (humStats.values.length > 0) {
-          humValues = humStats.values;
+        if (humStats.mappedValues && humStats.mappedValues.some(v => v !== null)) {
+          humValues = humStats.mappedValues;
           newDataSource.hum = 'iot';
-          console.log('✅ 💧 Humidity chart: Using IoT data (' + humStats.values.length + ' points)');
+          const dataCount = humStats.mappedValues.filter(v => v !== null).length;
+          console.log('✅ 💧 Humidity chart: Using IoT data (' + dataCount + ' points mapped to ' + timeLabelsData.length + ' labels)');
         } else {
-          // Tạo sample data: 12 điểm với giá trị trung bình
-          const baseHum = 70; // Độ ẩm mẫu
-          humValues = Array.from({ length: 12 }, () => baseHum + (Math.random() - 0.5) * 10);
+          humValues = timeLabelsData.map(() => null);
           newDataSource.hum = 'sample';
-          console.warn('⚠️ 💧 Humidity chart: Using SAMPLE data (no IoT data available)');
+          console.warn('⚠️ 💧 Humidity chart: No IoT data available');
         }
         
-        if (soilStats.values.length > 0) {
-          soilValues = soilStats.values;
+        if (soilStats.mappedValues && soilStats.mappedValues.some(v => v !== null)) {
+          soilValues = soilStats.mappedValues;
           newDataSource.soil = 'iot';
-          console.log('✅ 🌱 Soil moisture chart: Using IoT data (' + soilStats.values.length + ' points)');
+          const dataCount = soilStats.mappedValues.filter(v => v !== null).length;
+          console.log('✅ 🌱 Soil moisture chart: Using IoT data (' + dataCount + ' points mapped to ' + timeLabelsData.length + ' labels)');
         } else {
-          // Tạo sample data: 12 điểm với giá trị trung bình
-          const baseSoil = 50; // Độ ẩm đất mẫu
-          soilValues = Array.from({ length: 12 }, () => baseSoil + (Math.random() - 0.5) * 15);
+          soilValues = timeLabelsData.map(() => null);
           newDataSource.soil = 'sample';
-          console.warn('⚠️ 🌱 Soil moisture chart: Using SAMPLE data (no IoT data available)');
+          console.warn('⚠️ 🌱 Soil moisture chart: No IoT data available');
         }
         
-        if (lightStats.values.length > 0) {
-          lightValues = lightStats.values;
+        if (lightStats.mappedValues && lightStats.mappedValues.some(v => v !== null)) {
+          lightValues = lightStats.mappedValues;
           newDataSource.light = 'iot';
-          console.log('✅ 💡 Light chart: Using IoT data (' + lightStats.values.length + ' points)');
+          const dataCount = lightStats.mappedValues.filter(v => v !== null).length;
+          console.log('✅ 💡 Light chart: Using IoT data (' + dataCount + ' points mapped to ' + timeLabelsData.length + ' labels)');
         } else {
-          // Tạo sample data: 12 điểm với giá trị trung bình
-          const baseLight = 60; // Ánh sáng mẫu (%)
-          lightValues = Array.from({ length: 12 }, () => baseLight + (Math.random() - 0.5) * 20);
+          lightValues = timeLabelsData.map(() => null);
           newDataSource.light = 'sample';
-          console.warn('⚠️ 💡 Light chart: Using SAMPLE data (no IoT data available)');
+          console.warn('⚠️ 💡 Light chart: No IoT data available');
         }
         
         setDataSource(newDataSource);
-        
-        // Đảm bảo số lượng labels và data khớp nhau
-        const labelCount = timeLabelsData.length;
-        if (tempValues.length !== labelCount) {
-          if (tempValues.length < labelCount) {
-            // Lặp lại giá trị cuối cùng để đủ số lượng
-            const lastValue = tempValues[tempValues.length - 1] || 25;
-            tempValues = [...tempValues, ...Array(labelCount - tempValues.length).fill(lastValue)];
-          } else {
-            tempValues = tempValues.slice(0, labelCount);
-          }
-        }
-        if (humValues.length !== labelCount) {
-          if (humValues.length < labelCount) {
-            const lastValue = humValues[humValues.length - 1] || 70;
-            humValues = [...humValues, ...Array(labelCount - humValues.length).fill(lastValue)];
-          } else {
-            humValues = humValues.slice(0, labelCount);
-          }
-        }
-        if (soilValues.length !== labelCount) {
-          if (soilValues.length < labelCount) {
-            const lastValue = soilValues[soilValues.length - 1] || 50;
-            soilValues = [...soilValues, ...Array(labelCount - soilValues.length).fill(lastValue)];
-          } else {
-            soilValues = soilValues.slice(0, labelCount);
-          }
-        }
-        if (lightValues.length !== labelCount) {
-          if (lightValues.length < labelCount) {
-            const lastValue = lightValues[lightValues.length - 1] || 60;
-            lightValues = [...lightValues, ...Array(labelCount - lightValues.length).fill(lastValue)];
-          } else {
-            lightValues = lightValues.slice(0, labelCount);
-          }
-        }
         
         const hasRealData = tempStats.values.length > 0 || humStats.values.length > 0 || soilStats.values.length > 0 || lightStats.values.length > 0;
         console.log('📊 Chart data prepared:', {
