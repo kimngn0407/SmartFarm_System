@@ -315,8 +315,51 @@ const Dashboard = () => {
         if (soilData.length > 0) console.log('🌱 Sample soil data:', soilData[0]);
         if (lightData.length > 0) console.log('💡 Sample light data:', lightData[0]);
         
-        // Chuẩn bị time labels trước
-        const timeLabelsData = getLast6HoursLabels();
+        // Tạo time labels từ data thực tế (nếu có) hoặc từ thời gian hiện tại
+        // Ưu tiên tạo từ data để đảm bảo có data hiển thị
+        let timeLabelsData;
+        const allDataForLabels = [...tempData, ...humData, ...soilData, ...lightData];
+        
+        if (allDataForLabels.length > 0) {
+          // Tạo time labels từ data thực tế
+          const dataTimes = allDataForLabels.map(d => new Date(d.time));
+          const minTime = new Date(Math.min(...dataTimes));
+          const maxTime = new Date(Math.max(...dataTimes));
+          
+          // Làm tròn minTime xuống đến 15 phút
+          const minRounded = new Date(minTime);
+          minRounded.setMinutes(Math.floor(minTime.getMinutes() / 15) * 15, 0, 0);
+          
+          // Tạo labels từ minTime đến maxTime, mỗi 15 phút
+          timeLabelsData = [];
+          const current = new Date(minRounded);
+          while (current <= maxTime && timeLabelsData.length < 24) {
+            const hour = current.getHours();
+            const min = current.getMinutes();
+            timeLabelsData.push(`${hour.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}`);
+            current.setMinutes(current.getMinutes() + 15);
+          }
+          
+          // Nếu chưa đủ 24 labels, bổ sung từ thời gian hiện tại
+          if (timeLabelsData.length < 24) {
+            const defaultLabels = getLast6HoursLabels();
+            // Lấy các labels sau maxTime
+            const maxTimeStr = `${maxTime.getHours().toString().padStart(2, '0')}:${Math.floor(maxTime.getMinutes() / 15) * 15}`;
+            const maxIndex = defaultLabels.indexOf(maxTimeStr);
+            if (maxIndex >= 0) {
+              const additionalLabels = defaultLabels.slice(maxIndex + 1, 24);
+              timeLabelsData = [...timeLabelsData, ...additionalLabels].slice(0, 24);
+            } else {
+              timeLabelsData = defaultLabels;
+            }
+          }
+          
+          console.log(`📅 Created time labels from data: ${timeLabelsData.length} labels (from ${minRounded.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} to ${maxTime.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })})`);
+        } else {
+          // Không có data, dùng labels mặc định
+          timeLabelsData = getLast6HoursLabels();
+          console.log(`📅 No data available, using default time labels`);
+        }
         
         // Tính toán thống kê và map với time labels
         const tempStats = calculateStats(tempData, timeLabelsData);
