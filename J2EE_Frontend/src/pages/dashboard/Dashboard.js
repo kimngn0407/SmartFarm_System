@@ -534,6 +534,13 @@ const Dashboard = () => {
         if (soilStats.values.length > 0) {
           setSoilArr(soilStats.values);
         }
+        if (lightStats.values.length > 0) {
+          setLightArr(lightStats.values);
+          // Cập nhật time labels nếu chưa có
+          if (timeLabels.length === 0) {
+            setTimeLabels(lightStats.times.length > 0 ? lightStats.times : getLast12HoursLabels());
+          }
+        }
         
         // Cập nhật stats
         setStats(prev => ({
@@ -541,6 +548,7 @@ const Dashboard = () => {
           avgTemperature: tempStats.avg.toFixed(1),
           avgHumidity: humStats.avg.toFixed(1),
           avgSoil: soilStats.avg.toFixed(1),
+          avgLight: lightStats.avg.toFixed(1),
           minTemp: tempStats.min.toFixed(1),
           maxTemp: tempStats.max.toFixed(1),
           avgSoil12h: soilStats.avg.toFixed(1)
