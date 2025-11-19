@@ -477,11 +477,23 @@ const Dashboard = () => {
         const lightStats = calculateStats(lightData, timeLabelsData);
         
         console.log('📈 Stats calculated:', {
-          temp: { avg: tempStats.avg, min: tempStats.min, max: tempStats.max, count: tempStats.values.length },
-          hum: { avg: humStats.avg, min: humStats.min, max: humStats.max, count: humStats.values.length },
-          soil: { avg: soilStats.avg, min: soilStats.min, max: soilStats.max, count: soilStats.values.length },
-          light: { avg: lightStats.avg, min: lightStats.min, max: lightStats.max, count: lightStats.values.length }
+          temp: { avg: tempStats.avg, min: tempStats.min, max: tempStats.max, count: tempStats.values.length, mapped: tempStats.mappedValues?.filter(v => v !== null).length || 0 },
+          hum: { avg: humStats.avg, min: humStats.min, max: humStats.max, count: humStats.values.length, mapped: humStats.mappedValues?.filter(v => v !== null).length || 0 },
+          soil: { avg: soilStats.avg, min: soilStats.min, max: soilStats.max, count: soilStats.values.length, mapped: soilStats.mappedValues?.filter(v => v !== null).length || 0 },
+          light: { avg: lightStats.avg, min: lightStats.min, max: lightStats.max, count: lightStats.values.length, mapped: lightStats.mappedValues?.filter(v => v !== null).length || 0 }
         });
+        
+        // Debug: Log chi tiết humidity data
+        if (humData.length > 0) {
+          console.log('💧 Humidity data details:');
+          console.log('  - Total data points:', humData.length);
+          console.log('  - Value range:', humData.map(d => d.value).filter(v => v != null).sort((a, b) => a - b));
+          console.log('  - Unique values:', [...new Set(humData.map(d => d.value))].sort((a, b) => a - b));
+          console.log('  - First 5 data points:', humData.slice(0, 5).map(d => ({ time: d.time, value: d.value })));
+          console.log('  - Last 5 data points:', humData.slice(-5).map(d => ({ time: d.time, value: d.value })));
+        } else {
+          console.warn('⚠️ No humidity data found!');
+        }
         
         // Chuẩn bị dữ liệu cho chart - dùng mappedValues đã được map với time labels
         let tempValues, humValues, soilValues, lightValues;
