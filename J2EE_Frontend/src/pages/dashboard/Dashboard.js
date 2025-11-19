@@ -338,17 +338,34 @@ const Dashboard = () => {
         
         if (USE_DATA_TIME && allDataForLabels.length > 0) {
           // Option 2: Tạo từ data thực tế (GMT+7)
-          const dataTimes = allDataForLabels.map(d => new Date(d.time));
+          // Database lưu UTC, cần convert sang GMT+7
+          const dataTimes = allDataForLabels.map(d => {
+            const utcTime = new Date(d.time);
+            // Convert UTC sang GMT+7
+            return new Date(utcTime.getTime() + 7 * 60 * 60 * 1000);
+          });
           const minTime = new Date(Math.min(...dataTimes.map(d => d.getTime())));
           const maxTime = new Date(Math.max(...dataTimes.map(d => d.getTime())));
           
-          const minTimeStr = minTime.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', second: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' });
-          const maxTimeStr = maxTime.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', second: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' });
-          console.log(`📅 Data time range (GMT+7): ${minTimeStr} to ${maxTimeStr}`);
+          // Log với GMT+7
+          const minHour = minTime.getUTCHours();
+          const minMin = minTime.getUTCMinutes();
+          const minSec = minTime.getUTCSeconds();
+          const minDay = minTime.getUTCDate();
+          const minMonth = minTime.getUTCMonth() + 1;
+          const minYear = minTime.getUTCFullYear();
           
-          // Lấy giờ:phút local (GMT+7) từ minTime
-          const minHour = minTime.getHours();
-          const minMin = minTime.getMinutes();
+          const maxHour = maxTime.getUTCHours();
+          const maxMin = maxTime.getUTCMinutes();
+          const maxSec = maxTime.getUTCSeconds();
+          const maxDay = maxTime.getUTCDate();
+          const maxMonth = maxTime.getUTCMonth() + 1;
+          const maxYear = maxTime.getUTCFullYear();
+          
+          console.log(`📅 Data time range (GMT+7): ${minDay.toString().padStart(2, '0')}/${minMonth.toString().padStart(2, '0')}/${minYear} ${minHour.toString().padStart(2, '0')}:${minMin.toString().padStart(2, '0')}:${minSec.toString().padStart(2, '0')} to ${maxDay.toString().padStart(2, '0')}/${maxMonth.toString().padStart(2, '0')}/${maxYear} ${maxHour.toString().padStart(2, '0')}:${maxMin.toString().padStart(2, '0')}:${maxSec.toString().padStart(2, '0')}`);
+          
+          // Lấy giờ:phút GMT+7 từ minTime (đã convert)
+          const minRoundedMin = Math.floor(minMin / 15) * 15;
           const minRoundedMin = Math.floor(minMin / 15) * 15;
           
           // Bắt đầu từ 6h trước minTime
