@@ -303,11 +303,14 @@ const Dashboard = () => {
         if (soilData.length > 0) console.log('🌱 Sample soil data:', soilData[0]);
         if (lightData.length > 0) console.log('💡 Sample light data:', lightData[0]);
         
-        // Tính toán thống kê
-        const tempStats = calculateStats(tempData);
-        const humStats = calculateStats(humData);
-        const soilStats = calculateStats(soilData);
-        const lightStats = calculateStats(lightData);
+        // Chuẩn bị time labels trước
+        const timeLabelsData = getLast6HoursLabels();
+        
+        // Tính toán thống kê và map với time labels
+        const tempStats = calculateStats(tempData, timeLabelsData);
+        const humStats = calculateStats(humData, timeLabelsData);
+        const soilStats = calculateStats(soilData, timeLabelsData);
+        const lightStats = calculateStats(lightData, timeLabelsData);
         
         console.log('📈 Stats calculated:', {
           temp: { avg: tempStats.avg, min: tempStats.min, max: tempStats.max, count: tempStats.values.length },
