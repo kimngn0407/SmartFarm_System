@@ -1,0 +1,11 @@
+{
+  "time": 26,
+  "sensorId": 0,
+  "temperature": 24.50,
+  "humidity": 28.00,
+  "light_raw": 197,
+  "light_pct": 12,
+  "soil_raw": 1022,
+  "soil_pct": 0
+}
+
