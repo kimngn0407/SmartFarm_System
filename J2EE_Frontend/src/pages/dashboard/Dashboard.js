@@ -287,9 +287,19 @@ const Dashboard = () => {
               const fieldAlerts = alertsResponse.data || [];
               totalAlerts += fieldAlerts.length;
               
+              console.log(`🔍 Field ${field.id} (${field.fieldName || 'Unknown'}): ${fieldAlerts.length} alerts`);
+              
               // Tính status từ alerts: ưu tiên CRITICAL > WARNING > GOOD
               // Tìm alert có status cao nhất (không chỉ mới nhất)
               if (fieldAlerts.length > 0) {
+                // Log alerts để debug
+                console.log(`   📋 Alerts for field ${field.id}:`, fieldAlerts.map(a => ({
+                  id: a.id,
+                  status: a.status,
+                  message: a.message,
+                  timestamp: a.timestamp
+                })));
+                
                 // Hàm xác định priority của status (cao hơn = nghiêm trọng hơn)
                 const getStatusPriority = (alert) => {
                   const alertStatus = alert.status || '';
@@ -325,6 +335,8 @@ const Dashboard = () => {
                 const statusUpper = String(alertStatus).toUpperCase();
                 const messageUpper = String(alertMessage).toUpperCase();
                 
+                console.log(`   🎯 Highest priority alert: status="${alertStatus}", message="${alertMessage}"`);
+                
                 if (statusUpper === 'CRITICAL' || messageUpper.includes('CRITICAL')) {
                   fieldStatus = 'CRITICAL';
                 } else if (statusUpper === 'WARNING' || messageUpper.includes('WARNING')) {
@@ -333,6 +345,10 @@ const Dashboard = () => {
                   fieldStatus = 'GOOD';
                 }
                 // Nếu không xác định được, giữ nguyên GOOD (mặc định)
+                
+                console.log(`   ✅ Field ${field.id} status determined: ${fieldStatus}`);
+              } else {
+                console.log(`   ⚠️ Field ${field.id} has no alerts, using default GOOD`);
               }
             } catch (alertError) {
               console.error('Error fetching alerts for field', field.id, alertError);
@@ -342,6 +358,7 @@ const Dashboard = () => {
                 const fieldDetail = fieldDetailResponse.data;
                 if (fieldDetail.status) {
                   fieldStatus = fieldDetail.status;
+                  console.log(`   📌 Using field.status from fieldDetail: ${fieldStatus}`);
                 }
               } catch (fieldError) {
                 console.error('Error fetching field detail', field.id, fieldError);
@@ -349,14 +366,23 @@ const Dashboard = () => {
             }
             
             // Đếm trạng thái
-            if (fieldStatus === 'GOOD') fieldStatusCounts.Good++;
-            else if (fieldStatus === 'WARNING') fieldStatusCounts.Warning++;
-            else if (fieldStatus === 'CRITICAL') fieldStatusCounts.Critical++;
+            if (fieldStatus === 'GOOD') {
+              fieldStatusCounts.Good++;
+              console.log(`   ✅ Counted as GOOD. Total: Good=${fieldStatusCounts.Good}, Warning=${fieldStatusCounts.Warning}, Critical=${fieldStatusCounts.Critical}`);
+            } else if (fieldStatus === 'WARNING') {
+              fieldStatusCounts.Warning++;
+              console.log(`   ⚠️ Counted as WARNING. Total: Good=${fieldStatusCounts.Good}, Warning=${fieldStatusCounts.Warning}, Critical=${fieldStatusCounts.Critical}`);
+            } else if (fieldStatus === 'CRITICAL') {
+              fieldStatusCounts.Critical++;
+              console.log(`   🔴 Counted as CRITICAL. Total: Good=${fieldStatusCounts.Good}, Warning=${fieldStatusCounts.Warning}, Critical=${fieldStatusCounts.Critical}`);
+            }
             
           } catch (error) {
             console.error('Error processing field', field.id, error);
           }
         }));
+        
+        console.log(`📊 Final field status counts:`, fieldStatusCounts);
         
         // 5. Lấy dữ liệu sensor thật từ IoT
         console.log('🔍 Fetching real sensor data from IoT...');
