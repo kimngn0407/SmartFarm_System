@@ -3,13 +3,107 @@
 ## 📋 Tổng quan
 
 Trên VPS Linux, bạn có thể tự động chạy Arduino forwarder bằng:
-1. **Systemd Service** - Tự động chạy khi boot và tự động restart
-2. **udev Rules** - Tự động chạy khi cắm USB Arduino
-3. **Shell Script với Auto-Retry** - Tự động tìm và kết nối Arduino
+1. **PM2 (Khuyến nghị)** - Process Manager, dễ quản lý và monitor
+2. **Systemd Service** - Tự động chạy khi boot và tự động restart
+3. **udev Rules** - Tự động chạy khi cắm USB Arduino
+4. **Shell Script với Auto-Retry** - Tự động tìm và kết nối Arduino
+
+> **💡 Nếu bạn đã dùng PM2 cho các service khác**, hãy dùng **Cách 1: PM2** (đơn giản nhất)
 
 ---
 
-## 🎯 Cách 1: Systemd Service (Khuyến nghị)
+## 🎯 Cách 1: PM2 (Khuyến nghị - Nếu đã dùng PM2)
+
+### Bước 1: Cài PM2 (nếu chưa có)
+
+```bash
+# Cài PM2 globally
+sudo npm install -g pm2
+
+# Hoặc với yarn
+sudo yarn global add pm2
+
+# Setup PM2 startup script (tự động chạy khi boot)
+pm2 startup
+# Copy và chạy lệnh mà PM2 hiển thị (thường là sudo ...)
+```
+
+### Bước 2: Tạo thư mục logs
+
+```bash
+cd ~/projects/SmartFarm/SmartContract/device
+mkdir -p logs
+```
+
+### Bước 3: Chỉnh sửa ecosystem config
+
+```bash
+# Chỉnh sửa ecosystem.config.js hoặc ecosystem.config.json
+nano ecosystem.config.js
+```
+
+**Chỉnh các thông tin:**
+- `cwd`: Đường dẫn đến thư mục `device` (ví dụ: `/root/projects/SmartFarm/SmartContract/device`)
+- `interpreter`: `python3` hoặc đường dẫn đầy đủ đến Python
+- `env.FLASK_URL`: URL của Flask API
+- `env.API_KEY`: API Key
+
+### Bước 4: Start với PM2
+
+```bash
+cd ~/projects/SmartFarm/SmartContract/device
+
+# Start với ecosystem config
+pm2 start ecosystem.config.js
+
+# Hoặc start trực tiếp
+pm2 start forwarder_auto.py --interpreter python3 --name arduino-forwarder
+
+# Save PM2 process list (để tự động chạy khi reboot)
+pm2 save
+```
+
+### Bước 5: Kiểm tra và quản lý
+
+```bash
+# Xem status
+pm2 status
+
+# Xem logs
+pm2 logs arduino-forwarder
+
+# Xem logs real-time
+pm2 logs arduino-forwarder --lines 50
+
+# Restart
+pm2 restart arduino-forwarder
+
+# Stop
+pm2 stop arduino-forwarder
+
+# Delete (xóa khỏi PM2)
+pm2 delete arduino-forwarder
+
+# Monitor (CPU, Memory)
+pm2 monit
+```
+
+### Bước 6: Setup auto-start khi boot
+
+```bash
+# Generate startup script
+pm2 startup
+
+# Copy và chạy lệnh mà PM2 hiển thị (ví dụ):
+# sudo env PATH=$PATH:/usr/bin pm2 startup systemd -u root --hp /root
+
+# Save current process list
+pm2 save
+```
+
+---
+
+## 🎯 Cách 2: Systemd Service
 
 ### Bước 1: Copy service file
 
@@ -353,6 +447,33 @@ sudo udevadm trigger
 ---
 
 ## 🚀 Quick Start (Tóm tắt)
+
+### Với PM2 (Khuyến nghị):
+
+```bash
+# 1. Cài dependencies
+sudo apt install python3 python3-pip python3-venv nodejs npm
+sudo pip3 install pyserial requests
+sudo npm install -g pm2
+
+# 2. Cấp quyền USB
+sudo usermod -a -G dialout $USER
+newgrp dialout
+
+# 3. Setup PM2
+cd ~/projects/SmartFarm/SmartContract/device
+mkdir -p logs
+nano ecosystem.config.js  # Chỉnh đường dẫn và config
+pm2 start ecosystem.config.js
+pm2 save
+pm2 startup  # Setup auto-start khi boot
+
+# 4. Kiểm tra
+pm2 status
+pm2 logs arduino-forwarder
+```
+
+### Với Systemd:
 
 ```bash
 # 1. Cài dependencies
