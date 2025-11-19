@@ -327,7 +327,7 @@ const Dashboard = () => {
         const allDataForLabels = [...tempData, ...humData, ...soilData, ...lightData];
         
         // Có thể chọn: USE_DATA_TIME = true để dùng data thực tế, false để dùng thời gian hiện tại
-        const USE_DATA_TIME = false; // Đặt true nếu muốn dùng data thực tế
+        const USE_DATA_TIME = true; // Đặt true để hiển thị data thực tế từ database
         
         if (USE_DATA_TIME && allDataForLabels.length > 0) {
           // Option 2: Tạo từ data thực tế (GMT+7)
