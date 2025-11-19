@@ -288,24 +288,43 @@ const Dashboard = () => {
               totalAlerts += fieldAlerts.length;
               
               // Tính status từ alerts: ưu tiên CRITICAL > WARNING > GOOD
-              // Lấy alert mới nhất của field
+              // Tìm alert có status cao nhất (không chỉ mới nhất)
               if (fieldAlerts.length > 0) {
-                // Sắp xếp theo thời gian mới nhất
-                const sortedAlerts = [...fieldAlerts].sort((a, b) => {
-                  const timeA = new Date(a.timestamp || a.time || 0);
-                  const timeB = new Date(b.timestamp || b.time || 0);
-                  return timeB - timeA;
-                });
+                // Hàm xác định priority của status (cao hơn = nghiêm trọng hơn)
+                const getStatusPriority = (alert) => {
+                  const alertStatus = alert.status || '';
+                  const alertMessage = alert.message || '';
+                  const statusUpper = String(alertStatus).toUpperCase();
+                  const messageUpper = String(alertMessage).toUpperCase();
+                  
+                  if (statusUpper === 'CRITICAL' || messageUpper.includes('CRITICAL')) {
+                    return 3; // Cao nhất
+                  } else if (statusUpper === 'WARNING' || messageUpper.includes('WARNING')) {
+                    return 2;
+                  } else if (statusUpper === 'GOOD' || messageUpper.includes('GOOD')) {
+                    return 1;
+                  }
+                  return 0; // Không xác định
+                };
                 
-                // Lấy status từ alert mới nhất
-                const latestAlert = sortedAlerts[0];
-                const alertStatus = latestAlert.status || '';
-                const alertMessage = latestAlert.message || '';
+                // Tìm alert có priority cao nhất
+                let highestPriorityAlert = fieldAlerts[0];
+                let highestPriority = getStatusPriority(highestPriorityAlert);
+                
+                for (const alert of fieldAlerts) {
+                  const priority = getStatusPriority(alert);
+                  if (priority > highestPriority) {
+                    highestPriority = priority;
+                    highestPriorityAlert = alert;
+                  }
+                }
+                
+                // Xác định field status từ alert có priority cao nhất
+                const alertStatus = highestPriorityAlert.status || '';
+                const alertMessage = highestPriorityAlert.message || '';
                 const statusUpper = String(alertStatus).toUpperCase();
                 const messageUpper = String(alertMessage).toUpperCase();
                 
-                // Xác định field status từ alert status hoặc message
-                // Ưu tiên CRITICAL > WARNING > GOOD
                 if (statusUpper === 'CRITICAL' || messageUpper.includes('CRITICAL')) {
                   fieldStatus = 'CRITICAL';
                 } else if (statusUpper === 'WARNING' || messageUpper.includes('WARNING')) {
