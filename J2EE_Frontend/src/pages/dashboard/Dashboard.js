@@ -299,17 +299,21 @@ const Dashboard = () => {
                 
                 // Lấy status từ alert mới nhất
                 const latestAlert = sortedAlerts[0];
-                const alertStatus = latestAlert.status || latestAlert.message || '';
+                const alertStatus = latestAlert.status || '';
+                const alertMessage = latestAlert.message || '';
                 const statusUpper = String(alertStatus).toUpperCase();
+                const messageUpper = String(alertMessage).toUpperCase();
                 
-                // Xác định field status từ alert status
-                if (statusUpper.includes('CRITICAL') || statusUpper.includes('CRITICAL')) {
+                // Xác định field status từ alert status hoặc message
+                // Ưu tiên CRITICAL > WARNING > GOOD
+                if (statusUpper === 'CRITICAL' || messageUpper.includes('CRITICAL')) {
                   fieldStatus = 'CRITICAL';
-                } else if (statusUpper.includes('WARNING') || statusUpper.includes('WARNING')) {
+                } else if (statusUpper === 'WARNING' || messageUpper.includes('WARNING')) {
                   fieldStatus = 'WARNING';
-                } else {
+                } else if (statusUpper === 'GOOD' || messageUpper.includes('GOOD')) {
                   fieldStatus = 'GOOD';
                 }
+                // Nếu không xác định được, giữ nguyên GOOD (mặc định)
               }
             } catch (alertError) {
               console.error('Error fetching alerts for field', field.id, alertError);
