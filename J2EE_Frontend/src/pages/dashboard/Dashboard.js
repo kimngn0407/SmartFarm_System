@@ -500,22 +500,28 @@ const Dashboard = () => {
         const soilSensors = allSensors.filter(s => 
           s.type && (s.type.toLowerCase().includes('soil') || s.type.toLowerCase().includes('moisture'))
         );
+        const lightSensors = allSensors.filter(s => 
+          s.type && (s.type.toLowerCase().includes('light') || s.type.toLowerCase().includes('lumin'))
+        );
         
-        // Lấy dữ liệu 12h gần nhất
-        const tempSensorIds = tempSensors.map(s => s.id);
-        const humSensorIds = humSensors.map(s => s.id);
-        const soilSensorIds = soilSensors.map(s => s.id);
+        // Lấy dữ liệu 12h gần nhất - dùng sensor_id cố định từ Flask API
+        const tempSensorIds = [7]; // TEMP_SENSOR_ID từ Flask API
+        const humSensorIds = [8]; // HUMID_SENSOR_ID từ Flask API
+        const soilSensorIds = [9]; // SOIL_SENSOR_ID từ Flask API
+        const lightSensorIds = [10]; // LIGHT_SENSOR_ID từ Flask API
         
-        const [tempData, humData, soilData] = await Promise.all([
+        const [tempData, humData, soilData, lightData] = await Promise.all([
           tempSensorIds.length > 0 ? fetchRealSensorData(tempSensorIds, 12) : Promise.resolve([]),
           humSensorIds.length > 0 ? fetchRealSensorData(humSensorIds, 12) : Promise.resolve([]),
-          soilSensorIds.length > 0 ? fetchRealSensorData(soilSensorIds, 12) : Promise.resolve([])
+          soilSensorIds.length > 0 ? fetchRealSensorData(soilSensorIds, 12) : Promise.resolve([]),
+          lightSensorIds.length > 0 ? fetchRealSensorData(lightSensorIds, 12) : Promise.resolve([])
         ]);
         
         // Tính toán stats
         const tempStats = calculateStats(tempData);
         const humStats = calculateStats(humData);
         const soilStats = calculateStats(soilData);
+        const lightStats = calculateStats(lightData);
         
         // Cập nhật state
         if (tempStats.values.length > 0) {
