@@ -572,12 +572,14 @@ const Dashboard = () => {
     fetchData();
   }, []);
 
-  // Real-time update mỗi 15 phút - lấy dữ liệu mới từ API
+  // Real-time update mỗi 1 phút - lấy dữ liệu mới từ API
   useEffect(() => {
     if (loading) return;
     
     const updateData = async () => {
       try {
+        console.log('🔄 Starting real-time data update...');
+        
         // Lấy lại danh sách sensors
         const allSensors = await sensorService.getSensorList();
         
@@ -608,52 +610,8 @@ const Dashboard = () => {
           lightSensorIds.length > 0 ? fetchRealSensorData(lightSensorIds, 6) : Promise.resolve([])
         ]);
         
-        // Tạo time labels: luôn dùng thời gian hiện tại (6 giờ từ bây giờ)
-        let timeLabelsData;
-        const allDataForLabels = [...tempData, ...humData, ...soilData, ...lightData];
-        const USE_DATA_TIME = false; // Luôn dùng thời gian hiện tại
-        
-        if (USE_DATA_TIME && allDataForLabels.length > 0) {
-          // Tạo từ data thực tế (GMT+7)
-          // Database lưu UTC, cần convert sang GMT+7
-          const dataTimes = allDataForLabels.map(d => {
-            const utcTime = new Date(d.time);
-            // Convert UTC sang GMT+7
-            return new Date(utcTime.getTime() + 7 * 60 * 60 * 1000);
-          });
-          const minTime = new Date(Math.min(...dataTimes.map(d => d.getTime())));
-          const maxTime = new Date(Math.max(...dataTimes.map(d => d.getTime())));
-          
-          // Lấy giờ:phút GMT+7 từ minTime (đã convert)
-          const minHour = minTime.getUTCHours();
-          const minMin = minTime.getUTCMinutes();
-          const minRoundedMin = Math.floor(minMin / 15) * 15;
-          
-          // Bắt đầu từ 6h trước minTime
-          let startHour = minHour - 6;
-          let startMin = minRoundedMin;
-          
-          if (startHour < 0) {
-            startHour = 24 + startHour; // Qua nửa đêm
-          }
-          
-          // Tạo 24 labels từ startTime, mỗi 15 phút
-          timeLabelsData = [];
-          let currentHour = startHour;
-          let currentMin = startMin;
-          
-          for (let i = 0; i < 24; i++) {
-            timeLabelsData.push(`${currentHour.toString().padStart(2, '0')}:${currentMin.toString().padStart(2, '0')}`);
-            currentMin += 15;
-            if (currentMin >= 60) {
-              currentMin = 0;
-              currentHour = (currentHour + 1) % 24;
-            }
-          }
-        } else {
-          // Fallback: dùng thời gian hiện tại
-          timeLabelsData = getLast6HoursLabels();
-        }
+        // Luôn dùng thời gian hiện tại để tạo time labels (6 giờ từ bây giờ)
+        const timeLabelsData = getLast6HoursLabels();
         
         // Tính toán stats và map với time labels
         const tempStats = calculateStats(tempData, timeLabelsData);
@@ -661,23 +619,21 @@ const Dashboard = () => {
         const soilStats = calculateStats(soilData, timeLabelsData);
         const lightStats = calculateStats(lightData, timeLabelsData);
         
+        // Cập nhật time labels (luôn cập nhật để đảm bảo sync với current time)
+        setTimeLabels(timeLabelsData);
+        
         // Cập nhật state - dùng mappedValues đã được map với time labels
-        if (tempStats.mappedValues && tempStats.mappedValues.some(v => v !== null)) {
+        if (tempStats.mappedValues) {
           setTempArr(tempStats.mappedValues);
-          setTimeLabels(timeLabelsData);
         }
-        if (humStats.mappedValues && humStats.mappedValues.some(v => v !== null)) {
+        if (humStats.mappedValues) {
           setHumArr(humStats.mappedValues);
         }
-        if (soilStats.mappedValues && soilStats.mappedValues.some(v => v !== null)) {
+        if (soilStats.mappedValues) {
           setSoilArr(soilStats.mappedValues);
         }
-        if (lightStats.mappedValues && lightStats.mappedValues.some(v => v !== null)) {
+        if (lightStats.mappedValues) {
           setLightArr(lightStats.mappedValues);
-          // Cập nhật time labels nếu chưa có
-          if (timeLabels.length === 0) {
-            setTimeLabels(timeLabelsData);
-          }
         }
         
         // Cập nhật stats
@@ -692,17 +648,19 @@ const Dashboard = () => {
           avgSoil12h: soilStats.avg.toFixed(1)
         }));
         
-        console.log('🔄 Real-time data updated');
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        console.log(`🔄 Real-time data updated at ${timeStr} (GMT+7)`);
       } catch (error) {
-        console.error('Error updating real-time data:', error);
+        console.error('❌ Error updating real-time data:', error);
       }
     };
     
     // Cập nhật ngay lập tức
     updateData();
     
-    // Sau đó cập nhật mỗi 15 phút
-    const interval = setInterval(updateData, 15 * 60 * 1000); // 15 phút
+    // Sau đó cập nhật mỗi 1 phút (real-time)
+    const interval = setInterval(updateData, 1 * 60 * 1000); // 1 phút
     return () => clearInterval(interval);
   }, [loading]);
   useEffect(() => {
