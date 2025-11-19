@@ -320,13 +320,17 @@ const Dashboard = () => {
         if (soilData.length > 0) console.log('🌱 Sample soil data:', soilData[0]);
         if (lightData.length > 0) console.log('💡 Sample light data:', lightData[0]);
         
-        // Luôn tạo time labels từ thời điểm hiện tại trở về 6h trước (GMT+7)
-        // Đây là yêu cầu: hiển thị 6h gần nhất từ khi mở web
-        timeLabelsData = getLast6HoursLabels();
-        
-        // Log data time range để debug (nếu có)
+        // Tạo time labels: có thể dùng từ thời điểm hiện tại hoặc từ data thực tế
+        // Option 1: Từ thời điểm hiện tại (mặc định) - hiển thị 6h gần nhất từ khi mở web
+        // Option 2: Từ data thực tế - hiển thị 6h từ data có sẵn
+        let timeLabelsData;
         const allDataForLabels = [...tempData, ...humData, ...soilData, ...lightData];
-        if (allDataForLabels.length > 0) {
+        
+        // Có thể chọn: USE_DATA_TIME = true để dùng data thực tế, false để dùng thời gian hiện tại
+        const USE_DATA_TIME = false; // Đặt true nếu muốn dùng data thực tế
+        
+        if (USE_DATA_TIME && allDataForLabels.length > 0) {
+          // Option 2: Tạo từ data thực tế (GMT+7)
           const dataTimes = allDataForLabels.map(d => new Date(d.time));
           const minTime = new Date(Math.min(...dataTimes.map(d => d.getTime())));
           const maxTime = new Date(Math.max(...dataTimes.map(d => d.getTime())));
@@ -334,10 +338,42 @@ const Dashboard = () => {
           const minTimeStr = minTime.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', second: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' });
           const maxTimeStr = maxTime.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', second: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' });
           console.log(`📅 Data time range (GMT+7): ${minTimeStr} to ${maxTimeStr}`);
+          
+          // Lấy giờ:phút local (GMT+7) từ minTime
+          const minHour = minTime.getHours();
+          const minMin = minTime.getMinutes();
+          const minRoundedMin = Math.floor(minMin / 15) * 15;
+          
+          // Bắt đầu từ 6h trước minTime
+          let startHour = minHour - 6;
+          let startMin = minRoundedMin;
+          
+          if (startHour < 0) {
+            startHour = 24 + startHour; // Qua nửa đêm
+          }
+          
+          // Tạo 24 labels từ startTime, mỗi 15 phút
+          timeLabelsData = [];
+          let currentHour = startHour;
+          let currentMin = startMin;
+          
+          for (let i = 0; i < 24; i++) {
+            timeLabelsData.push(`${currentHour.toString().padStart(2, '0')}:${currentMin.toString().padStart(2, '0')}`);
+            currentMin += 15;
+            if (currentMin >= 60) {
+              currentMin = 0;
+              currentHour = (currentHour + 1) % 24;
+            }
+          }
+          
+          console.log(`📅 Created ${timeLabelsData.length} time labels from data (GMT+7, starting from ${startHour.toString().padStart(2, '0')}:${startMin.toString().padStart(2, '0')})`);
+        } else {
+          // Option 1: Từ thời điểm hiện tại (mặc định)
+          timeLabelsData = getLast6HoursLabels();
           console.log(`📅 Chart time range (GMT+7): Last 6 hours from current time`);
         }
         
-        console.log(`📅 Created ${timeLabelsData.length} time labels (GMT+7, last 6 hours from now)`);
+        console.log(`📅 Created ${timeLabelsData.length} time labels (GMT+7)`);
         console.log(`📅 First 3 labels: ${timeLabelsData.slice(0, 3).join(', ')}`);
         console.log(`📅 Last 3 labels: ${timeLabelsData.slice(-3).join(', ')}`);
         
