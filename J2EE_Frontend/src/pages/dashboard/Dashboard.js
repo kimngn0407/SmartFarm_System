@@ -52,6 +52,8 @@ const Dashboard = () => {
     soil: 'unknown',
     light: 'unknown'
   });
+  const [lastUpdateTime, setLastUpdateTime] = useState(null); // Thời gian cập nhật data mới nhất
+  const [apiConnectionStatus, setApiConnectionStatus] = useState('checking'); // 'checking' | 'connected' | 'error'
 
   // Hàm lấy dữ liệu sensor thật từ API và filter mỗi 15 phút
   const fetchRealSensorData = async (sensorIds, hours = 6) => {
@@ -926,13 +928,29 @@ const Dashboard = () => {
                 <ListItem divider>
                   <ListItemText
                     primary="Cập nhật cuối"
-                    secondary={new Date().toLocaleString()}
+                    secondary={lastUpdateTime ? lastUpdateTime.toLocaleString('vi-VN', { 
+                      timeZone: 'Asia/Ho_Chi_Minh',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      second: '2-digit',
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric'
+                    }) : 'Đang tải...'}
                   />
                 </ListItem>
                 <ListItem>
                   <ListItemText
                     primary="Kết nối"
-                    secondary={<span style={{ color: '#1976d2', fontWeight: 500 }}>Ổn định</span>}
+                    secondary={
+                      apiConnectionStatus === 'connected' ? (
+                        <span style={{ color: '#43a047', fontWeight: 500 }}>Ổn định</span>
+                      ) : apiConnectionStatus === 'error' ? (
+                        <span style={{ color: '#d32f2f', fontWeight: 500 }}>Không ổn định</span>
+                      ) : (
+                        <span style={{ color: '#ff9800', fontWeight: 500 }}>Đang kiểm tra...</span>
+                      )
+                    }
                   />
                 </ListItem>
               </List>
