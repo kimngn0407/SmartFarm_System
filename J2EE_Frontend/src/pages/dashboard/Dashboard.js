@@ -338,40 +338,29 @@ const Dashboard = () => {
           const minRounded = new Date(minTime);
           minRounded.setMinutes(Math.floor(minTime.getMinutes() / 15) * 15, 0, 0);
           
-          // Tạo labels từ minTime đến maxTime, mỗi 15 phút, tối đa 24 labels
+          // Tạo labels từ minTime, mở rộng về trước và sau để có đủ 6h (24 labels)
           timeLabelsData = [];
-          const current = new Date(minRounded);
-          const endTime = new Date(maxTime);
-          endTime.setMinutes(Math.ceil(maxTime.getMinutes() / 15) * 15, 0, 0);
           
-          // Đảm bảo có ít nhất 6h data (24 labels)
-          const sixHoursLater = new Date(minRounded);
-          sixHoursLater.setHours(sixHoursLater.getHours() + 6);
-          const actualEndTime = endTime > sixHoursLater ? sixHoursLater : endTime;
+          // Bắt đầu từ 6h trước minTime (hoặc từ 00:00 nếu minTime < 6h)
+          const startTime = new Date(minRounded);
+          startTime.setHours(startTime.getHours() - 6);
+          if (startTime.getHours() < 0) {
+            startTime.setHours(0, 0, 0, 0);
+          }
           
-          while (current <= actualEndTime && timeLabelsData.length < 24) {
+          // Làm tròn startTime xuống đến 15 phút
+          startTime.setMinutes(Math.floor(startTime.getMinutes() / 15) * 15, 0, 0);
+          
+          // Tạo 24 labels từ startTime, mỗi 15 phút
+          const current = new Date(startTime);
+          for (let i = 0; i < 24; i++) {
             const hour = current.getHours();
             const min = current.getMinutes();
             timeLabelsData.push(`${hour.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}`);
             current.setMinutes(current.getMinutes() + 15);
           }
           
-          // Nếu chưa đủ 24 labels, bổ sung từ thời gian hiện tại
-          if (timeLabelsData.length < 24) {
-            const defaultLabels = getLast6HoursLabels();
-            // Lấy các labels sau maxTime
-            const maxTimeStr = `${actualEndTime.getHours().toString().padStart(2, '0')}:${actualEndTime.getMinutes().toString().padStart(2, '0')}`;
-            const maxIndex = defaultLabels.indexOf(maxTimeStr);
-            if (maxIndex >= 0 && maxIndex < defaultLabels.length - 1) {
-              const additionalLabels = defaultLabels.slice(maxIndex + 1, 24);
-              timeLabelsData = [...timeLabelsData, ...additionalLabels].slice(0, 24);
-            } else {
-              // Nếu không tìm thấy, dùng labels mặc định từ hiện tại
-              timeLabelsData = defaultLabels;
-            }
-          }
-          
-          console.log(`📅 Created ${timeLabelsData.length} time labels from data`);
+          console.log(`📅 Created ${timeLabelsData.length} time labels from data (starting from ${startTime.getHours().toString().padStart(2, '0')}:${startTime.getMinutes().toString().padStart(2, '0')})`);
           console.log(`📅 First 3 labels: ${timeLabelsData.slice(0, 3).join(', ')}`);
           console.log(`📅 Last 3 labels: ${timeLabelsData.slice(-3).join(', ')}`);
         } else {
