@@ -137,38 +137,44 @@ const Dashboard = () => {
     });
     
     // Map data values với time labels dựa trên thời gian thực tế
+    // So sánh chỉ dựa trên giờ:phút, không quan tâm ngày
     const mappedValues = timeLabels.map((label, index) => {
       // Parse label thành thời gian (HH:MM)
       const [labelHour, labelMin] = label.split(':').map(Number);
-      const labelTime = new Date();
-      labelTime.setHours(labelHour, labelMin, 0, 0);
-      // Đặt ngày là hôm nay
-      const today = new Date();
-      labelTime.setFullYear(today.getFullYear(), today.getMonth(), today.getDate());
       
-      // Tìm data point gần nhất với label time (trong khoảng ±7.5 phút)
+      // Tìm data point có giờ:phút gần nhất với label
       let closestData = null;
       let minDiff = Infinity;
       
       for (const item of data) {
         const itemTime = new Date(item.time);
-        // Tính khoảng cách thời gian (có thể khác ngày)
-        const diffMinutes = Math.abs((itemTime - labelTime) / (1000 * 60));
+        const itemHour = itemTime.getHours();
+        const itemMin = itemTime.getMinutes();
         
-        // Chấp nhận data trong khoảng ±7.5 phút (nửa interval)
-        // Hoặc nếu không có data trong khoảng đó, lấy data gần nhất (trong 30 phút)
-        if (diffMinutes <= 7.5 && diffMinutes < minDiff) {
-          minDiff = diffMinutes;
-          closestData = item;
-        } else if (diffMinutes <= 30 && minDiff > 7.5 && diffMinutes < minDiff) {
-          // Nếu không có data trong ±7.5 phút, chấp nhận data trong ±30 phút
+        // Tính khoảng cách chỉ dựa trên giờ:phút (không quan tâm ngày)
+        // Chuyển về phút trong ngày để so sánh
+        const labelMinutes = labelHour * 60 + labelMin;
+        const itemMinutes = itemHour * 60 + itemMin;
+        
+        // Tính khoảng cách (có thể vượt qua nửa đêm)
+        let diffMinutes = Math.abs(itemMinutes - labelMinutes);
+        // Nếu khoảng cách > 12 giờ, có thể là qua nửa đêm
+        if (diffMinutes > 12 * 60) {
+          diffMinutes = 24 * 60 - diffMinutes;
+        }
+        
+        // Chấp nhận data trong khoảng ±15 phút (1 interval)
+        if (diffMinutes <= 15 && diffMinutes < minDiff) {
           minDiff = diffMinutes;
           closestData = item;
         }
       }
       
       if (closestData) {
-        console.log(`   📍 Mapped label ${label} → data time ${new Date(closestData.time).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} (diff: ${minDiff.toFixed(1)} min)`);
+        const itemTime = new Date(closestData.time);
+        const itemHour = itemTime.getHours();
+        const itemMin = itemTime.getMinutes();
+        console.log(`   📍 Mapped label ${label} → data ${itemHour.toString().padStart(2, '0')}:${itemMin.toString().padStart(2, '0')} (diff: ${minDiff.toFixed(0)} min)`);
       }
       
       return closestData ? Number(closestData.value) : null;
@@ -176,6 +182,15 @@ const Dashboard = () => {
     
     const mappedCount = mappedValues.filter(v => v !== null).length;
     console.log(`📊 Mapped ${mappedCount} out of ${timeLabels.length} time labels with data`);
+    
+    // Debug: Log một số data points để kiểm tra
+    if (data.length > 0) {
+      console.log(`📋 Sample data times:`, data.slice(0, 3).map(d => {
+        const dt = new Date(d.time);
+        return `${dt.getHours().toString().padStart(2, '0')}:${dt.getMinutes().toString().padStart(2, '0')}`;
+      }));
+      console.log(`📋 Time labels (first 3):`, timeLabels.slice(0, 3));
+    }
     
     return { avg, min, max, values, times, mappedValues };
   };
