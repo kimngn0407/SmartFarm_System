@@ -81,47 +81,28 @@ const Dashboard = () => {
     // Sắp xếp theo thời gian
     allData.sort((a, b) => new Date(a.time) - new Date(b.time));
     
-    // Lấy 6h gần nhất từ dữ liệu có sẵn (nếu có)
+    // Lấy 6h gần nhất từ thời điểm hiện tại (không phải từ latestTime)
     let recentData = [];
     if (allData.length > 0) {
-      const latestTime = new Date(allData[allData.length - 1].time);
-      const sixHoursAgo = new Date(latestTime.getTime() - 6 * 60 * 60 * 1000);
-      recentData = allData.filter(item => new Date(item.time) >= sixHoursAgo);
-      
-      // Nếu không có dữ liệu trong 6h, lấy tất cả dữ liệu có sẵn
-      if (recentData.length < 2) {
-        recentData = allData.slice(-24); // Lấy tối đa 24 điểm
-        console.log(`📅 No data in last 6h, using all ${recentData.length} available data points`);
-      }
-    }
-    
-    // Filter data để chỉ lấy 1 điểm mỗi 15 phút
-    if (recentData.length > 0) {
-      const filteredData = [];
-      const intervalMinutes = 15; // 15 phút
-      let lastSelectedTime = null;
-      
-      for (const item of recentData) {
+      const now = new Date();
+      const sixHoursAgo = new Date(now.getTime() - 6 * 60 * 60 * 1000);
+      recentData = allData.filter(item => {
         const itemTime = new Date(item.time);
-        
-        if (lastSelectedTime === null) {
-          // Lấy điểm đầu tiên
-          filteredData.push(item);
-          lastSelectedTime = itemTime;
-        } else {
-          // Chỉ lấy điểm nếu cách điểm trước đó >= 15 phút
-          const diffMinutes = (itemTime - lastSelectedTime) / (1000 * 60);
-          if (diffMinutes >= intervalMinutes) {
-            filteredData.push(item);
-            lastSelectedTime = itemTime;
-          }
-        }
-      }
+        return itemTime >= sixHoursAgo;
+      });
       
-      console.log(`⏱️ Filtered to ${filteredData.length} data points (1 point per ${intervalMinutes} minutes)`);
-      return filteredData;
+      console.log(`📅 Data in last 6h: ${recentData.length} points (from ${sixHoursAgo.toISOString()} to ${now.toISOString()})`);
+      
+      // Nếu không có dữ liệu trong 6h, lấy tất cả dữ liệu có sẵn (tối đa 24 điểm)
+      if (recentData.length < 2) {
+        recentData = allData.slice(-24); // Lấy tối đa 24 điểm gần nhất
+        console.log(`📅 No data in last 6h, using last ${recentData.length} available data points`);
+      }
     }
     
+    // Không filter quá chặt - trả về tất cả data trong 6h để mapping có thể tìm được
+    // Logic mapping sẽ tự động chọn data point gần nhất cho mỗi time label
+    console.log(`⏱️ Returning ${recentData.length} data points for mapping (will be mapped to time labels)`);
     return recentData;
   };
 
@@ -161,6 +142,9 @@ const Dashboard = () => {
       const [labelHour, labelMin] = label.split(':').map(Number);
       const labelTime = new Date();
       labelTime.setHours(labelHour, labelMin, 0, 0);
+      // Đặt ngày là hôm nay
+      const today = new Date();
+      labelTime.setFullYear(today.getFullYear(), today.getMonth(), today.getDate());
       
       // Tìm data point gần nhất với label time (trong khoảng ±7.5 phút)
       let closestData = null;
@@ -168,17 +152,30 @@ const Dashboard = () => {
       
       for (const item of data) {
         const itemTime = new Date(item.time);
+        // Tính khoảng cách thời gian (có thể khác ngày)
         const diffMinutes = Math.abs((itemTime - labelTime) / (1000 * 60));
         
         // Chấp nhận data trong khoảng ±7.5 phút (nửa interval)
+        // Hoặc nếu không có data trong khoảng đó, lấy data gần nhất (trong 30 phút)
         if (diffMinutes <= 7.5 && diffMinutes < minDiff) {
+          minDiff = diffMinutes;
+          closestData = item;
+        } else if (diffMinutes <= 30 && minDiff > 7.5 && diffMinutes < minDiff) {
+          // Nếu không có data trong ±7.5 phút, chấp nhận data trong ±30 phút
           minDiff = diffMinutes;
           closestData = item;
         }
       }
       
+      if (closestData) {
+        console.log(`   📍 Mapped label ${label} → data time ${new Date(closestData.time).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} (diff: ${minDiff.toFixed(1)} min)`);
+      }
+      
       return closestData ? Number(closestData.value) : null;
     });
+    
+    const mappedCount = mappedValues.filter(v => v !== null).length;
+    console.log(`📊 Mapped ${mappedCount} out of ${timeLabels.length} time labels with data`);
     
     return { avg, min, max, values, times, mappedValues };
   };
