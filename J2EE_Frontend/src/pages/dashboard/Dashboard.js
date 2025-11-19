@@ -147,9 +147,15 @@ const Dashboard = () => {
       let minDiff = Infinity;
       
       for (const item of data) {
+        // Parse time từ database (UTC) và chuyển sang GMT+7
         const itemTime = new Date(item.time);
-        const itemHour = itemTime.getHours();
-        const itemMin = itemTime.getMinutes();
+        // Database lưu UTC, nhưng cần hiển thị GMT+7
+        // getHours() trả về local time của browser, nhưng data là UTC
+        // Cần convert UTC sang GMT+7
+        const utcTime = new Date(itemTime.toISOString());
+        const gmt7Time = new Date(utcTime.getTime() + 7 * 60 * 60 * 1000); // +7 hours
+        const itemHour = gmt7Time.getUTCHours();
+        const itemMin = gmt7Time.getUTCMinutes();
         
         // Tính khoảng cách chỉ dựa trên giờ:phút (không quan tâm ngày)
         // Chuyển về phút trong ngày để so sánh
@@ -176,9 +182,10 @@ const Dashboard = () => {
       }
       
       if (closestData) {
-        const itemTime = new Date(closestData.time);
-        const itemHour = itemTime.getHours();
-        const itemMin = itemTime.getMinutes();
+        const utcTime = new Date(closestData.time);
+        const gmt7Time = new Date(utcTime.getTime() + 7 * 60 * 60 * 1000);
+        const itemHour = gmt7Time.getUTCHours();
+        const itemMin = gmt7Time.getUTCMinutes();
         console.log(`   📍 Mapped label ${label} → data ${itemHour.toString().padStart(2, '0')}:${itemMin.toString().padStart(2, '0')} (diff: ${minDiff.toFixed(0)} min)`);
       }
       
@@ -581,13 +588,18 @@ const Dashboard = () => {
         
         if (USE_DATA_TIME && allDataForLabels.length > 0) {
           // Tạo từ data thực tế (GMT+7)
-          const dataTimes = allDataForLabels.map(d => new Date(d.time));
+          // Database lưu UTC, cần convert sang GMT+7
+          const dataTimes = allDataForLabels.map(d => {
+            const utcTime = new Date(d.time);
+            // Convert UTC sang GMT+7
+            return new Date(utcTime.getTime() + 7 * 60 * 60 * 1000);
+          });
           const minTime = new Date(Math.min(...dataTimes.map(d => d.getTime())));
           const maxTime = new Date(Math.max(...dataTimes.map(d => d.getTime())));
           
-          // Lấy giờ:phút local (GMT+7) từ minTime
-          const minHour = minTime.getHours();
-          const minMin = minTime.getMinutes();
+          // Lấy giờ:phút GMT+7 từ minTime (đã convert)
+          const minHour = minTime.getUTCHours();
+          const minMin = minTime.getUTCMinutes();
           const minRoundedMin = Math.floor(minMin / 15) * 15;
           
           // Bắt đầu từ 6h trước minTime
