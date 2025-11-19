@@ -574,8 +574,47 @@ const Dashboard = () => {
           lightSensorIds.length > 0 ? fetchRealSensorData(lightSensorIds, 6) : Promise.resolve([])
         ]);
         
-        // Chuẩn bị time labels trước
-        const timeLabelsData = getLast6HoursLabels();
+        // Tạo time labels: dùng cùng logic với initial load
+        let timeLabelsData;
+        const allDataForLabels = [...tempData, ...humData, ...soilData, ...lightData];
+        const USE_DATA_TIME = true; // Cùng flag với initial load
+        
+        if (USE_DATA_TIME && allDataForLabels.length > 0) {
+          // Tạo từ data thực tế (GMT+7)
+          const dataTimes = allDataForLabels.map(d => new Date(d.time));
+          const minTime = new Date(Math.min(...dataTimes.map(d => d.getTime())));
+          const maxTime = new Date(Math.max(...dataTimes.map(d => d.getTime())));
+          
+          // Lấy giờ:phút local (GMT+7) từ minTime
+          const minHour = minTime.getHours();
+          const minMin = minTime.getMinutes();
+          const minRoundedMin = Math.floor(minMin / 15) * 15;
+          
+          // Bắt đầu từ 6h trước minTime
+          let startHour = minHour - 6;
+          let startMin = minRoundedMin;
+          
+          if (startHour < 0) {
+            startHour = 24 + startHour; // Qua nửa đêm
+          }
+          
+          // Tạo 24 labels từ startTime, mỗi 15 phút
+          timeLabelsData = [];
+          let currentHour = startHour;
+          let currentMin = startMin;
+          
+          for (let i = 0; i < 24; i++) {
+            timeLabelsData.push(`${currentHour.toString().padStart(2, '0')}:${currentMin.toString().padStart(2, '0')}`);
+            currentMin += 15;
+            if (currentMin >= 60) {
+              currentMin = 0;
+              currentHour = (currentHour + 1) % 24;
+            }
+          }
+        } else {
+          // Fallback: dùng thời gian hiện tại
+          timeLabelsData = getLast6HoursLabels();
+        }
         
         // Tính toán stats và map với time labels
         const tempStats = calculateStats(tempData, timeLabelsData);
