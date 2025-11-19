@@ -644,7 +644,7 @@ const Dashboard = () => {
   
       <Grid container spacing={3} mb={2} sx={{ display: 'flex', flexWrap: 'wrap' }}>
         {quickStatsData.map((stat, idx) => (
-          <Grid item xs={12} sm={6} md={4} lg={true} key={stat.label} sx={{ flex: { lg: '1 1 0' }, minWidth: { lg: '18%', xs: '100%' } }}>
+          <Grid item xs={12} sm={6} md={4} lg={2} xl={2} key={stat.label} sx={{ flex: { lg: '1 1 0' }, minWidth: { lg: '16%', xs: '100%' } }}>
             <Paper 
               sx={{ 
                 p: 2, 
