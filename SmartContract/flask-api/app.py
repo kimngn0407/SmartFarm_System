@@ -19,14 +19,15 @@ ENGINE = create_engine(DB_URL, future=True)
 app = Flask(__name__)
 
 def canonical(obj: dict) -> str:
-    # ưu tiên 'light', fallback 'light_pct'
+    # Chuẩn hóa JSON để tính hash (bỏ qua các field debug như light_raw, soil_raw, error)
+    # Ưu tiên 'light_pct', fallback 'light'
     payload = {
         "sensorId": int(obj.get("sensorId", 0)),
         "time": int(obj.get("time", int(time.time()))),
         "temperature": obj.get("temperature", None),
         "humidity": obj.get("humidity", None),
         "soil_pct": obj.get("soil_pct", None),
-        "light": obj.get("light", obj.get("light_pct", None))
+        "light": obj.get("light_pct", obj.get("light", None))  # Ưu tiên light_pct
     }
     return json.dumps(payload, separators=(",", ":"), ensure_ascii=False)
 
@@ -39,34 +40,67 @@ def ingest():
         return jsonify(error="unauthorized"), 401
 
     b = request.get_json(force=True)
-    epoch = int(b.get("time", time.time()))
     
-    # FIX: Nếu time < 1000000000 (trước năm 2001), dùng thời gian hiện tại
-    if epoch < 1000000000:
+    # Debug: Log received data
+    print(f"📥 Received JSON keys: {list(b.keys())}")
+    print(f"   - soil_pct: {b.get('soil_pct', 'MISSING')}")
+    print(f"   - light_pct: {b.get('light_pct', 'MISSING')}")
+    print(f"   - light: {b.get('light', 'MISSING')}")
+    
+    raw_time = int(b.get("time", time.time()))
+    
+    # Xử lý time: Nếu time < 1000000000 (trước năm 2001), 
+    # có thể là số giây từ khi khởi động Arduino -> chuyển thành Unix timestamp
+    if raw_time < 1000000000:
+        # Giả sử là số giây từ khi khởi động, dùng thời gian hiện tại
         epoch = int(time.time())
+    else:
+        # Đã là Unix timestamp
+        epoch = raw_time
+    
+    # Kiểm tra có lỗi đọc DHT11 không
+    has_error = b.get("error") is not None
     
     t = b.get("temperature")
     h = b.get("humidity")
     s = b.get("soil_pct")
-    l = b.get("light", b.get("light_pct"))
+    # Ưu tiên light_pct (format mới), fallback light (format cũ)
+    l = b.get("light_pct", b.get("light"))
+    
+    # Debug: Log extracted values
+    print(f"📊 Extracted values:")
+    print(f"   - temperature: {t}")
+    print(f"   - humidity: {h}")
+    print(f"   - soil_pct: {s}")
+    print(f"   - light_pct/light: {l}")
 
     with ENGINE.begin() as cn:
-        if t is not None:
-            cn.execute(text("""INSERT INTO public.sensor_data (sensor_id,value,"time")
-                               VALUES (:sid,:val,to_timestamp(:ts))"""),
-                       {"sid": TEMP_SENSOR_ID, "val": float(t), "ts": epoch})
-        if h is not None:
-            cn.execute(text("""INSERT INTO public.sensor_data (sensor_id,value,"time")
-                               VALUES (:sid,:val,to_timestamp(:ts))"""),
-                       {"sid": HUMID_SENSOR_ID, "val": float(h), "ts": epoch})
+        # Chỉ lưu temperature/humidity nếu không có lỗi
+        if not has_error:
+            if t is not None:
+                cn.execute(text("""INSERT INTO public.sensor_data (sensor_id,value,"time")
+                                   VALUES (:sid,:val,to_timestamp(:ts))"""),
+                           {"sid": TEMP_SENSOR_ID, "val": float(t), "ts": epoch})
+            if h is not None:
+                cn.execute(text("""INSERT INTO public.sensor_data (sensor_id,value,"time")
+                                   VALUES (:sid,:val,to_timestamp(:ts))"""),
+                           {"sid": HUMID_SENSOR_ID, "val": float(h), "ts": epoch})
+        
+        # Luôn lưu soil và light (không phụ thuộc DHT11)
         if s is not None:
+            print(f"💾 INSERTING soil_pct={s} → sensor_id={SOIL_SENSOR_ID}")
             cn.execute(text("""INSERT INTO public.sensor_data (sensor_id,value,"time")
                                VALUES (:sid,:val,to_timestamp(:ts))"""),
                        {"sid": SOIL_SENSOR_ID, "val": float(s), "ts": epoch})
+        else:
+            print(f"⚠️  soil_pct is None, skipping INSERT")
         if l is not None:
+            print(f"💾 INSERTING light_pct={l} → sensor_id={LIGHT_SENSOR_ID}")
             cn.execute(text("""INSERT INTO public.sensor_data (sensor_id,value,"time")
                                VALUES (:sid,:val,to_timestamp(:ts))"""),
                        {"sid": LIGHT_SENSOR_ID, "val": float(l), "ts": epoch})
+        else:
+            print(f"⚠️  light_pct/light is None, skipping INSERT")
 
     # tính hash & đẩy oracle
     c = canonical(b)

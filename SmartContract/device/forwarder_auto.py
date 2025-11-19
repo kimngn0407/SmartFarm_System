@@ -138,6 +138,17 @@ def main():
                         print(f"❌ JSON decode error: {e}")
                         continue
                 
+                # Debug: Kiểm tra soil_pct và light_pct
+                print(f"📊 Parsed payload keys: {list(payload.keys())}")
+                if "soil_pct" in payload:
+                    print(f"   ✅ soil_pct: {payload['soil_pct']}")
+                else:
+                    print(f"   ❌ soil_pct: MISSING (có soil_raw: {'soil_raw' in payload})")
+                if "light_pct" in payload:
+                    print(f"   ✅ light_pct: {payload['light_pct']}")
+                else:
+                    print(f"   ❌ light_pct: MISSING (có light_raw: {'light_raw' in payload}, có light: {'light' in payload})")
+                
                 # Send to Flask API
                 headers = {
                     "Content-Type": "application/json",
