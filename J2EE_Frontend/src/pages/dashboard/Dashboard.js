@@ -30,6 +30,7 @@ const Dashboard = () => {
     avgTemperature: 'N/A',
     avgHumidity: 'N/A',
     avgSoil: 'N/A',
+    avgLight: 'N/A',
     fieldStatusCounts: { Good: 0, Warning: 0, Critical: 0 },
     minTemp: null,
     maxTemp: null,
@@ -42,6 +43,7 @@ const Dashboard = () => {
   const [tempArr, setTempArr] = useState([]);
   const [humArr, setHumArr] = useState([]);
   const [soilArr, setSoilArr] = useState([]);
+  const [lightArr, setLightArr] = useState([]);
   const [timeLabels, setTimeLabels] = useState([]);
   const [farmNames, setFarmNames] = useState([]);
   const [dataSource, setDataSource] = useState({
@@ -241,16 +243,19 @@ const Dashboard = () => {
         if (tempData.length > 0) console.log('🌡️ Sample temp data:', tempData[0]);
         if (humData.length > 0) console.log('💧 Sample hum data:', humData[0]);
         if (soilData.length > 0) console.log('🌱 Sample soil data:', soilData[0]);
+        if (lightData.length > 0) console.log('💡 Sample light data:', lightData[0]);
         
         // Tính toán thống kê
         const tempStats = calculateStats(tempData);
         const humStats = calculateStats(humData);
         const soilStats = calculateStats(soilData);
+        const lightStats = calculateStats(lightData);
         
         console.log('📈 Stats calculated:', {
           temp: { avg: tempStats.avg, min: tempStats.min, max: tempStats.max, count: tempStats.values.length },
           hum: { avg: humStats.avg, min: humStats.min, max: humStats.max, count: humStats.values.length },
-          soil: { avg: soilStats.avg, min: soilStats.min, max: soilStats.max, count: soilStats.values.length }
+          soil: { avg: soilStats.avg, min: soilStats.min, max: soilStats.max, count: soilStats.values.length },
+          light: { avg: lightStats.avg, min: lightStats.min, max: lightStats.max, count: lightStats.values.length }
         });
         
         // Chuẩn bị dữ liệu cho chart
@@ -259,7 +264,7 @@ const Dashboard = () => {
         
         // Nếu có dữ liệu thật, dùng dữ liệu thật
         // Nếu không có, tạo sample data để chart hiển thị (12 điểm)
-        let tempValues, humValues, soilValues;
+        let tempValues, humValues, soilValues, lightValues;
         const newDataSource = { ...dataSource };
         
         if (tempStats.values.length > 0) {
@@ -298,6 +303,18 @@ const Dashboard = () => {
           console.warn('⚠️ 🌱 Soil moisture chart: Using SAMPLE data (no IoT data available)');
         }
         
+        if (lightStats.values.length > 0) {
+          lightValues = lightStats.values;
+          newDataSource.light = 'iot';
+          console.log('✅ 💡 Light chart: Using IoT data (' + lightStats.values.length + ' points)');
+        } else {
+          // Tạo sample data: 12 điểm với giá trị trung bình
+          const baseLight = 60; // Ánh sáng mẫu (%)
+          lightValues = Array.from({ length: 12 }, () => baseLight + (Math.random() - 0.5) * 20);
+          newDataSource.light = 'sample';
+          console.warn('⚠️ 💡 Light chart: Using SAMPLE data (no IoT data available)');
+        }
+        
         setDataSource(newDataSource);
         
         // Đảm bảo số lượng labels và data khớp nhau
@@ -327,8 +344,16 @@ const Dashboard = () => {
             soilValues = soilValues.slice(0, labelCount);
           }
         }
+        if (lightValues.length !== labelCount) {
+          if (lightValues.length < labelCount) {
+            const lastValue = lightValues[lightValues.length - 1] || 60;
+            lightValues = [...lightValues, ...Array(labelCount - lightValues.length).fill(lastValue)];
+          } else {
+            lightValues = lightValues.slice(0, labelCount);
+          }
+        }
         
-        const hasRealData = tempStats.values.length > 0 || humStats.values.length > 0 || soilStats.values.length > 0;
+        const hasRealData = tempStats.values.length > 0 || humStats.values.length > 0 || soilStats.values.length > 0 || lightStats.values.length > 0;
         console.log('📊 Chart data prepared:', {
           labels: labelCount,
           temp: tempValues.length,
@@ -343,6 +368,7 @@ const Dashboard = () => {
           console.log('   - Temperature:', newDataSource.temp === 'iot' ? '✅ IoT' : '❌ Sample');
           console.log('   - Humidity:', newDataSource.hum === 'iot' ? '✅ IoT' : '❌ Sample');
           console.log('   - Soil:', newDataSource.soil === 'iot' ? '✅ IoT' : '❌ Sample');
+          console.log('   - Light:', newDataSource.light === 'iot' ? '✅ IoT' : '❌ Sample');
         } else {
           console.warn('⚠️ ⚠️ ⚠️ CHART IS USING SAMPLE DATA ⚠️ ⚠️ ⚠️');
         }
@@ -350,12 +376,14 @@ const Dashboard = () => {
         setTempArr(tempValues);
         setHumArr(humValues);
         setSoilArr(soilValues);
+        setLightArr(lightValues);
         setTimeLabels(timeLabelsData);
         
         // Tính toán stats
         const avgTemperature = tempStats.avg || 0;
         const avgHumidity = humStats.avg || 0;
         const avgSoil = soilStats.avg || 0;
+        const avgLight = lightStats.avg || 0;
         const minTemp = tempStats.min || 0;
         const maxTemp = tempStats.max || 0;
         const avgSoil12h = soilStats.avg || 0;
@@ -397,6 +425,7 @@ const Dashboard = () => {
           avgTemperature: avgTemperature.toFixed(1), 
           avgHumidity: avgHumidity.toFixed(1), 
           avgSoil: avgSoil.toFixed(1), 
+          avgLight: avgLight.toFixed(1),
           fieldStatusCounts,
           minTemp: minTemp.toFixed(1),
           maxTemp: maxTemp.toFixed(1),
@@ -411,6 +440,7 @@ const Dashboard = () => {
         console.log('  - Temperature data points:', tempData.length);
         console.log('  - Humidity data points:', humData.length);
         console.log('  - Soil data points:', soilData.length);
+        console.log('  - Light data points:', lightData.length);
         
       } catch (error) {
         console.error('❌ Error in fetchData:', error);
@@ -520,10 +550,18 @@ const Dashboard = () => {
           backgroundColor: '#D7CCC8',
           tension: 0.4,
           yAxisID: 'y2',
+        },
+        {
+          label: 'Ánh sáng (%)',
+          data: lightArr.length > 0 ? lightArr : Array(timeLabels.length).fill(0),
+          borderColor: '#FFD700',
+          backgroundColor: '#FFF9C4',
+          tension: 0.4,
+          yAxisID: 'y3',
         }
       ]
     });
-  }, [tempArr, humArr, soilArr, timeLabels]);
+  }, [tempArr, humArr, soilArr, lightArr, timeLabels]);
 
   const quickStatsData = [
     {
@@ -555,6 +593,12 @@ const Dashboard = () => {
       value: formatPercentage(stats.avgSoil),
       icon: <SpaIcon fontSize="large" color="success" />,
       color: '#d7ccc8'
+    },
+    {
+      label: 'Ánh sáng TB',
+      value: formatPercentage(stats.avgLight),
+      icon: <LightModeIcon fontSize="large" color="warning" />,
+      color: '#fff9c4'
     }
   ];
 
@@ -636,14 +680,14 @@ const Dashboard = () => {
           <ChartContainer 
             title={
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Typography variant="h6">Biểu đồ nhiệt độ, độ ẩm không khí & độ ẩm đất 12 giờ gần nhất</Typography>
-                {dataSource.temp === 'iot' || dataSource.hum === 'iot' || dataSource.soil === 'iot' ? (
+                <Typography variant="h6">Biểu đồ nhiệt độ, độ ẩm không khí, độ ẩm đất & ánh sáng 12 giờ gần nhất</Typography>
+                {dataSource.temp === 'iot' || dataSource.hum === 'iot' || dataSource.soil === 'iot' || dataSource.light === 'iot' ? (
                   <StatusBadge 
                     status="success" 
                     label="Dữ liệu IoT" 
                     sx={{ ml: 1 }}
                   />
-                ) : dataSource.temp === 'sample' || dataSource.hum === 'sample' || dataSource.soil === 'sample' ? (
+                ) : dataSource.temp === 'sample' || dataSource.hum === 'sample' || dataSource.soil === 'sample' || dataSource.light === 'sample' ? (
                   <StatusBadge 
                     status="warning" 
                     label="Dữ liệu mẫu" 
@@ -695,6 +739,14 @@ const Dashboard = () => {
                       position: 'right',
                       grid: { drawOnChartArea: false },
                       title: { display: true, text: 'Độ ẩm đất (%)' },
+                      beginAtZero: false
+                    },
+                    y3: {
+                      type: 'linear',
+                      display: true,
+                      position: 'right',
+                      grid: { drawOnChartArea: false },
+                      title: { display: true, text: 'Ánh sáng (%)' },
                       beginAtZero: false
                     }
                   }
