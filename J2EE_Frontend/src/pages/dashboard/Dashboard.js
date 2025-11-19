@@ -123,9 +123,12 @@ const Dashboard = () => {
     const avg = values.reduce((a, b) => a + b, 0) / values.length;
     const min = Math.min(...values);
     const max = Math.max(...values);
+    // Tạo time labels, đảm bảo không trùng lặp bằng cách làm tròn đến 15 phút
     const times = data.map(d => {
       const date = new Date(d.time);
-      return date.getHours().toString().padStart(2, '0') + ':' + date.getMinutes().toString().padStart(2, '0');
+      // Làm tròn phút xuống đến bội số của 15
+      const roundedMinutes = Math.floor(date.getMinutes() / 15) * 15;
+      return date.getHours().toString().padStart(2, '0') + ':' + roundedMinutes.toString().padStart(2, '0');
     });
     
     return { avg, min, max, values, times };
@@ -450,7 +453,7 @@ const Dashboard = () => {
     fetchData();
   }, []);
 
-  // Real-time update mỗi 30 phút - lấy dữ liệu mới từ API
+  // Real-time update mỗi 15 phút - lấy dữ liệu mới từ API
   useEffect(() => {
     if (loading) return;
     
@@ -518,8 +521,8 @@ const Dashboard = () => {
     // Cập nhật ngay lập tức
     updateData();
     
-    // Sau đó cập nhật mỗi 30 phút
-    const interval = setInterval(updateData, 30 * 60 * 1000); // 30 phút
+    // Sau đó cập nhật mỗi 15 phút
+    const interval = setInterval(updateData, 15 * 60 * 1000); // 15 phút
     return () => clearInterval(interval);
   }, [loading]);
   useEffect(() => {
