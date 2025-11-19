@@ -67,11 +67,12 @@ def ingest():
     # Ưu tiên light_pct (format mới), fallback light (format cũ)
     l = b.get("light_pct", b.get("light"))
     
-    # Nếu soil_pct là 0 hoặc None, nhưng có soil_raw, tính lại từ soil_raw
+    # Nếu soil_pct là None (không có), nhưng có soil_raw, tính từ soil_raw
     # Logic: soil_raw cao (1023) = đất khô = soil_pct thấp (0%)
     #        soil_raw thấp (0) = đất ướt = soil_pct cao (100%)
+    # LƯU Ý: Không tính lại nếu soil_pct = 0 (vì 0 là giá trị hợp lệ khi đất khô)
     soil_raw = b.get("soil_raw")
-    if (s is None or s == 0) and soil_raw is not None:
+    if s is None and soil_raw is not None:
         # Tính soil_pct từ soil_raw: đảo ngược (1023 → 0%, 0 → 100%)
         soil_raw_val = int(soil_raw)
         if 0 <= soil_raw_val <= 1023:
