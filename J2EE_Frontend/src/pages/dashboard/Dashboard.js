@@ -709,6 +709,16 @@ const Dashboard = () => {
         const soilStats = calculateStats(soilData, timeLabelsData);
         const lightStats = calculateStats(lightData, timeLabelsData);
         
+        // Debug: Log humidity data trong real-time update
+        console.log('🔄 Real-time update - Humidity data:');
+        console.log('  - Raw data points:', humData.length);
+        console.log('  - Mapped values:', humStats.mappedValues?.filter(v => v !== null).length || 0, 'out of', timeLabelsData.length);
+        if (humData.length > 0) {
+          console.log('  - Sample humidity values:', humData.slice(0, 5).map(d => ({ time: d.time, value: d.value })));
+          console.log('  - Unique values:', [...new Set(humData.map(d => d.value))].sort((a, b) => a - b));
+          console.log('  - Mapped humidity values (first 5):', humStats.mappedValues?.slice(0, 5));
+        }
+        
         // Cập nhật time labels (luôn cập nhật để đảm bảo sync với current time)
         setTimeLabels(timeLabelsData);
         
