@@ -63,21 +63,28 @@ def ingest():
     
     t = b.get("temperature")
     h = b.get("humidity")
-    s = b.get("soil_pct")
     # Ưu tiên light_pct (format mới), fallback light (format cũ)
     l = b.get("light_pct", b.get("light"))
     
-    # Nếu soil_pct là None (không có), nhưng có soil_raw, tính từ soil_raw
+    # LUÔN tính soil_pct từ soil_raw nếu có (bỏ qua soil_pct từ Arduino)
+    # Vì Arduino có thể gửi soil_pct = 0 nhưng soil_raw thay đổi
     # Logic: soil_raw cao (1023) = đất khô = soil_pct thấp (0%)
     #        soil_raw thấp (0) = đất ướt = soil_pct cao (100%)
-    # LƯU Ý: Không tính lại nếu soil_pct = 0 (vì 0 là giá trị hợp lệ khi đất khô)
+    s = None
     soil_raw = b.get("soil_raw")
-    if s is None and soil_raw is not None:
+    if soil_raw is not None:
         # Tính soil_pct từ soil_raw: đảo ngược (1023 → 0%, 0 → 100%)
         soil_raw_val = int(soil_raw)
         if 0 <= soil_raw_val <= 1023:
             s = 100 - (soil_raw_val * 100 / 1023)
             print(f"🔄 Calculated soil_pct from soil_raw: {soil_raw_val} → {s:.1f}%")
+        else:
+            print(f"⚠️  soil_raw out of range: {soil_raw_val} (expected 0-1023)")
+    else:
+        # Fallback: dùng soil_pct từ Arduino nếu không có soil_raw
+        s = b.get("soil_pct")
+        if s is not None:
+            print(f"📌 Using soil_pct from Arduino: {s}%")
     
     # Debug: Log extracted values
     print(f"📊 Extracted values:")
