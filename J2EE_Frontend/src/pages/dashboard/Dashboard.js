@@ -197,9 +197,10 @@ const Dashboard = () => {
     
     // Debug: Log một số data points để kiểm tra
     if (data.length > 0) {
-      console.log(`📋 Sample data times:`, data.slice(0, 3).map(d => {
-        const dt = new Date(d.time);
-        return `${dt.getHours().toString().padStart(2, '0')}:${dt.getMinutes().toString().padStart(2, '0')}`;
+      console.log(`📋 Sample data times (GMT+7):`, data.slice(0, 3).map(d => {
+        const utcTime = new Date(d.time);
+        const gmt7Time = new Date(utcTime.getTime() + 7 * 60 * 60 * 1000);
+        return `${gmt7Time.getUTCHours().toString().padStart(2, '0')}:${gmt7Time.getUTCMinutes().toString().padStart(2, '0')}`;
       }));
       console.log(`📋 Time labels (first 3):`, timeLabels.slice(0, 3));
     }
