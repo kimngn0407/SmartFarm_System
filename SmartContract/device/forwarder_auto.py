@@ -124,7 +124,8 @@ def main():
                     else:
                         continue
                 
-                print(f"📥 Received: {line[:80]}...")
+                # Hiển thị đầy đủ JSON (không cắt)
+                print(f"📥 Received: {line}")
                 
                 # Parse JSON from Arduino
                 try:
@@ -148,6 +149,9 @@ def main():
                     print(f"   ✅ light_pct: {payload['light_pct']}")
                 else:
                     print(f"   ❌ light_pct: MISSING (có light_raw: {'light_raw' in payload}, có light: {'light' in payload})")
+                
+                # Debug: Hiển thị toàn bộ payload để verify
+                print(f"📤 Sending to Flask API: {json.dumps(payload, separators=(',', ':'))}")
                 
                 # Send to Flask API
                 headers = {
