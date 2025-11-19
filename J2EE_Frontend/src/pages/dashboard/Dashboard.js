@@ -503,11 +503,14 @@ const Dashboard = () => {
           lightSensorIds.length > 0 ? fetchRealSensorData(lightSensorIds, 6) : Promise.resolve([])
         ]);
         
-        // Tính toán stats
-        const tempStats = calculateStats(tempData);
-        const humStats = calculateStats(humData);
-        const soilStats = calculateStats(soilData);
-        const lightStats = calculateStats(lightData);
+        // Chuẩn bị time labels trước
+        const timeLabelsData = getLast6HoursLabels();
+        
+        // Tính toán stats và map với time labels
+        const tempStats = calculateStats(tempData, timeLabelsData);
+        const humStats = calculateStats(humData, timeLabelsData);
+        const soilStats = calculateStats(soilData, timeLabelsData);
+        const lightStats = calculateStats(lightData, timeLabelsData);
         
         // Cập nhật state
         // Luôn dùng labels từ thời gian hiện tại để đảm bảo hiển thị đúng giờ
