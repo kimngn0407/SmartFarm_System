@@ -11,8 +11,12 @@ AI_SmartFarm_CHatbot/out/
 demoSmartFarm/demo/target/
 
 # Python virtual environments
+**/.venv/
+**/venv/
 RecommentCrop/.venv/
 PestAndDisease/.venv/
+SmartContract/flask-api/.venv/
+SmartContract/device/venv/
 __pycache__/
 *.pyc
 *.pyo
