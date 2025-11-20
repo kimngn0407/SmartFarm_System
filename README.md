@@ -1,4 +1,4 @@
-# 🌾 SmartFarm - Hệ Thống Nông Nghiệp Thông Minh`
+# 🌾 SmartFarm - Hệ Thống Nông Nghiệp Thông Minh
 
 > **Hệ thống quản lý nông trại đầy đủ với AI Chatbot, Machine Learning, IoT Sensors, và Blockchain**
 
@@ -140,7 +140,6 @@ SmartFarm/
 ├── 🐳 Docker & Deployment
 │   ├── docker-compose.yml          # Docker Compose configuration
 │   ├── deploy.sh                   # Deployment script
-│   ├── rebuild.sh                  # Rebuild script
 │   └── nginx/                      # Nginx configuration
 │
 ├── 📚 Documentation
@@ -157,7 +156,6 @@ SmartFarm/
 │
 └── 🔧 Configuration & Scripts
     ├── .gitignore                  # Git ignore rules
-    ├── rebuild_venv.sh             # Python venv rebuild script
     └── ...                         # Other utility scripts
 ```
 
@@ -514,7 +512,6 @@ nano docker-compose.yml
 | [`INSTALLATION.md`](INSTALLATION.md) | Hướng dẫn cài đặt chi tiết |
 | [`PROJECT_STRUCTURE.md`](PROJECT_STRUCTURE.md) | Giải thích cấu trúc dự án |
 | [`DEPLOY_GUIDE.md`](DEPLOY_GUIDE.md) | Hướng dẫn deployment |
-| [`REBUILD_INSTRUCTIONS.md`](REBUILD_INSTRUCTIONS.md) | Hướng dẫn rebuild |
 
 ### Feature Documentation
 
@@ -522,14 +519,12 @@ nano docker-compose.yml
 |------|-------|
 | [`EMAIL_SETUP_GUIDE.md`](EMAIL_SETUP_GUIDE.md) | Cấu hình email alerts |
 | [`ALERT_MIGRATION_GUIDE.md`](ALERT_MIGRATION_GUIDE.md) | Database migration cho alerts |
-| [`VPS_EMAIL_SETUP_STEP_BY_STEP.md`](VPS_EMAIL_SETUP_STEP_BY_STEP.md) | Cấu hình email trên VPS |
 
 ### Quick References
 
 | File | Mô tả |
 |------|-------|
 | [`QUICK_EMAIL_UPDATE.md`](QUICK_EMAIL_UPDATE.md) | Cập nhật email nhanh |
-| [`VPS_EMAIL_QUICK_UPDATE.txt`](VPS_EMAIL_QUICK_UPDATE.txt) | Script cập nhật email |
 
 ---
 

@@ -37,7 +37,7 @@ Tìm dòng:
       # Email Configuration
       MAIL_HOST: smtp.gmail.com
       MAIL_PORT: 587
-      MAIL_USERNAME: your-email@gmail.com
+      MAIL_USERNAME: lovengan0407@gmail.com
       MAIL_PASSWORD: bjjdyvqwrrmqdicg
       MAIL_FROM: your-email@gmail.com
 ```

@@ -637,17 +637,17 @@ const AlertScreen = () => {
             </Paper>
 
             {/* Alerts Grid - Card Layout */}
-            {!Array.isArray(filteredAlerts) || filteredAlerts.length === 0 ? (
+              {!Array.isArray(filteredAlerts) || filteredAlerts.length === 0 ? (
               <Paper sx={{ p: 4, textAlign: 'center', borderRadius: 3 }}>
-                <NotificationsIcon sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
-                <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
-                  Không có cảnh báo nào
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Hiện tại không có cảnh báo nào phù hợp với bộ lọc của bạn
-                </Typography>
+                  <NotificationsIcon sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
+                  <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
+                    Không có cảnh báo nào
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Hiện tại không có cảnh báo nào phù hợp với bộ lọc của bạn
+                  </Typography>
               </Paper>
-            ) : (
+              ) : (
               <Grid container spacing={3}>
                 {Array.isArray(filteredAlerts) && filteredAlerts.map((alert) => {
                   const status = String(alert.status || '').trim();
@@ -717,25 +717,25 @@ const AlertScreen = () => {
                                 {isCritical ? <ErrorIcon /> : isWarning ? <WarningIcon /> : <CheckCircleIcon />}
                               </Box>
                               <Box sx={{ flexGrow: 1 }}>
-                                <Chip
+                              <Chip
                                   label={statusLabel}
-                                  color={getAlertColor(alert.status)}
-                                  size="small"
+                                color={getAlertColor(alert.status)}
+                                size="small"
                                   sx={{ fontWeight: 600, mb: 0.5 }}
-                                />
+                              />
                                 <Typography variant="caption" display="block" color="text.secondary" sx={{ mt: 0.5 }}>
                                   {getSensorTypeFromMessage(alert.message)}
                                 </Typography>
                               </Box>
                             </Box>
                             <IconButton
-                              size="small"
+                                size="small"
                               onClick={() => handleViewDetail(alert)}
                               sx={{ color: 'text.secondary' }}
                             >
                               <VisibilityIcon fontSize="small" />
                             </IconButton>
-                          </Box>
+                            </Box>
                           
                           {/* Alert Message */}
                           <Typography
@@ -808,27 +808,27 @@ const AlertScreen = () => {
                           
                           {/* Location and Sensor Info */}
                           <Box sx={{ mb: 2 }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                               <LocationIcon sx={{ fontSize: 16, mr: 1, color: 'text.secondary' }} />
                               <Typography variant="body2" color="text.secondary">
-                                {alert.fieldName || alert.field?.name || 'Khu vực không xác định'}
-                              </Typography>
+                                  {alert.fieldName || alert.field?.name || 'Khu vực không xác định'}
+                                </Typography>
                             </Box>
                             <Box sx={{ display: 'flex', alignItems: 'center' }}>
                               <SensorIcon sx={{ fontSize: 16, mr: 1, color: 'text.secondary' }} />
-                              <Typography variant="body2" color="text.secondary">
-                                {alert.sensorName || alert.sensor?.name || 'Cảm biến không xác định'}
-                              </Typography>
-                            </Box>
+                                <Typography variant="body2" color="text.secondary">
+                                  {alert.sensorName || alert.sensor?.name || 'Cảm biến không xác định'}
+                                </Typography>
+                              </Box>
                           </Box>
                           
                           {/* Timestamp */}
                           <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                             <ScheduleIcon sx={{ fontSize: 16, mr: 1, color: 'text.secondary' }} />
                             <Typography variant="caption" color="text.secondary">
-                              {formatTime(alert.timestamp)}
-                            </Typography>
-                          </Box>
+                                {formatTime(alert.timestamp)}
+                              </Typography>
+                            </Box>
                         </CardContent>
                         
                         {/* Action Buttons */}
@@ -844,7 +844,7 @@ const AlertScreen = () => {
                           {(isCritical || isWarning) && (
                             <Button
                               variant="contained"
-                              color="success"
+                                color="success"
                               fullWidth
                               startIcon={<DoneIcon />}
                               onClick={() => handleResolveAlert(alert.id)}
@@ -876,7 +876,7 @@ const AlertScreen = () => {
                   );
                 })}
               </Grid>
-            )}
+              )}
           </Box>
         </Fade>
 
@@ -900,8 +900,8 @@ const AlertScreen = () => {
               <Box>
                 <Box sx={{ mb: 3 }}>
                   <Typography variant="h5" sx={{ mb: 1, fontWeight: 600 }}>
-                    {selectedAlert.message}
-                  </Typography>
+                  {selectedAlert.message}
+                </Typography>
                   <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                     <Chip
                       label={(() => {
@@ -949,7 +949,7 @@ const AlertScreen = () => {
                             {selectedAlert.type === 'Soil Moisture' && '%'}
                             {selectedAlert.type === 'Light' && '%'}
                           </Typography>
-                        </Grid>
+                  </Grid>
                         {selectedAlert.thresholdMin !== null && (
                           <Grid item xs={12} sm={4}>
                             <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
@@ -1015,9 +1015,9 @@ const AlertScreen = () => {
                   <Grid item xs={12} sm={6}>
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                       <LocationIcon sx={{ mr: 1, color: 'text.secondary' }} />
-                      <Typography variant="subtitle2" color="text.secondary">
-                        Khu vực
-                      </Typography>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Khu vực
+                    </Typography>
                     </Box>
                     <Typography variant="body1" sx={{ fontWeight: 500 }}>
                       {selectedAlert.fieldName || selectedAlert.field?.name || 'Không xác định'}
@@ -1027,9 +1027,9 @@ const AlertScreen = () => {
                   <Grid item xs={12} sm={6}>
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                       <SensorIcon sx={{ mr: 1, color: 'text.secondary' }} />
-                      <Typography variant="subtitle2" color="text.secondary">
-                        Cảm biến
-                      </Typography>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Cảm biến
+                    </Typography>
                     </Box>
                     <Typography variant="body1" sx={{ fontWeight: 500 }}>
                       {selectedAlert.sensorName || selectedAlert.sensor?.name || 'Không xác định'}
@@ -1039,9 +1039,9 @@ const AlertScreen = () => {
                   <Grid item xs={12}>
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                       <ScheduleIcon sx={{ mr: 1, color: 'text.secondary' }} />
-                      <Typography variant="subtitle2" color="text.secondary">
-                        Thời gian
-                      </Typography>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Thời gian
+                    </Typography>
                     </Box>
                     <Typography variant="body1" sx={{ fontWeight: 500 }}>
                       {selectedAlert.timestamp ? new Date(selectedAlert.timestamp).toLocaleString('vi-VN', {
