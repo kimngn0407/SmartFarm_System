@@ -23,6 +23,8 @@ import alertService from '../../services/alertService';
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, BarController, BarElement);
 
+const DEFAULT_FIELD_STATUS_COUNTS = { Good: 2, Warning: 2, Critical: 2 };
+
 const Dashboard = () => {
   const [stats, setStats] = useState({
     totalSensors: 0,
@@ -357,6 +359,9 @@ const Dashboard = () => {
           }
         }));
         
+        // 4.b Theo yêu cầu, nếu muốn giữ mặc định 2-2-2 thay vì dữ liệu thật
+        fieldStatusCounts = { ...DEFAULT_FIELD_STATUS_COUNTS };
+
         // 5. Lấy dữ liệu sensor thật từ IoT
         console.log('🔍 Fetching real sensor data from IoT...');
         console.log(`📋 Total sensors: ${allSensors.length}`);
