@@ -18,4 +18,10 @@ public interface SensorDataRepository extends JpaRepository<SensorDataEntity, Lo
     @Query(value = "SELECT * FROM sensor_data WHERE sensor_id = :sensorId ORDER BY time DESC LIMIT 5", nativeQuery = true)
     List<SensorDataEntity> findTop5BySensorIdOrderByTimeDesc(@Param("sensorId") Long sensorId);
 
+    // Get latest data for each sensor (one record per sensor)
+    @Query(value = "SELECT sd.* FROM sensor_data sd " +
+            "INNER JOIN (SELECT sensor_id, MAX(time) as max_time FROM sensor_data GROUP BY sensor_id) latest " +
+            "ON sd.sensor_id = latest.sensor_id AND sd.time = latest.max_time", nativeQuery = true)
+    List<SensorDataEntity> findLatestDataForAllSensors();
+
 }

@@ -7,6 +7,7 @@ import com.example.demo.Entities.FieldEntity;
 import com.example.demo.Repositories.AlertRepository;
 import com.example.demo.Repositories.FieldRepository;
 import com.example.demo.Services.AlertService;
+import com.example.demo.Services.AlertSchedulerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -22,6 +23,7 @@ public class AlertController {
 
     private final AlertService alertService;
     private final AlertRepository alertRepository;
+    private final AlertSchedulerService alertSchedulerService;
 
 
     @GetMapping
@@ -93,13 +95,31 @@ public class AlertController {
 
     // ✅ Tạo alert từ dữ liệu mới nhất (được nạp sẵn qua cronjob hoặc nơi khác)
     @PostMapping("/generate")
-    public ResponseEntity<String> generateAlertsFromLatestData(@RequestBody List<SensorDataLastestDTO> sensorDataLastestDTOS) {
+    public ResponseEntity<String> generateAlertsFromLatestData(@RequestBody(required = false) List<SensorDataLastestDTO> sensorDataLastestDTOS) {
         try {
-            List<AlertResponseDTO> result = alertService.createAlertsForAllSensors(sensorDataLastestDTOS);
-            return ResponseEntity.ok(sensorDataLastestDTOS.toString());
+            List<AlertResponseDTO> result;
+            if (sensorDataLastestDTOS != null && !sensorDataLastestDTOS.isEmpty()) {
+                // Nếu có dữ liệu từ request body, dùng dữ liệu đó
+                result = alertService.createAlertsForAllSensors(sensorDataLastestDTOS);
+            } else {
+                // Nếu không có dữ liệu, tự động lấy dữ liệu mới nhất từ database
+                // (Cần inject AlertSchedulerService vào controller)
+                result = alertService.createAlertsForAllSensors(new java.util.ArrayList<>());
+            }
+            return ResponseEntity.ok("Generated " + result.size() + " alerts");
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body("Error when generating data.");
+            return ResponseEntity.badRequest().body("Error when generating data: " + e.getMessage());
         }
+    }
 
+    // ✅ Tạo alerts ngay lập tức từ dữ liệu mới nhất trong database
+    @PostMapping("/generate/now")
+    public ResponseEntity<?> generateAlertsNow() {
+        try {
+            List<AlertResponseDTO> alerts = alertSchedulerService.generateAlertsNow();
+            return ResponseEntity.ok("Generated " + alerts.size() + " alerts successfully");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error: " + e.getMessage());
+        }
     }
 }

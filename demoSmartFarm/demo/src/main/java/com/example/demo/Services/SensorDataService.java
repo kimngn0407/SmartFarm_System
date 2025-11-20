@@ -63,6 +63,16 @@ public class SensorDataService {
                 .collect(Collectors.toList());
     }
 
-
+    // Get latest data for all sensors (one record per sensor)
+    public List<SensorDataDTO> getLatestDataForAllSensors() {
+        List<SensorDataEntity> sensorDataList = sensorDataRepository.findLatestDataForAllSensors();
+        return sensorDataList.stream()
+                .map(data -> new SensorDataDTO(
+                        data.getId(),
+                        data.getSensor().getId(),
+                        data.getValue(),
+                        data.getTime()))
+                .collect(Collectors.toList());
+    }
 
 }
