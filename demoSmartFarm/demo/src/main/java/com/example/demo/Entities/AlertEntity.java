@@ -43,16 +43,16 @@ public class AlertEntity {
     @JsonIgnoreProperties({"farm", "sensors", "cropSeason"})
     private FieldEntity field;
 
-    @Transient
+    @Column(name = "type")
     private String type;
 
-    @Transient
+    @Column(name = "value")
     private Double value;
 
-    @Transient
+    @Column(name = "threshold_min")
     private Double thresholdMin;
 
-    @Transient
+    @Column(name = "threshold_max")
     private Double thresholdMax;
 }
 

@@ -676,9 +676,9 @@ const AlertScreen = () => {
                   }
                   
                   // Calculate if value is above or below threshold
-                  const value = alert.value;
-                  const min = alert.thresholdMin;
-                  const max = alert.thresholdMax;
+                  const value = alert.value !== null && alert.value !== undefined ? alert.value : null;
+                  const min = alert.thresholdMin !== null && alert.thresholdMin !== undefined ? alert.thresholdMin : null;
+                  const max = alert.thresholdMax !== null && alert.thresholdMax !== undefined ? alert.thresholdMax : null;
                   const isAboveMax = value !== null && max !== null && value > max;
                   const isBelowMin = value !== null && min !== null && value < min;
                   
@@ -751,7 +751,7 @@ const AlertScreen = () => {
                           </Typography>
                           
                           {/* Value and Threshold Display */}
-                          {value !== null && value !== undefined && (
+                          {value !== null && value !== undefined ? (
                             <Box
                               sx={{
                                 p: 2,
@@ -788,6 +788,21 @@ const AlertScreen = () => {
                                   Ngưỡng: {min !== null ? min.toFixed(1) : 'N/A'} - {max !== null ? max.toFixed(1) : 'N/A'}
                                 </Typography>
                               )}
+                            </Box>
+                          ) : (
+                            <Box
+                              sx={{
+                                p: 2,
+                                mb: 2,
+                                borderRadius: 2,
+                                backgroundColor: 'rgba(255, 255, 255, 0.7)',
+                                border: '1px solid rgba(0, 0, 0, 0.1)',
+                                textAlign: 'center',
+                              }}
+                            >
+                              <Typography variant="body2" color="text.secondary">
+                                Chưa có dữ liệu giá trị
+                              </Typography>
                             </Box>
                           )}
                           
