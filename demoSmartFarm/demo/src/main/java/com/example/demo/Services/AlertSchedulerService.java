@@ -6,7 +6,7 @@ import com.example.demo.Entities.SensorDataEntity;
 import com.example.demo.Repositories.SensorDataRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Scheduled;
+// import org.springframework.scheduling.annotation.Scheduled; // Đã tắt - uncomment khi bật lại
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -29,8 +29,10 @@ public class AlertSchedulerService {
     /**
      * Tự động tạo alerts từ dữ liệu sensor mới nhất
      * Chạy mỗi 5 phút (300000 milliseconds)
+     * 
+     * ⚠️ TẠM TẮT - Để bật lại, uncomment @Scheduled annotation bên dưới
      */
-    @Scheduled(fixedRate = 300000) // 5 phút = 300000 milliseconds
+    // @Scheduled(fixedRate = 300000) // 5 phút = 300000 milliseconds - ĐÃ TẮT
     public void generateAlertsFromLatestSensorData() {
         try {
             log.info("🔄 Bắt đầu tạo alerts từ dữ liệu sensor mới nhất...");

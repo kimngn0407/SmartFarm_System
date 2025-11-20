@@ -17,6 +17,12 @@ import org.thymeleaf.spring6.SpringTemplateEngine;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Email Service - Gửi email cảnh báo
+ * 
+ * ⚠️ TẠM TẮT - Service này chỉ hoạt động khi có cấu hình MAIL_HOST trong docker-compose.yml
+ * Để bật lại, uncomment các dòng MAIL_* trong docker-compose.yml và set giá trị
+ */
 @Service
 @ConditionalOnProperty(name = "spring.mail.host")
 public class EmailService {
