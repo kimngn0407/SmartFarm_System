@@ -94,6 +94,8 @@ public class AlertController {
 //    }
 
     // ✅ Tạo alert từ dữ liệu mới nhất (được nạp sẵn qua cronjob hoặc nơi khác)
+    // ⚠️ ĐÃ TẮT - Để bật lại, uncomment các endpoint này
+    /*
     @PostMapping("/generate")
     public ResponseEntity<String> generateAlertsFromLatestData(@RequestBody(required = false) List<SensorDataLastestDTO> sensorDataLastestDTOS) {
         try {
@@ -122,4 +124,5 @@ public class AlertController {
             return ResponseEntity.badRequest().body("Error: " + e.getMessage());
         }
     }
+    */
 }

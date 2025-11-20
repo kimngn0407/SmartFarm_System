@@ -20,10 +20,11 @@ import java.util.Map;
 /**
  * Email Service - Gửi email cảnh báo
  * 
- * ⚠️ TẠM TẮT - Service này chỉ hoạt động khi có cấu hình MAIL_HOST trong docker-compose.yml
+ * ⚠️ ĐÃ TẮT - Service này chỉ hoạt động khi có cấu hình MAIL_HOST trong docker-compose.yml
  * Để bật lại, uncomment các dòng MAIL_* trong docker-compose.yml và set giá trị
+ * Và uncomment @Service annotation bên dưới
  */
-@Service
+// @Service - ĐÃ TẮT
 @ConditionalOnProperty(name = "spring.mail.host")
 public class EmailService {
 
@@ -45,6 +46,11 @@ public class EmailService {
 
     @Async
     public void sendAlertEmail(List<String> to, List<String> cc, List<String> bcc, String subject, Map<String, Object> templateVariables) {
+        // ⚠️ ĐÃ TẮT - Không gửi email
+        logger.warn("Email service is disabled. Skipping email to: {}", to);
+        return;
+        
+        /* ĐÃ TẮT - Uncomment để bật lại
         if (mailSender == null) {
             logger.warn("Email service is not configured. Skipping email to: {}", to);
             return;
@@ -92,5 +98,6 @@ public class EmailService {
         } catch (Exception ex) {
             logger.error("Failed to send alert email to {}: {}", to, ex.getMessage(), ex);
         }
+        */
     }
 }

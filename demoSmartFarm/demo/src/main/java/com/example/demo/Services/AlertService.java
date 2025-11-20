@@ -117,6 +117,11 @@ public class AlertService {
     public List<AlertResponseDTO> createAlertsFromSensorData(SensorEntity sensor, SensorDataLastestDTO data) {
         List<AlertResponseDTO> alerts = new ArrayList<>();
 
+        // ⚠️ TẠM TẮT - Không tạo cảnh báo tự động
+        // Để bật lại, xóa hoặc comment dòng return bên dưới
+        return alerts;
+
+        /* ĐÃ TẮT - Uncomment để bật lại
         FieldEntity field = sensor.getField();
         if (field == null){ return alerts;}
         Optional<CropSeasonEntity> cropSeasonEntity = cropSeasonRepository.findFirstByFieldIdOrderByPlantingDateDesc(field.getId());
@@ -276,5 +281,6 @@ public class AlertService {
         }
 
         return alerts;
+        */
     }
 }
