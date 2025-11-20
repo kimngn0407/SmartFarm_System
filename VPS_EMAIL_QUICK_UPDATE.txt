@@ -1,0 +1,67 @@
+===========================================
+CẬP NHẬT EMAIL PASSWORD TRÊN VPS - NHANH
+===========================================
+
+Bạn đang trên VPS và có password: bjjdyvqwrrmqdicg
+
+CÁCH NHANH NHẤT - Copy paste các lệnh sau:
+
+# 1. Di chuyển đến project
+cd ~/projects/SmartFarm
+
+# 2. Mở docker-compose.yml
+nano docker-compose.yml
+
+# 3. Tìm dòng này (khoảng dòng 38-39):
+#      FRONTEND_ORIGINS: ${FRONTEND_ORIGINS:-http://173.249.48.25,http://173.249.48.25:80,http://localhost:3000,http://localhost:80}
+#      # Email Configuration (Optional - uncomment and set values to enable email alerts)
+
+# 4. Xóa dấu # và cập nhật như sau (thay YOUR_EMAIL bằng email của bạn):
+      # Email Configuration
+      MAIL_HOST: smtp.gmail.com
+      MAIL_PORT: 587
+      MAIL_USERNAME: YOUR_EMAIL@gmail.com
+      MAIL_PASSWORD: bjjdyvqwrrmqdicg
+      MAIL_FROM: YOUR_EMAIL@gmail.com
+
+# 5. Lưu: Ctrl + O → Enter → Ctrl + X
+
+# 6. Restart backend
+docker-compose stop backend
+docker-compose up -d --build backend
+
+# 7. Kiểm tra
+docker exec smartfarm-backend env | grep MAIL
+docker-compose logs -f backend | grep -i mail
+
+===========================================
+HOẶC DÙNG SED (Tự động, không cần mở file):
+===========================================
+
+cd ~/projects/SmartFarm
+
+# Backup
+cp docker-compose.yml docker-compose.yml.backup
+
+# Uncomment và cập nhật email config (thay YOUR_EMAIL)
+sed -i '/# Email Configuration/i\      # Email Configuration' docker-compose.yml
+sed -i '/# MAIL_HOST/c\      MAIL_HOST: smtp.gmail.com' docker-compose.yml
+sed -i '/# MAIL_PORT/c\      MAIL_PORT: 587' docker-compose.yml
+sed -i '/# MAIL_USERNAME/c\      MAIL_USERNAME: YOUR_EMAIL@gmail.com' docker-compose.yml
+sed -i '/# MAIL_PASSWORD/c\      MAIL_PASSWORD: bjjdyvqwrrmqdicg' docker-compose.yml
+sed -i '/# MAIL_FROM/c\      MAIL_FROM: YOUR_EMAIL@gmail.com' docker-compose.yml
+
+# Xóa các dòng comment cũ
+sed -i '/# MAIL_HOST:/d' docker-compose.yml
+sed -i '/# MAIL_PORT:/d' docker-compose.yml
+sed -i '/# MAIL_USERNAME:/d' docker-compose.yml
+sed -i '/# MAIL_PASSWORD:/d' docker-compose.yml
+sed -i '/# MAIL_FROM:/d' docker-compose.yml
+
+# Restart
+docker-compose stop backend
+docker-compose up -d --build backend
+
+# Kiểm tra
+docker exec smartfarm-backend env | grep MAIL
+
