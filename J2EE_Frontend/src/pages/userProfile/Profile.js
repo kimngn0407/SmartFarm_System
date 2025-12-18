@@ -45,10 +45,8 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import WarningIcon from '@mui/icons-material/Warning';
-import BugReportIcon from '@mui/icons-material/BugReport';
 import profileService from '../../services/profileService';
 // import { testAllEndpoints } from '../../utils/apiTest'; // File không tồn tại
-import ApiStatusIndicator from '../../components/common/ApiStatusIndicator';
 import FallbackModeInfo from '../../components/common/FallbackModeInfo';
 
 const LEAF_GREEN = '#43a047';
@@ -149,13 +147,33 @@ const Profile = () => {
       
       if (profile) {
         console.log('📋 Setting profile data:', profile);
+        
+        // Xử lý role: có thể là Set<Role>, array, hoặc string
+        let roleDisplay = 'FARMER';
+        if (profile.roles) {
+          if (Array.isArray(profile.roles)) {
+            roleDisplay = profile.roles.length > 0 ? profile.roles[0] : 'FARMER';
+          } else if (typeof profile.roles === 'object' && profile.roles.size !== undefined) {
+            // Set<Role> từ Java
+            const rolesArray = Array.from(profile.roles);
+            roleDisplay = rolesArray.length > 0 ? rolesArray[0] : 'FARMER';
+          } else if (typeof profile.roles === 'string') {
+            roleDisplay = profile.roles;
+          }
+        } else if (profile.role) {
+          roleDisplay = profile.role;
+        }
+        
+        // Xử lý personalInfo nếu có (từ CompleteProfileDTO)
+        const personalInfo = profile.personalInfo || profile;
+        
         setProfileData({
-          fullName: profile.fullName || profile.name || 'Chưa cập nhật',
-          email: profile.email || userEmail || 'Chưa cập nhật',
-          phone: profile.phone || 'Chưa cập nhật',
-          address: profile.address || 'Chưa cập nhật',
-          role: profile.role || 'FARMER',
-          joinDate: profile.joinDate || profile.createdAt || profile.dateCreated || '01/01/2023',
+          fullName: personalInfo.fullName || profile.fullName || profile.name || 'Chưa cập nhật',
+          email: personalInfo.email || profile.email || userEmail || 'Chưa cập nhật',
+          phone: personalInfo.phone || profile.phone || 'Chưa cập nhật',
+          address: personalInfo.address || profile.address || 'Chưa cập nhật',
+          role: roleDisplay,
+          joinDate: profile.joinDate || profile.createdAt || profile.dateCreated || personalInfo.dateCreated || '01/01/2023',
         });
       } else {
         // Fallback to default data
@@ -390,7 +408,6 @@ const Profile = () => {
   return (
     <Container maxWidth="lg">
       <Box sx={{ mt: 4, mb: 6 }}>
-        <ApiStatusIndicator />
         <FallbackModeInfo 
           isInFallbackMode={isInFallbackMode} 
           storedData={profileService.getStoredProfileData()}
@@ -458,7 +475,7 @@ const Profile = () => {
                         {profileData.fullName || 'Tên người dùng'}
                       </Typography>
                       <Typography fontSize={15} color={LEAF_GREEN_DARK} sx={{ mb: 1 }}>
-                        {profileData.role || 'Vai trò'}
+                        {profileData.role ? profileData.role.replace(/_/g, ' ') : 'Vai trò'}
                       </Typography>
                       <Chip
                         label={`Hoàn thành ${Math.round(getProfileCompletion())}%`}
@@ -642,31 +659,6 @@ const Profile = () => {
                         />
                       </Grid>
                       <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 3 }}>
-                        <Button
-                          variant="outlined"
-                          size="large"
-                          startIcon={<BugReportIcon />}
-                          onClick={() => {
-                            console.log('Testing all API endpoints...');
-                            // testAllEndpoints(); // Function không tồn tại
-                            alert('API testing feature is not available');
-                          }}
-                          sx={{
-                            borderColor: '#ff9800',
-                            color: '#ff9800',
-                            fontWeight: 700,
-                            borderRadius: 3,
-                            px: 4,
-                            textTransform: 'none',
-                            '&:hover': {
-                              borderColor: '#f57c00',
-                              color: '#f57c00',
-                              background: '#fff3e0',
-                            },
-                          }}
-                        >
-                          Test APIs
-                        </Button>
                         <Button
                           variant="outlined"
                           size="large"

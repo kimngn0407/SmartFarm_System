@@ -1,6 +1,6 @@
 # 🌾 SmartFarm - Hệ Thống Nông Nghiệp Thông Minh
 
-> **Hệ thống quản lý nông trại đầy đủ với AI Chatbot, Machine Learning, IoT Sensors, và Blockchain**
+> **Hệ thống quản lý nông trại đầy đủ với AI Chatbot, Machine Learning, và IoT Sensors**
 
 [![Status](https://img.shields.io/badge/status-active-success.svg)]()
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)]()
@@ -32,7 +32,6 @@ SmartFarm là hệ thống quản lý nông trại thông minh tích hợp:
 - **AI Chatbot** - Tư vấn nông nghiệp thông minh với Google Gemini
 - **Machine Learning** - Gợi ý cây trồng và nhận diện sâu bệnh
 - **IoT Sensors** - Thu thập dữ liệu realtime từ cảm biến
-- **Blockchain** - Lưu trữ dữ liệu sensor trên ZeroChain
 - **Web Dashboard** - Quản lý và theo dõi nông trại
 
 ---
@@ -72,8 +71,7 @@ SmartFarm là hệ thống quản lý nông trại thông minh tích hợp:
 ### 🔗 IoT Integration
 - Kết nối Arduino/ESP8266/ESP32
 - Thu thập dữ liệu realtime
-- Lưu trữ trên Blockchain
-- Forwarder service tự động
+- Lưu trữ trong PostgreSQL database
 
 ---
 
@@ -106,12 +104,12 @@ SmartFarm là hệ thống quản lý nông trại thông minh tích hợp:
        │
        │
 ┌──────▼──────────────────────────────────────────────────────┐
-│              IoT & Blockchain Layer                          │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
-│  │  Arduino     │  │  Flask API   │  │  ZeroChain   │      │
-│  │  Sensors     │  │  (Port 8000) │  │  Blockchain  │      │
-│  │  (ESP8266)   │  │              │  │              │      │
-│  └──────────────┘  └──────────────┘  └──────────────┘      │
+│                    IoT Layer                                 │
+│  ┌──────────────┐  ┌──────────────┐                        │
+│  │  Arduino     │  │  Flask API   │                         │
+│  │  Sensors     │  │  (Port 8000) │                         │
+│  │  (ESP8266)   │  │              │                         │
+│  └──────────────┘  └──────────────┘                        │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -130,12 +128,8 @@ SmartFarm/
 │   ├── RecommentCrop/              # Crop Recommendation ML Service
 │   └── PestAndDisease/             # Pest Detection ML Service
 │
-├── 🔗 IoT & Blockchain
-│   └── SmartContract/              # Smart Contracts & IoT Integration
-│       ├── flask-api/              # Flask API for sensor data
-│       ├── device/                 # Arduino forwarder
-│       ├── oracle-node/            # Blockchain oracle
-│       └── contracts/              # Solidity smart contracts
+├── 🔗 IoT Integration
+│   └── (IoT sensors gửi dữ liệu trực tiếp đến Flask API)
 │
 ├── 🐳 Docker & Deployment
 │   ├── docker-compose.yml          # Docker Compose configuration
@@ -193,7 +187,7 @@ SmartFarm/
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/kimngn0407/SmartFarmSystem.git
+git clone https://github.com/kimngn0407/SmartFarm_System.git
 cd SmartFarm
 
 # 2. Cấu hình environment (nếu cần)
@@ -384,7 +378,6 @@ Tạo file `J2EE_Frontend/.env`:
 
 ```env
 REACT_APP_API_URL=http://localhost:8080
-REACT_APP_RENDER_API_BASE=http://localhost:8080
 REACT_APP_GOOGLE_MAPS_API_KEY=your-google-maps-api-key
 ```
 
@@ -395,20 +388,6 @@ Tạo file `AI_SmartFarm_CHatbot/.env.local`:
 ```env
 GOOGLE_GENAI_API_KEY=your-google-genai-api-key
 NEXT_PUBLIC_API_URL=http://localhost:8080
-```
-
-#### IoT & Blockchain
-
-Tạo file `SmartContract/flask-api/.env`:
-
-```env
-DB_URL=postgresql://postgres:password@localhost:5432/SmartFarm1
-API_KEY=MY_API_KEY
-ORACLE_URL=http://localhost:5001/oracle/push
-TEMP_SENSOR_ID=7
-HUMID_SENSOR_ID=8
-SOIL_SENSOR_ID=9
-LIGHT_SENSOR_ID=10
 ```
 
 > **📖 Xem chi tiết:** [`INSTALLATION.md`](INSTALLATION.md)
@@ -482,7 +461,7 @@ ssh root@your-vps-ip
 
 # 2. Clone repository
 cd ~/projects
-git clone https://github.com/kimngn0407/SmartFarmSystem.git SmartFarm
+git clone https://github.com/kimngn0407/SmartFarm_System.git SmartFarm
 cd SmartFarm
 
 # 3. Cấu hình environment
@@ -663,7 +642,7 @@ SmartFarm Development Team
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/kimngn0407/SmartFarmSystem/issues)
+- **Issues**: [GitHub Issues](https://github.com/kimngn0407/SmartFarm_System/issues)
 - **Documentation**: Xem các file `.md` trong repository
 
 ---

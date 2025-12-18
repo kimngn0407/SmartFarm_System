@@ -101,6 +101,26 @@ const Field = () => {
         }
     }, [location.search, selectedFarmId]);
 
+    // Listen for field status update events (khi alert được resolve)
+    useEffect(() => {
+        const handleFieldStatusUpdate = (event) => {
+            const { fieldId } = event.detail;
+            console.log('🔄 Nhận được event fieldStatusUpdated cho field:', fieldId);
+            
+            // Refresh fields để cập nhật màu sắc
+            if (selectedFarmId) {
+                console.log('🔄 Đang refresh fields để cập nhật màu sắc...');
+                loadFields(selectedFarmId);
+            }
+        };
+
+        window.addEventListener('fieldStatusUpdated', handleFieldStatusUpdate);
+        
+        return () => {
+            window.removeEventListener('fieldStatusUpdated', handleFieldStatusUpdate);
+        };
+    }, [selectedFarmId]);
+
     const loadFields = async (farmId) => {
         try {
             const response = await fieldService.getFieldsByFarm(farmId);

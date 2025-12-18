@@ -156,6 +156,59 @@ const SensorManager = () => {
         fetchFieldsAndSensors();
     }, [selectedFarm]);
 
+    // Listen for field status update events (khi alert được resolve)
+    useEffect(() => {
+        const handleFieldStatusUpdate = async (event) => {
+            const { fieldId } = event.detail;
+            console.log('🔄 [Sensor] Nhận được event fieldStatusUpdated cho field:', fieldId);
+            
+            // Refresh fields để cập nhật màu sắc trên map
+            if (selectedFarm) {
+                console.log('🔄 [Sensor] Đang refresh fields để cập nhật màu sắc...');
+                setLoading(true);
+                try {
+                    const resFields = await fieldService.getFieldsByFarm(selectedFarm);
+                    if (resFields && resFields.data && Array.isArray(resFields.data)) {
+                        const fieldsWithCoordinates = await Promise.all(
+                            resFields.data.map(async (field) => {
+                                try {
+                                    const resCoords = await fieldService.getFieldCoordinates(field.id);
+                                    const resSensors = await sensorService.getSensorsByField(field.id);
+                                    return {
+                                        ...field,
+                                        coordinates: Array.isArray(resCoords?.data) ? resCoords.data : [],
+                                        sensors: Array.isArray(resSensors?.data) ? resSensors.data : [],
+                                    };
+                                } catch (err) {
+                                    console.error(`Error loading field ${field.id}:`, err);
+                                    return {
+                                        ...field,
+                                        coordinates: [],
+                                        sensors: [],
+                                    };
+                                }
+                            })
+                        );
+                        const safeFields = Array.isArray(fieldsWithCoordinates) ? fieldsWithCoordinates : [];
+                        setFields(safeFields);
+                        const allSensors = safeFields.flatMap(f => (Array.isArray(f.sensors) ? f.sensors : []));
+                        setSensors(Array.isArray(allSensors) ? allSensors : []);
+                    }
+                } catch (error) {
+                    console.error('Error refreshing fields:', error);
+                } finally {
+                    setLoading(false);
+                }
+            }
+        };
+
+        window.addEventListener('fieldStatusUpdated', handleFieldStatusUpdate);
+        
+        return () => {
+            window.removeEventListener('fieldStatusUpdated', handleFieldStatusUpdate);
+        };
+    }, [selectedFarm]);
+
     const handleAddSensor = () => {
         setSelectedSensor(null);
         console.log('Fields for selected farm:', fields);

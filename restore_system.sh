@@ -104,3 +104,20 @@ echo ""
 echo "📊 Kiểm tra logs:"
 echo "   docker-compose logs -f"
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

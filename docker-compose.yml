@@ -35,7 +35,7 @@ services:
       JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
       CROP_RECOMMENDATION_URL: http://crop-service:5000
       PEST_DISEASE_URL: http://pest-service:5001
-      FRONTEND_ORIGINS: ${FRONTEND_ORIGINS:-http://173.249.48.25,http://173.249.48.25:80,http://localhost:3000,http://localhost:80}
+      FRONTEND_ORIGINS: ${FRONTEND_ORIGINS:-http://109.205.180.72,http://109.205.180.72:80,http://localhost:3000,http://localhost:80}
       # Email Configuration (Optional - uncomment and set values to enable email alerts)
       # MAIL_HOST: ${MAIL_HOST:-}
       # MAIL_PORT: ${MAIL_PORT:-587}
@@ -109,12 +109,10 @@ services:
       context: ./J2EE_Frontend
       dockerfile: Dockerfile
       args:
-        - REACT_APP_API_URL=http://173.249.48.25:8080
-        - REACT_APP_RENDER_API_BASE=http://173.249.48.25:8080
+        - REACT_APP_API_URL=http://109.205.180.72:8080
     container_name: smartfarm-frontend
     environment:
-      - REACT_APP_API_URL=http://173.249.48.25:8080
-      - REACT_APP_RENDER_API_BASE=http://173.249.48.25:8080
+      - REACT_APP_API_URL=http://109.205.180.72:8080
     ports:
       - "80:80"
     depends_on:
@@ -138,7 +136,7 @@ services:
     environment:
       PORT: 9002
       NODE_ENV: production
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://173.249.48.25:8080}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://109.205.180.72:8080}
       GOOGLE_GENAI_API_KEY: ${GOOGLE_GENAI_API_KEY:-your-api-key}
     ports:
       - "9002:9002"

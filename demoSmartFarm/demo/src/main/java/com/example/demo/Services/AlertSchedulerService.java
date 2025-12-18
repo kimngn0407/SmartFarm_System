@@ -28,11 +28,12 @@ public class AlertSchedulerService {
 
     /**
      * Tự động tạo alerts từ dữ liệu sensor mới nhất
-     * Chạy mỗi 5 phút (300000 milliseconds)
+     * Chạy mỗi 30 phút (1800000 milliseconds)
+     * Sau khi tạo alerts, sẽ cập nhật field status dựa trên alerts
      * 
      * ⚠️ TẠM TẮT - Để bật lại, uncomment @Scheduled annotation bên dưới
      */
-    // @Scheduled(fixedRate = 300000) // 5 phút = 300000 milliseconds - ĐÃ TẮT
+    // @Scheduled(fixedRate = 1800000) // 30 phút = 1800000 milliseconds - ĐÃ TẮT
     public void generateAlertsFromLatestSensorData() {
         try {
             log.info("🔄 Bắt đầu tạo alerts từ dữ liệu sensor mới nhất...");
@@ -88,6 +89,11 @@ public class AlertSchedulerService {
             log.info("📊 Thống kê alerts: Critical={}, Warning={}, Good={}", 
                     criticalCount, warningCount, goodCount);
             
+            // Cập nhật field status dựa trên alerts vừa tạo
+            log.info("🔄 Bắt đầu cập nhật field status từ alerts...");
+            alertService.updateAllFieldStatuses();
+            log.info("✅ Đã hoàn thành cập nhật field status");
+            
         } catch (Exception e) {
             log.error("❌ Lỗi khi tạo alerts tự động: {}", e.getMessage(), e);
         }
@@ -120,7 +126,12 @@ public class AlertSchedulerService {
                 }
             }
             
-            return alertService.createAlertsForAllSensors(sensorDataLastestDTOs);
+            List<AlertResponseDTO> alerts = alertService.createAlertsForAllSensors(sensorDataLastestDTOs);
+            
+            // Cập nhật field status sau khi tạo alerts
+            alertService.updateAllFieldStatuses();
+            
+            return alerts;
             
         } catch (Exception e) {
             log.error("❌ Lỗi khi tạo alerts: {}", e.getMessage(), e);

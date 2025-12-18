@@ -17,34 +17,68 @@ const SmartFarmChatbot = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [chatbotUrl, setChatbotUrl] = useState(null);
   const [iframeError, setIframeError] = useState(false);
-  const [position, setPosition] = useState({ x: 20, y: 20 });
+  // Load position from localStorage hoặc dùng giá trị mặc định
+  const getInitialPosition = () => {
+    try {
+      const saved = localStorage.getItem('chatbotPosition');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return { x: parsed.x || 20, y: parsed.y || 20 };
+      }
+    } catch (e) {
+      console.warn('Could not load saved chatbot position:', e);
+    }
+    return { x: 20, y: 20 };
+  };
+
+  const [position, setPosition] = useState(getInitialPosition);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const [lastActivityTime, setLastActivityTime] = useState(Date.now());
   const chatbotRef = React.useRef(null);
   
-  // URL của chatbot - Hardcode VPS IP để tránh lỗi
-  // Luôn dùng VPS port 9002, không dùng Vercel
-  const CHATBOT_VPS_URL = 'http://173.249.48.25:9002';
-  
+  // URL của chatbot - Auto-detect localhost hoặc VPS
   const getChatbotUrl = () => {
-    // Hardcode VPS URL để đảm bảo không gọi Vercel
-    console.log('🤖 Chatbot URL (VPS hardcoded):', CHATBOT_VPS_URL);
-    return CHATBOT_VPS_URL;
+    // Priority 1: Environment variable
+    if (process.env.REACT_APP_CHATBOT_URL) {
+      return process.env.REACT_APP_CHATBOT_URL;
+    }
+    
+    // Priority 2: Development mode - always use localhost
+    if (process.env.NODE_ENV === 'development') {
+      return 'http://localhost:9002';
+    }
+    
+    // Priority 3: Auto-detect from browser location
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname;
+      // Nếu đang chạy trên localhost, dùng localhost:9002
+      if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        return 'http://localhost:9002';
+      }
+      // Nếu không phải localhost, dùng hostname hiện tại với port 9002 (cho VPS)
+      const protocol = window.location.protocol;
+      return `${protocol}//${hostname}:9002`;
+    }
+    
+    // Priority 4: Default for local development
+    return 'http://localhost:9002';
   };
   
-  // Chỉ tính toán URL khi mở chatbot
+  const CHATBOT_URL = getChatbotUrl();
+  
+  // Chỉ tính toán URL khi mở chatbot - thêm query để ẩn Next.js overlay
   useEffect(() => {
     if (isOpen && !chatbotUrl) {
       try {
-        const url = getChatbotUrl();
+        const url = CHATBOT_URL + '?hideDevOverlay=true';
+        console.log('🤖 Chatbot URL:', url);
         setChatbotUrl(url);
       } catch (error) {
         console.error('Error initializing chatbot URL:', error);
         setIframeError(true);
       }
     }
-  }, [isOpen, chatbotUrl]);
+  }, [isOpen, chatbotUrl, CHATBOT_URL]);
 
   // Detect mobile screen
   useEffect(() => {
@@ -65,26 +99,27 @@ const SmartFarmChatbot = () => {
 
   const toggleMinimize = () => {
     setIsMinimized(!isMinimized);
-    setLastActivityTime(Date.now());
   };
 
-  // Auto-minimize after 10 seconds of inactivity
+  // Lưu position vào localStorage khi thay đổi
   useEffect(() => {
-    if (!isOpen || isMinimized) return;
-    
-    const checkInactivity = setInterval(() => {
-      const timeSinceLastActivity = Date.now() - lastActivityTime;
-      if (timeSinceLastActivity >= 10000) {
-        setIsMinimized(true);
+    if (isOpen && !isDragging) {
+      try {
+        localStorage.setItem('chatbotPosition', JSON.stringify(position));
+      } catch (e) {
+        console.warn('Could not save chatbot position:', e);
       }
-    }, 1000);
-
-    return () => clearInterval(checkInactivity);
-  }, [isOpen, isMinimized, lastActivityTime]);
+    }
+  }, [position, isOpen, isDragging]);
 
   // Handle drag start
   const handleMouseDown = (e) => {
-    if (e.target.closest('.chatbot-header')) {
+    // Chỉ cho phép kéo từ header, không phải từ các button
+    const header = e.target.closest('.chatbot-header');
+    const isButton = e.target.closest('button') || e.target.closest('[role="button"]');
+    
+    if (header && !isButton) {
+      e.preventDefault();
       setIsDragging(true);
       const rect = chatbotRef.current?.getBoundingClientRect();
       if (rect) {
@@ -93,7 +128,6 @@ const SmartFarmChatbot = () => {
           y: e.clientY - rect.top,
         });
       }
-      setLastActivityTime(Date.now());
     }
   };
 
@@ -106,14 +140,15 @@ const SmartFarmChatbot = () => {
       const newY = e.clientY - dragOffset.y;
       
       // Constrain to viewport
-      const maxX = window.innerWidth - (isMobile ? window.innerWidth : 450);
-      const maxY = window.innerHeight - (isMinimized ? 60 : 700);
+      const chatbotWidth = isMobile ? window.innerWidth : isMinimized ? 200 : 700;
+      const chatbotHeight = isMobile ? window.innerHeight : isMinimized ? 60 : 900;
+      const maxX = window.innerWidth - chatbotWidth;
+      const maxY = window.innerHeight - chatbotHeight;
       
       setPosition({
         x: Math.max(0, Math.min(newX, maxX)),
         y: Math.max(0, Math.min(newY, maxY)),
       });
-      setLastActivityTime(Date.now());
     };
 
     const handleMouseUp = () => {
@@ -131,11 +166,11 @@ const SmartFarmChatbot = () => {
 
   // Responsive dimensions with draggable position
   const chatbotStyle = {
-    // Desktop
-    width: isMobile ? '100vw' : isMinimized ? '200px' : '450px',
-    height: isMobile ? '100vh' : isMinimized ? '60px' : '700px',
+    // Desktop - Tăng kích thước để dễ đọc hơn
+    width: isMobile ? '100vw' : isMinimized ? '200px' : '700px',
+    height: isMobile ? '100vh' : isMinimized ? '60px' : '900px',
     maxWidth: isMobile ? '100vw' : 'calc(100vw - 40px)',
-    maxHeight: isMobile ? '100vh' : 'calc(100vh - 100px)',
+    maxHeight: isMobile ? '100vh' : 'calc(100vh - 40px)',
     
     // Position - draggable
     position: 'fixed',
@@ -164,10 +199,7 @@ const SmartFarmChatbot = () => {
           <Box>
             <Tooltip title="🌾 Hỏi trợ lý AI nông nghiệp" placement="left" arrow>
               <IconButton
-                onClick={() => {
-                  toggleChatbot();
-                  setLastActivityTime(Date.now());
-                }}
+                onClick={toggleChatbot}
                 sx={{
                   position: 'fixed',
                   bottom: isMobile ? 16 : 24,
@@ -288,10 +320,7 @@ const SmartFarmChatbot = () => {
               onLoad={() => {
                 console.log('✅ Chatbot iframe loaded from:', chatbotUrl);
                 setIframeError(false);
-                setLastActivityTime(Date.now());
               }}
-              onMouseMove={() => setLastActivityTime(Date.now())}
-              onFocus={() => setLastActivityTime(Date.now())}
             />
           )}
           
@@ -325,7 +354,7 @@ const SmartFarmChatbot = () => {
                   setIframeError(false);
                   setChatbotUrl(null);
                   // Retry load
-                  const url = getChatbotUrl();
+                  const url = CHATBOT_URL;
                   setChatbotUrl(url);
                 }}
               >

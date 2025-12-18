@@ -20,6 +20,7 @@ public class AlertService {
     private final AccountRepository accountRepository;
     private final Warning_thresholdRepository thresholdRepository;
     private final AlertRepository alertRepository;
+    private final FieldRepository fieldRepository;
     
     @Autowired(required = false)
     private EmailService emailService;
@@ -31,12 +32,14 @@ public class AlertService {
                        AccountRepository accountRepository,
                        Warning_thresholdRepository thresholdRepository,
                        AlertRepository alertRepository,
+                       FieldRepository fieldRepository,
                        CropSeasonRepository cropSeasonRepository,
                        SimpMessagingTemplate messagingTemplate) {
         this.sensorRepository = sensorRepository;
         this.accountRepository = accountRepository;
         this.thresholdRepository = thresholdRepository;
         this.alertRepository = alertRepository;
+        this.fieldRepository = fieldRepository;
         this.cropSeasonRepository = cropSeasonRepository;
         this.messagingTemplate = messagingTemplate;
     }
@@ -74,26 +77,45 @@ public class AlertService {
     }
 
     // ✅ Resolve alert
+    // Sau khi resolve alert, sẽ tự động tính lại field status
     public void resolveAlert(Long alertId) {
         Optional<AlertEntity> alertOpt = alertRepository.findById(alertId);
         if (alertOpt.isPresent()) {
             AlertEntity alert = alertOpt.get();
+            Long fieldId = alert.getField() != null ? alert.getField().getId() : null;
+            
+            // Đổi status alert thành GOOD (đã xử lý)
             alert.setStatus("GOOD");
             alertRepository.save(alert);
+            
+            // Tính lại field status sau khi resolve alert
+            if (fieldId != null) {
+                System.out.println("🔄 Alert " + alertId + " đã được resolve, tính lại field " + fieldId + " status...");
+                calculateAndUpdateFieldStatus(fieldId);
+            }
         }
     }
 
     // ✅ Mark alert as read
+    // Sau khi mark as read, sẽ tự động tính lại field status
     public void markAlertAsRead(Long alertId) {
         Optional<AlertEntity> alertOpt = alertRepository.findById(alertId);
         if (alertOpt.isPresent()) {
             AlertEntity alert = alertOpt.get();
+            Long fieldId = alert.getField() != null ? alert.getField().getId() : null;
+            
             // You can add a 'read' field to AlertEntity if needed
             // For now, we'll just update the status
             if ("CRITICAL".equals(alert.getStatus())) {
                 alert.setStatus("WARNING");
             }
             alertRepository.save(alert);
+            
+            // Tính lại field status sau khi mark as read
+            if (fieldId != null) {
+                System.out.println("🔄 Alert " + alertId + " đã được mark as read, tính lại field " + fieldId + " status...");
+                calculateAndUpdateFieldStatus(fieldId);
+            }
         }
     }
 
@@ -282,5 +304,119 @@ public class AlertService {
 
         return alerts;
         */
+    }
+
+    /**
+     * Tính và cập nhật field status dựa trên alerts của field
+     * Logic:
+     * - Nếu có ≥1 alert CRITICAL → Field = CRITICAL
+     * - Nếu có ≥1 alert WARNING (và không có CRITICAL) → Field = WARNING
+     * - Nếu tất cả alerts đều GOOD → Field = GOOD
+     * 
+     * @param fieldId ID của field cần cập nhật status
+     */
+    public void calculateAndUpdateFieldStatus(Long fieldId) {
+        try {
+            Optional<FieldEntity> fieldOpt = fieldRepository.findById(fieldId);
+            if (fieldOpt.isEmpty()) {
+                System.err.println("Field not found: " + fieldId);
+                return;
+            }
+
+            FieldEntity field = fieldOpt.get();
+            
+            // Lấy TẤT CẢ alerts của field để tính lại status chính xác
+            // (Không filter theo thời gian để đảm bảo tính đúng sau khi resolve alert)
+            List<AlertEntity> allAlerts = alertRepository.findByFieldId(fieldId);
+            
+            // Tính field status từ TẤT CẢ alerts của field
+            String fieldStatus = calculateFieldStatusFromAlerts(allAlerts);
+            
+            // Cập nhật field status
+            field.setStatus(fieldStatus);
+            fieldRepository.save(field);
+            
+            System.out.println("✅ Đã cập nhật field " + fieldId + " status: " + fieldStatus);
+            
+        } catch (Exception e) {
+            System.err.println("❌ Lỗi khi cập nhật field status cho field " + fieldId + ": " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Tính field status từ danh sách alerts
+     * Priority: CRITICAL > WARNING > GOOD
+     * 
+     * Logic:
+     * - Nếu có ≥1 alert CRITICAL → Field = CRITICAL
+     * - Nếu có ≥1 alert WARNING (và không có CRITICAL) → Field = WARNING
+     * - Nếu tất cả alerts đều GOOD → Field = GOOD
+     */
+    private String calculateFieldStatusFromAlerts(List<AlertEntity> alerts) {
+        if (alerts == null || alerts.isEmpty()) {
+            return "GOOD"; // Mặc định là GOOD nếu không có alert
+        }
+
+        boolean hasCritical = false;
+        boolean hasWarning = false;
+        boolean hasGood = false;
+
+        for (AlertEntity alert : alerts) {
+            String status = alert.getStatus();
+            if (status == null) continue;
+
+            // So sánh case-insensitive
+            String upperStatus = status.toUpperCase().trim();
+            
+            // Kiểm tra status (có thể là "Critical", "CRITICAL", "Warning", "WARNING", "Good", "GOOD")
+            if (upperStatus.equals("CRITICAL") || upperStatus.contains("CRITICAL")) {
+                hasCritical = true;
+            } else if (upperStatus.equals("WARNING") || upperStatus.contains("WARNING")) {
+                hasWarning = true;
+            } else if (upperStatus.equals("GOOD") || upperStatus.contains("GOOD")) {
+                hasGood = true;
+            }
+        }
+
+        // Logic: CRITICAL > WARNING > GOOD
+        // Nếu có CRITICAL → CRITICAL (ưu tiên cao nhất)
+        if (hasCritical) {
+            return "CRITICAL";
+        } 
+        // Nếu có WARNING (và không có CRITICAL) → WARNING
+        else if (hasWarning) {
+            return "WARNING";
+        } 
+        // Nếu tất cả đều GOOD → GOOD
+        else if (hasGood) {
+            return "GOOD";
+        }
+
+        // Mặc định
+        return "GOOD";
+    }
+
+    /**
+     * Cập nhật status cho tất cả fields dựa trên alerts của chúng
+     * Được gọi sau khi tạo alerts mới
+     */
+    public void updateAllFieldStatuses() {
+        try {
+            // Lấy tất cả fields
+            List<FieldEntity> allFields = fieldRepository.findAll();
+            
+            System.out.println("🔄 Bắt đầu cập nhật status cho " + allFields.size() + " fields...");
+            
+            for (FieldEntity field : allFields) {
+                calculateAndUpdateFieldStatus(field.getId());
+            }
+            
+            System.out.println("✅ Đã cập nhật status cho tất cả fields");
+            
+        } catch (Exception e) {
+            System.err.println("❌ Lỗi khi cập nhật status cho tất cả fields: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 }

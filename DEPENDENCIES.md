@@ -245,41 +245,6 @@ Danh sách đầy đủ các thư viện, framework và công cụ cần thiết
 
 ---
 
-## 🔗 IoT & Blockchain Dependencies
-
-### Flask API Service
-
-**File:** `SmartContract/flask-api/requirements.txt`
-
-| Package | Version | Purpose |
-|---------|---------|---------|
-| Flask | 3.0.2 | Web framework |
-| SQLAlchemy | 2.0.30 | ORM |
-| psycopg2-binary | 2.9.9 | PostgreSQL driver |
-| eth-utils | 2.3.1 | Ethereum utilities |
-| eth-hash[pycryptodome] | Latest | Keccak hashing |
-| python-dotenv | 1.0.1 | Environment variables |
-| requests | 2.32.3 | HTTP client |
-
-### Device Forwarder
-
-**File:** `SmartContract/device/` (Manual install)
-
-| Package | Version | Purpose |
-|---------|---------|---------|
-| pyserial | Latest | Serial communication |
-| requests | Latest | HTTP client |
-
-### Oracle Node
-
-**File:** `SmartContract/oracle-node/package.json`
-
-| Package | Version | Purpose |
-|---------|---------|---------|
-| express | Latest | Web server |
-| web3 | Latest | Blockchain interaction |
-
----
 
 ## 🗄️ Database
 

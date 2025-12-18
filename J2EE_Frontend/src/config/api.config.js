@@ -6,24 +6,27 @@
 // Get API base URL from environment
 const getApiBaseUrl = () => {
   // Priority 1: Environment variable (set in docker-compose.yml or .env)
+  // Nếu có REACT_APP_API_URL trong .env, dùng nó (ưu tiên cao nhất cho local)
   if (process.env.REACT_APP_API_URL) {
     return process.env.REACT_APP_API_URL;
   }
   
-  // Priority 2: REACT_APP_RENDER_API_BASE
-  if (process.env.REACT_APP_RENDER_API_BASE) {
-    return process.env.REACT_APP_RENDER_API_BASE;
+  // Priority 2: Check if running in development mode - always use localhost
+  if (process.env.NODE_ENV === 'development') {
+    return 'http://localhost:8080';
   }
   
   // Priority 3: Auto-detect from browser location (for production on VPS)
-  // Khi chạy trên browser, tự động detect VPS IP từ window.location
+  // Chỉ dùng khi không phải development mode
   if (typeof window !== 'undefined') {
     const hostname = window.location.hostname;
-    // Nếu không phải localhost, dùng hostname hiện tại với port 8080
-    if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+    // Nếu đang chạy trên localhost, luôn dùng localhost:8080
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return 'http://localhost:8080';
+    }
+    // Nếu không phải localhost, dùng hostname hiện tại với port 8080 (cho VPS)
       const protocol = window.location.protocol; // http: hoặc https:
       return `${protocol}//${hostname}:8080`;
-    }
   }
   
   // Priority 4: Default for local development
@@ -75,10 +78,6 @@ export const API_ENDPOINTS = {
     HEALTH: `${API_BASE_URL}/api/crop/health`,
   },
   
-  // Direct AI Services - REMOVED: Tất cả services đều chạy trên VPS
-  // Không còn sử dụng Vercel, Render, hoặc bất kỳ external service nào
-  DIRECT: {},
-  
   // Alerts
   ALERTS: {
     BASE: `${API_BASE_URL}/api/alerts`,
@@ -105,12 +104,13 @@ export const API_ENDPOINTS = {
   },
 };
 
-// Log configuration (always log in production để debug)
-console.log('🔧 API Configuration:');
-console.log('  Environment:', process.env.NODE_ENV);
-console.log('  API Base URL:', API_BASE_URL);
-console.log('  Window location:', typeof window !== 'undefined' ? window.location.href : 'N/A');
-console.log('  ✅ Vercel URLs đã được loại bỏ hoàn toàn');
+// Log configuration (only in development)
+if (process.env.NODE_ENV === 'development') {
+  console.log('🔧 API Configuration:');
+  console.log('  Environment:', process.env.NODE_ENV);
+  console.log('  API Base URL:', API_BASE_URL);
+  console.log('  Window location:', typeof window !== 'undefined' ? window.location.href : 'N/A');
+}
 
 export default {
   API_BASE_URL,

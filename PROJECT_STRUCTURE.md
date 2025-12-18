@@ -9,7 +9,6 @@ Tài liệu này giải thích chi tiết cấu trúc thư mục và tổ chức
 - [Tổng quan cấu trúc](#-tổng-quan-cấu-trúc)
 - [Frontend Applications](#-frontend-applications)
 - [Backend Services](#-backend-services)
-- [IoT & Blockchain](#-iot--blockchain)
 - [Docker & Deployment](#-docker--deployment)
 - [Documentation](#-documentation)
 - [Configuration Files](#-configuration-files)
@@ -29,9 +28,6 @@ SmartFarm/
 │   ├── demoSmartFarm/demo/         # Spring Boot REST API
 │   ├── RecommentCrop/              # Crop Recommendation ML
 │   └── PestAndDisease/             # Pest Detection ML
-│
-├── 🔗 IoT & Blockchain/
-│   └── SmartContract/              # Smart Contracts & IoT
 │
 ├── 🐳 Docker & Deployment/
 │   ├── docker-compose.yml
@@ -242,43 +238,6 @@ PestAndDisease/
 
 ---
 
-## 🔗 IoT & Blockchain
-
-### SmartContract/
-
-```
-SmartContract/
-├── flask-api/                      # Flask API for sensor data
-│   ├── app.py                      # Main API
-│   ├── requirements.txt
-│   └── schema-extra.sql
-│
-├── device/                         # Arduino forwarder
-│   ├── forwarder.py               # Serial forwarder
-│   ├── forwarder_auto.py          # Auto forwarder
-│   └── venv/                      # Python venv
-│
-├── oracle-node/                    # Blockchain oracle
-│   ├── server.js
-│   └── package.json
-│
-├── contracts/                      # Smart contracts
-│   └── SensorOracle.sol
-│
-├── scripts/                        # Deployment scripts
-│   ├── deploy.js
-│   └── check-balance.js
-│
-└── README.md
-```
-
-**Key Components:**
-- `flask-api/` - REST API nhận data từ Arduino
-- `device/` - Forwarder gửi data từ Arduino lên API
-- `oracle-node/` - Oracle node cho blockchain
-- `contracts/` - Solidity smart contracts
-
----
 
 ## 🐳 Docker & Deployment
 
@@ -379,7 +338,7 @@ REACT_APP_GOOGLE_MAPS_API_KEY=...
 2. **Backend** - Business logic & API
 3. **ML Services** - Machine Learning models
 4. **IoT** - Sensor data collection
-5. **Blockchain** - Data verification
+5. **Database** - Data storage and verification
 
 ### Communication Flow
 
@@ -388,7 +347,7 @@ Frontend → Backend API → Database
                 ↓
          ML Services (Crop/Pest)
                 ↓
-         IoT Sensors → Blockchain
+         IoT Sensors → Database
 ```
 
 ---

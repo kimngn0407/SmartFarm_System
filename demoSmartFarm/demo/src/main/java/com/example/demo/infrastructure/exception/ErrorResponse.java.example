@@ -1,0 +1,66 @@
+package com.example.demo.infrastructure.exception;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+import java.util.Map;
+
+/**
+ * Error Response DTO
+ * 
+ * Format chuẩn cho tất cả error responses
+ * 
+ * @author SmartFarm Team
+ */
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ErrorResponse {
+    
+    /**
+     * Timestamp khi error xảy ra
+     */
+    private LocalDateTime timestamp;
+    
+    /**
+     * HTTP status code
+     */
+    private Integer status;
+    
+    /**
+     * Error type (e.g., "Not Found", "Bad Request")
+     */
+    private String error;
+    
+    /**
+     * Error message
+     */
+    private String message;
+    
+    /**
+     * Request path
+     */
+    private String path;
+    
+    /**
+     * Validation errors (nếu có)
+     * Key: field name
+     * Value: error message
+     */
+    private Map<String, String> validationErrors;
+}
+
+
+
+
+
+
+
+
+
+
+

@@ -21,6 +21,52 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
         <meta name="theme-color" content="#1e1b4b" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              // Ẩn Next.js dev server overlay/panel
+              (function() {
+                function hideOverlay() {
+                  // Ẩn các element có data attribute của Next.js
+                  document.querySelectorAll('[data-nextjs-toast], [data-nextjs-dialog], [data-nextjs-portal]').forEach(el => {
+                    el.style.display = 'none';
+                    el.style.visibility = 'hidden';
+                    el.style.opacity = '0';
+                    el.style.pointerEvents = 'none';
+                  });
+                  
+                  // Ẩn panel có chứa Route/Turbopack/Preferences
+                  document.querySelectorAll('div').forEach(div => {
+                    const text = div.textContent || '';
+                    if (text.includes('Route') && text.includes('Turbopack') && text.includes('Preferences')) {
+                      div.style.display = 'none';
+                      div.style.visibility = 'hidden';
+                      div.style.opacity = '0';
+                      div.style.pointerEvents = 'none';
+                    }
+                  });
+                }
+                
+                // Chạy ngay lập tức
+                hideOverlay();
+                
+                // Chạy lại sau khi DOM load
+                if (document.readyState === 'loading') {
+                  document.addEventListener('DOMContentLoaded', hideOverlay);
+                }
+                
+                // Chạy lại sau một khoảng thời gian (để bắt overlay được inject sau)
+                setTimeout(hideOverlay, 100);
+                setTimeout(hideOverlay, 500);
+                setTimeout(hideOverlay, 1000);
+                
+                // Observer để theo dõi thay đổi DOM
+                const observer = new MutationObserver(hideOverlay);
+                observer.observe(document.body, { childList: true, subtree: true });
+              })();
+            `,
+          }}
+        />
       </head>
       <body className={cn("font-sans antialiased h-full overflow-hidden")}>
         <div className="fixed inset-0 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">

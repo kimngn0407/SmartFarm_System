@@ -4,12 +4,10 @@ FROM node:18-alpine AS build
 WORKDIR /app
 
 # Build arguments cho environment variables
-ARG REACT_APP_API_URL=http://173.249.48.25:8080
-ARG REACT_APP_RENDER_API_BASE=http://173.249.48.25:8080
+ARG REACT_APP_API_URL=http://109.205.180.72:8080
 
 # Set environment variables từ build args
 ENV REACT_APP_API_URL=${REACT_APP_API_URL}
-ENV REACT_APP_RENDER_API_BASE=${REACT_APP_RENDER_API_BASE}
 
 # Copy package files
 COPY package*.json ./

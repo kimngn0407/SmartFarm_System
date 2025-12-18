@@ -22,13 +22,23 @@ import {
     Alert,
     Avatar,
     Tabs,
-    Tab
+    Tab,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    TextField,
+    InputAdornment
 } from '@mui/material';
 import {
     Water as WaterIcon,
     LocalFlorist as LocalFloristIcon,
     Agriculture as AgricultureIcon,
-    Schedule as ScheduleIcon
+    Schedule as ScheduleIcon,
+    Add as AddIcon,
+    TrendingUp as TrendingUpIcon,
+    Assessment as AssessmentIcon,
+    Warning as WarningIcon
 } from '@mui/icons-material';
 import irrigationService from '../../services/irrigationService';
 import farmService from '../../services/farmService';
@@ -43,7 +53,21 @@ const IrrigationManager = () => {
     const [fields, setFields] = useState([]);
     const [loading, setLoading] = useState(true);
     const [apiError, setApiError] = useState(null);
-    const [activeTab, setActiveTab] = useState('irrigation');
+    const [activeTab, setActiveTab] = useState('overview'); // overview, irrigation, fertilization, both, record, stats
+    
+    // Form states
+    const [openRecordDialog, setOpenRecordDialog] = useState(false);
+    const [recordType, setRecordType] = useState('irrigation'); // 'irrigation' or 'fertilization'
+    const [recordForm, setRecordForm] = useState({
+        fieldId: '',
+        amount: '',
+        method: '',
+        duration: '', // chỉ cho tưới tiêu
+        fertilizer: '', // chỉ cho bón phân
+        unit: 'kg' // chỉ cho bón phân
+    });
+    const [recordError, setRecordError] = useState('');
+    const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
         loadFarmsData();
@@ -52,16 +76,26 @@ const IrrigationManager = () => {
     useEffect(() => {
         if (selectedFarm) {
             console.log('Selected farm changed:', selectedFarm);
+            // Reset selectedField về 0 (Tất cả fields) khi đổi farm
+            setSelectedField(0);
+            // Clear fields trước khi load fields mới
+            setFields([]);
             loadFieldsData();
         }
     }, [selectedFarm]);
 
     useEffect(() => {
-        if (selectedFarm && fields.length >= 0) {
+        // Chỉ load history khi:
+        // 1. Đã chọn farm
+        // 2. Fields đã được load xong (fields.length > 0 hoặc đã cố gắng load nhưng không có fields)
+        // 3. Không đang trong quá trình load fields (tránh load nhiều lần)
+        if (selectedFarm) {
+            // Nếu fields.length === 0 và đang chờ load, không load history
+            // Nếu fields đã được load (có thể là 0 fields hoặc có fields), thì load history
             console.log('Selected field changed or fields loaded:', selectedField, fields.length);
             loadHistoryData();
         }
-    }, [selectedField, fields]);
+    }, [selectedField, fields, selectedFarm]);
 
     const loadFarmsData = async () => {
         try {
@@ -116,13 +150,10 @@ const IrrigationManager = () => {
             );
             setApiError(null);
             
-            // ✅ CHỈ RESET selectedField KHI FIELD HIỆN TẠI KHÔNG TỒN TẠI
-            if (selectedField > 0) {
-                const fieldExists = transformedFields.some(field => field.id === selectedField);
-                if (!fieldExists) {
-                    setSelectedField(0); // Reset chỉ khi field không tồn tại
-                }
-            }
+            console.log(`✅ Loaded ${transformedFields.length} fields for farm ${selectedFarm}`);
+            
+            // selectedField đã được reset về 0 trong useEffect khi đổi farm
+            // Không cần kiểm tra lại ở đây
         } catch (error) {
             console.error('Error fetching fields:', error);
             setApiError('Không thể tải danh sách fields. Đang sử dụng dữ liệu mẫu.');
@@ -146,13 +177,8 @@ const IrrigationManager = () => {
             const currentFields = mockFields[selectedFarm] || [];
             setFields(currentFields);
             
-            // ✅ CHỈ RESET selectedField KHI THAY ĐỔI FARM VÀ FIELD HIỆN TẠI KHÔNG TỒN TẠI
-            if (selectedField > 0) {
-                const fieldExists = currentFields.some(field => field.id === selectedField);
-                if (!fieldExists) {
-                    setSelectedField(0); // Reset chỉ khi field không tồn tại
-                }
-            }
+            // selectedField đã được reset về 0 trong useEffect khi đổi farm
+            // Không cần kiểm tra lại ở đây
         }
     };
 
@@ -409,6 +435,133 @@ const IrrigationManager = () => {
         return 'default';
     };
 
+    // Tính toán thống kê
+    const calculateStats = () => {
+        const totalIrrigation = irrigationHistory.length;
+        const totalFertilization = fertilizationHistory.length;
+        
+        const totalWaterAmount = irrigationHistory.reduce((sum, record) => {
+            return sum + (parseFloat(record.amount) || 0);
+        }, 0);
+        
+        const totalFertilizerAmount = fertilizationHistory.reduce((sum, record) => {
+            return sum + (parseFloat(record.amount) || 0);
+        }, 0);
+        
+        // Lần cuối tưới/bón
+        const lastIrrigation = irrigationHistory.length > 0 
+            ? irrigationHistory[0] 
+            : null;
+        const lastFertilization = fertilizationHistory.length > 0 
+            ? fertilizationHistory[0] 
+            : null;
+        
+        // Tính số ngày từ lần cuối
+        const getDaysSince = (timestamp) => {
+            if (!timestamp) return null;
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diffTime = Math.abs(now - date);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            return diffDays;
+        };
+        
+        return {
+            totalIrrigation,
+            totalFertilization,
+            totalWaterAmount: totalWaterAmount.toFixed(0),
+            totalFertilizerAmount: totalFertilizerAmount.toFixed(0),
+            lastIrrigation,
+            lastFertilization,
+            daysSinceLastIrrigation: getDaysSince(lastIrrigation?.timestamp),
+            daysSinceLastFertilization: getDaysSince(lastFertilization?.timestamp)
+        };
+    };
+
+    const stats = calculateStats();
+
+    // Xử lý ghi nhận hoạt động
+    const handleRecordSubmit = async () => {
+        setRecordError('');
+        
+        // Validation
+        if (!recordForm.fieldId || recordForm.fieldId === '') {
+            setRecordError('Vui lòng chọn field');
+            return;
+        }
+        
+        if (!recordForm.amount || parseFloat(recordForm.amount) <= 0) {
+            setRecordError('Vui lòng nhập lượng nước/phân hợp lệ');
+            return;
+        }
+        
+        if (recordType === 'irrigation' && !recordForm.duration) {
+            setRecordError('Vui lòng nhập thời gian tưới');
+            return;
+        }
+        
+        if (recordType === 'fertilization' && !recordForm.fertilizer) {
+            setRecordError('Vui lòng nhập loại phân');
+            return;
+        }
+        
+        setSubmitting(true);
+        
+        try {
+            const timestamp = new Date().toISOString();
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            const farmerName = user.username || user.email || 'N/A';
+            
+            if (recordType === 'irrigation') {
+                const irrigationData = {
+                    fieldId: Number(recordForm.fieldId),
+                    action: recordForm.method || 'Tưới thủ công',
+                    amount: parseFloat(recordForm.amount),
+                    duration: parseInt(recordForm.duration),
+                    method: recordForm.method || 'Tưới thủ công',
+                    farmerName: farmerName,
+                    timestamp: timestamp
+                };
+                
+                await irrigationService.logIrrigation(irrigationData);
+            } else {
+                const fertilizationData = {
+                    fieldId: Number(recordForm.fieldId),
+                    fertilizer: recordForm.fertilizer,
+                    fertilizer_type: recordForm.fertilizer,
+                    amount: parseFloat(recordForm.amount),
+                    unit: recordForm.unit || 'kg',
+                    method: recordForm.method || 'Bón thủ công',
+                    farmerName: farmerName,
+                    timestamp: timestamp
+                };
+                
+                await irrigationService.logFertilization(fertilizationData);
+            }
+            
+            // Reload data
+            await loadHistoryData();
+            
+            // Close dialog
+            setOpenRecordDialog(false);
+            setRecordForm({
+                fieldId: '',
+                amount: '',
+                method: '',
+                duration: '',
+                fertilizer: '',
+                unit: 'kg'
+            });
+            setRecordError('');
+            
+        } catch (error) {
+            console.error('Error logging activity:', error);
+            setRecordError(error.response?.data?.message || 'Có lỗi xảy ra khi ghi nhận. Vui lòng thử lại.');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
     const TabPanel = (props) => {
         const { children, value, index, ...other } = props;
         return (
@@ -644,7 +797,7 @@ const IrrigationManager = () => {
                             color: '#64748B',
                             fontWeight: 500
                         }}>
-                            Quản lý lịch sử tưới tiêu và bón phân
+                            Ghi nhận, theo dõi và quản lý hoạt động tưới tiêu & bón phân
                         </Typography>
                     </Box>
                 </Box>
@@ -684,34 +837,80 @@ const IrrigationManager = () => {
                 border: '1px solid #E2E8F0',
                 boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)'
             }}>
-                <Typography variant="h6" sx={{ 
-                    mb: 3, 
-                    fontWeight: 'bold',
-                    color: '#1E293B',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 2
-                }}>
-                    <Box sx={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: '8px',
-                        background: 'linear-gradient(135deg, #A7F3D0, #6EE7B7)',
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                    <Typography variant="h6" sx={{ 
+                        fontWeight: 'bold',
+                        color: '#1E293B',
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'center'
+                        gap: 2
                     }}>
-                        🔍
-                    </Box>
-                    Bộ lọc
-                </Typography>
+                        <Box sx={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: '8px',
+                            background: 'linear-gradient(135deg, #A7F3D0, #6EE7B7)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}>
+                            🔍
+                        </Box>
+                        Bộ lọc
+                    </Typography>
+                    <Button
+                        variant="contained"
+                        startIcon={<AddIcon />}
+                        onClick={() => {
+                            if (fields.length === 0) {
+                                setApiError('Vui lòng chọn farm có fields để ghi nhận hoạt động');
+                                return;
+                            }
+                            setRecordForm({
+                                fieldId: selectedField > 0 ? selectedField : '',
+                                amount: '',
+                                method: '',
+                                duration: '',
+                                fertilizer: '',
+                                unit: 'kg'
+                            });
+                            setRecordError('');
+                            setOpenRecordDialog(true);
+                        }}
+                        disabled={fields.length === 0}
+                        sx={{
+                            background: 'linear-gradient(135deg, #10B981, #059669)',
+                            color: 'white',
+                            fontWeight: 'bold',
+                            borderRadius: '12px',
+                            px: 3,
+                            py: 1.2,
+                            boxShadow: '0 4px 14px 0 rgba(16, 185, 129, 0.3)',
+                            '&:hover': {
+                                background: 'linear-gradient(135deg, #059669, #047857)',
+                                boxShadow: '0 6px 20px 0 rgba(16, 185, 129, 0.4)'
+                            },
+                            '&:disabled': {
+                                background: '#E5E7EB',
+                                color: '#9CA3AF'
+                            }
+                        }}
+                    >
+                        Ghi nhận mới
+                    </Button>
+                </Box>
                 <Grid container spacing={3}>
                     <Grid item xs={12} md={6}>
                         <FormControl fullWidth>
                             <InputLabel sx={{ color: '#64748B', fontWeight: 500 }}>Chọn Farm</InputLabel>
                             <Select
-                                value={selectedFarm}
-                                onChange={(e) => setSelectedFarm(Number(e.target.value))}
+                                value={selectedFarm || ''}
+                                onChange={(e) => {
+                                    const newFarmId = Number(e.target.value);
+                                    setSelectedFarm(newFarmId);
+                                    // Reset field về "Tất cả" khi đổi farm
+                                    setSelectedField(0);
+                                }}
                                 label="Chọn Farm"
                                 sx={{
                                     borderRadius: '12px',
@@ -736,7 +935,7 @@ const IrrigationManager = () => {
                                             backgroundColor: '#E0F2FE'
                                         }
                                     }}>
-                                        {farm.name} ({farm.fieldCount} fields)
+                                        {farm.name} {farm.fieldCount > 0 && `(${farm.fieldCount} fields)`}
                                     </MenuItem>
                                 ))}
                             </Select>
@@ -747,8 +946,12 @@ const IrrigationManager = () => {
                             <InputLabel sx={{ color: '#64748B', fontWeight: 500 }}>Chọn Field</InputLabel>
                             <Select
                                 value={selectedField}
-                                onChange={(e) => setSelectedField(Number(e.target.value))}
+                                onChange={(e) => {
+                                    const newFieldId = Number(e.target.value);
+                                    setSelectedField(newFieldId);
+                                }}
                                 label="Chọn Field"
+                                disabled={fields.length === 0}
                                 sx={{
                                     borderRadius: '12px',
                                     backgroundColor: '#F8FAFC',
@@ -770,18 +973,26 @@ const IrrigationManager = () => {
                                     '&:hover': {
                                         backgroundColor: '#DCFCE7'
                                     }
-                                }}>Tất cả fields</MenuItem>
-                                {fields.map(field => (
-                                    <MenuItem key={field.id} value={field.id} sx={{
-                                        borderRadius: '8px',
-                                        margin: '4px 8px',
-                                        '&:hover': {
-                                            backgroundColor: '#DCFCE7'
-                                        }
-                                    }}>
-                                        {field.name} ({field.area || 'N/A'})
+                                }}>
+                                    Tất cả fields {fields.length > 0 && `(${fields.length})`}
+                                </MenuItem>
+                                {fields.length === 0 ? (
+                                    <MenuItem disabled value={-1} sx={{ fontStyle: 'italic', color: '#9CA3AF' }}>
+                                        Farm này chưa có fields nào
                                     </MenuItem>
-                                ))}
+                                ) : (
+                                    fields.map(field => (
+                                        <MenuItem key={field.id} value={field.id} sx={{
+                                            borderRadius: '8px',
+                                            margin: '4px 8px',
+                                            '&:hover': {
+                                                backgroundColor: '#DCFCE7'
+                                            }
+                                        }}>
+                                            {field.name} ({field.area || 'N/A'})
+                                        </MenuItem>
+                                    ))
+                                )}
                             </Select>
                         </FormControl>
                     </Grid>
@@ -795,6 +1006,8 @@ const IrrigationManager = () => {
                         <Tabs 
                             value={activeTab} 
                             onChange={(event, newValue) => setActiveTab(newValue)}
+                            variant="scrollable"
+                            scrollButtons="auto"
                             sx={{
                                 '& .MuiTab-root': {
                                     borderRadius: '12px 12px 0 0',
@@ -818,46 +1031,237 @@ const IrrigationManager = () => {
                             }}
                         >
                             <Tab 
+                                label="Tổng quan" 
+                                value="overview"
+                                icon={<AssessmentIcon />}
+                                iconPosition="start"
+                            />
+                            <Tab 
                                 label="Tưới tiêu" 
                                 value="irrigation"
                                 icon={<WaterIcon />}
                                 iconPosition="start"
-                                sx={{
-                                    backgroundColor: activeTab === 'irrigation' ? '#E0F2FE' : '#F8FAFC',
-                                    color: activeTab === 'irrigation' ? '#0369A1' : '#64748B',
-                                    '& .MuiSvgIcon-root': {
-                                        color: activeTab === 'irrigation' ? '#0369A1' : '#64748B'
-                                    }
-                                }}
                             />
                             <Tab 
                                 label="Bón phân" 
                                 value="fertilization"
                                 icon={<LocalFloristIcon />}
                                 iconPosition="start"
-                                sx={{
-                                    backgroundColor: activeTab === 'fertilization' ? '#DCFCE7' : '#F8FAFC',
-                                    color: activeTab === 'fertilization' ? '#15803D' : '#64748B',
-                                    '& .MuiSvgIcon-root': {
-                                        color: activeTab === 'fertilization' ? '#15803D' : '#64748B'
-                                    }
-                                }}
                             />
                             <Tab 
                                 label="Tất cả" 
                                 value="both"
                                 icon={<ScheduleIcon />}
                                 iconPosition="start"
-                                sx={{
-                                    backgroundColor: activeTab === 'both' ? '#FEF3C7' : '#F8FAFC',
-                                    color: activeTab === 'both' ? '#D97706' : '#64748B',
-                                    '& .MuiSvgIcon-root': {
-                                        color: activeTab === 'both' ? '#D97706' : '#64748B'
-                                    }
-                                }}
                             />
                         </Tabs>
                     </Box>
+
+                    {/* Tab Tổng quan - Dashboard */}
+                    <TabPanel value={activeTab} index="overview">
+                        <Grid container spacing={3} sx={{ mb: 3 }}>
+                            {/* Thống kê Tưới tiêu */}
+                            <Grid item xs={12} sm={6} md={3}>
+                                <Card sx={{ 
+                                    background: 'linear-gradient(135deg, #E0F2FE 0%, #BAE6FD 100%)',
+                                    boxShadow: 3
+                                }}>
+                                    <CardContent>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                            <Avatar sx={{ bgcolor: '#0EA5E9', width: 56, height: 56 }}>
+                                                <WaterIcon sx={{ fontSize: 32, color: 'white' }} />
+                                            </Avatar>
+                                            <Box>
+                                                <Typography variant="h5" fontWeight="bold" color="#0369A1">
+                                                    {stats.totalIrrigation}
+                                                </Typography>
+                                                <Typography variant="body2" color="text.secondary">
+                                                    Lần tưới tiêu
+                                                </Typography>
+                                            </Box>
+                                        </Box>
+                                    </CardContent>
+                                </Card>
+                            </Grid>
+                            
+                            {/* Thống kê Bón phân */}
+                            <Grid item xs={12} sm={6} md={3}>
+                                <Card sx={{ 
+                                    background: 'linear-gradient(135deg, #DCFCE7 0%, #BBF7D0 100%)',
+                                    boxShadow: 3
+                                }}>
+                                    <CardContent>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                            <Avatar sx={{ bgcolor: '#10B981', width: 56, height: 56 }}>
+                                                <LocalFloristIcon sx={{ fontSize: 32, color: 'white' }} />
+                                            </Avatar>
+                                            <Box>
+                                                <Typography variant="h5" fontWeight="bold" color="#059669">
+                                                    {stats.totalFertilization}
+                                                </Typography>
+                                                <Typography variant="body2" color="text.secondary">
+                                                    Lần bón phân
+                                                </Typography>
+                                            </Box>
+                                        </Box>
+                                    </CardContent>
+                                </Card>
+                            </Grid>
+                            
+                            {/* Tổng lượng nước */}
+                            <Grid item xs={12} sm={6} md={3}>
+                                <Card sx={{ 
+                                    background: 'linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%)',
+                                    boxShadow: 3
+                                }}>
+                                    <CardContent>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                            <Avatar sx={{ bgcolor: '#3B82F6', width: 56, height: 56 }}>
+                                                <TrendingUpIcon sx={{ fontSize: 32, color: 'white' }} />
+                                            </Avatar>
+                                            <Box>
+                                                <Typography variant="h5" fontWeight="bold" color="#1E40AF">
+                                                    {stats.totalWaterAmount}
+                                                </Typography>
+                                                <Typography variant="body2" color="text.secondary">
+                                                    Lít nước (tổng)
+                                                </Typography>
+                                            </Box>
+                                        </Box>
+                                    </CardContent>
+                                </Card>
+                            </Grid>
+                            
+                            {/* Tổng lượng phân */}
+                            <Grid item xs={12} sm={6} md={3}>
+                                <Card sx={{ 
+                                    background: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)',
+                                    boxShadow: 3
+                                }}>
+                                    <CardContent>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                            <Avatar sx={{ bgcolor: '#F59E0B', width: 56, height: 56 }}>
+                                                <AgricultureIcon sx={{ fontSize: 32, color: 'white' }} />
+                                            </Avatar>
+                                            <Box>
+                                                <Typography variant="h5" fontWeight="bold" color="#92400E">
+                                                    {stats.totalFertilizerAmount}
+                                                </Typography>
+                                                <Typography variant="body2" color="text.secondary">
+                                                    kg phân (tổng)
+                                                </Typography>
+                                            </Box>
+                                        </Box>
+                                    </CardContent>
+                                </Card>
+                            </Grid>
+                        </Grid>
+
+                        {/* Thông tin lần cuối */}
+                        <Grid container spacing={3}>
+                            <Grid item xs={12} md={6}>
+                                <Paper sx={{ p: 3, borderRadius: '16px', background: '#F0F9FF', border: '1px solid #BAE6FD' }}>
+                                    <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: '#0369A1' }}>
+                                        Lần tưới tiêu gần nhất
+                                    </Typography>
+                                    {stats.lastIrrigation ? (
+                                        <Box>
+                                            <Typography variant="body1" sx={{ mb: 1 }}>
+                                                <strong>Field:</strong> {stats.lastIrrigation.fieldName || `Field ${stats.lastIrrigation.fieldId}`}
+                                            </Typography>
+                                            <Typography variant="body1" sx={{ mb: 1 }}>
+                                                <strong>Lượng nước:</strong> {stats.lastIrrigation.amount} lít
+                                            </Typography>
+                                            <Typography variant="body1" sx={{ mb: 1 }}>
+                                                <strong>Thời gian:</strong> {formatDateTime(stats.lastIrrigation.timestamp).date} {formatDateTime(stats.lastIrrigation.timestamp).time}
+                                            </Typography>
+                                            {stats.daysSinceLastIrrigation !== null && (
+                                                <Chip 
+                                                    label={`Cách đây ${stats.daysSinceLastIrrigation} ngày`}
+                                                    color={stats.daysSinceLastIrrigation > 3 ? 'warning' : 'success'}
+                                                    size="small"
+                                                    sx={{ mt: 1 }}
+                                                />
+                                            )}
+                                        </Box>
+                                    ) : (
+                                        <Typography variant="body2" color="text.secondary">
+                                            Chưa có dữ liệu tưới tiêu
+                                        </Typography>
+                                    )}
+                                </Paper>
+                            </Grid>
+                            
+                            <Grid item xs={12} md={6}>
+                                <Paper sx={{ p: 3, borderRadius: '16px', background: '#F0FDF4', border: '1px solid #BBF7D0' }}>
+                                    <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold', color: '#059669' }}>
+                                        Lần bón phân gần nhất
+                                    </Typography>
+                                    {stats.lastFertilization ? (
+                                        <Box>
+                                            <Typography variant="body1" sx={{ mb: 1 }}>
+                                                <strong>Field:</strong> {stats.lastFertilization.fieldName || `Field ${stats.lastFertilization.fieldId}`}
+                                            </Typography>
+                                            <Typography variant="body1" sx={{ mb: 1 }}>
+                                                <strong>Loại phân:</strong> {stats.lastFertilization.fertilizer || stats.lastFertilization.fertilizer_type || 'N/A'}
+                                            </Typography>
+                                            <Typography variant="body1" sx={{ mb: 1 }}>
+                                                <strong>Thời gian:</strong> {formatDateTime(stats.lastFertilization.timestamp).date} {formatDateTime(stats.lastFertilization.timestamp).time}
+                                            </Typography>
+                                            {stats.daysSinceLastFertilization !== null && (
+                                                <Chip 
+                                                    label={`Cách đây ${stats.daysSinceLastFertilization} ngày`}
+                                                    color={stats.daysSinceLastFertilization > 7 ? 'warning' : 'success'}
+                                                    size="small"
+                                                    sx={{ mt: 1 }}
+                                                />
+                                            )}
+                                        </Box>
+                                    ) : (
+                                        <Typography variant="body2" color="text.secondary">
+                                            Chưa có dữ liệu bón phân
+                                        </Typography>
+                                    )}
+                                </Paper>
+                            </Grid>
+                        </Grid>
+
+                        {/* Gợi ý dựa trên thống kê */}
+                        <Paper sx={{ p: 3, mt: 3, borderRadius: '16px', background: '#FFFBEB', border: '1px solid #FDE68A' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                                <WarningIcon sx={{ color: '#F59E0B', fontSize: 28 }} />
+                                <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#92400E' }}>
+                                    💡 Gợi ý
+                                </Typography>
+                            </Box>
+                            <Box component="ul" sx={{ pl: 3 }}>
+                                {stats.daysSinceLastIrrigation !== null && stats.daysSinceLastIrrigation > 3 && (
+                                    <li>
+                                        <Typography variant="body2">
+                                            <strong>Nên tưới nước:</strong> Đã {stats.daysSinceLastIrrigation} ngày chưa tưới. 
+                                            Hãy kiểm tra độ ẩm đất và tưới nước nếu cần.
+                                        </Typography>
+                                    </li>
+                                )}
+                                {stats.daysSinceLastFertilization !== null && stats.daysSinceLastFertilization > 7 && (
+                                    <li>
+                                        <Typography variant="body2">
+                                            <strong>Nên bón phân:</strong> Đã {stats.daysSinceLastFertilization} ngày chưa bón phân. 
+                                            Hãy kiểm tra nhu cầu dinh dưỡng của cây trồng.
+                                        </Typography>
+                                    </li>
+                                )}
+                                {stats.totalIrrigation === 0 && stats.totalFertilization === 0 && (
+                                    <li>
+                                        <Typography variant="body2">
+                                            <strong>Bắt đầu ghi nhận:</strong> Hãy ghi nhận lần đầu tiên bạn tưới nước hoặc bón phân 
+                                            để hệ thống có thể theo dõi và đưa ra gợi ý tốt hơn.
+                                        </Typography>
+                                    </li>
+                                )}
+                            </Box>
+                        </Paper>
+                    </TabPanel>
 
                     <TabPanel value={activeTab} index="irrigation">
                         {renderIrrigationHistory()}
@@ -936,6 +1340,221 @@ const IrrigationManager = () => {
                     </Typography>
                 </Paper>
             )}
+
+            {/* Dialog ghi nhận hoạt động */}
+            <Dialog 
+                open={openRecordDialog} 
+                onClose={() => !submitting && setOpenRecordDialog(false)}
+                maxWidth="md"
+                fullWidth
+                PaperProps={{
+                    sx: {
+                        borderRadius: '16px',
+                        background: 'linear-gradient(135deg, #F8FAFC 0%, #E2E8F0 100%)'
+                    }
+                }}
+            >
+                <DialogTitle sx={{
+                    background: recordType === 'irrigation' 
+                        ? 'linear-gradient(135deg, #0EA5E9, #06B6D4)'
+                        : 'linear-gradient(135deg, #10B981, #059669)',
+                    color: 'white',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2
+                }}>
+                    <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)' }}>
+                        {recordType === 'irrigation' ? <WaterIcon /> : <LocalFloristIcon />}
+                    </Avatar>
+                    <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                        Ghi nhận {recordType === 'irrigation' ? 'Tưới tiêu' : 'Bón phân'}
+                    </Typography>
+                </DialogTitle>
+                
+                <DialogContent sx={{ mt: 2 }}>
+                    <Box sx={{ mb: 2 }}>
+                        <Tabs 
+                            value={recordType} 
+                            onChange={(e, newValue) => {
+                                setRecordType(newValue);
+                                setRecordForm(prev => ({
+                                    ...prev,
+                                    duration: '',
+                                    fertilizer: ''
+                                }));
+                            }}
+                            sx={{ mb: 3 }}
+                        >
+                            <Tab label="Tưới tiêu" value="irrigation" icon={<WaterIcon />} iconPosition="start" />
+                            <Tab label="Bón phân" value="fertilization" icon={<LocalFloristIcon />} iconPosition="start" />
+                        </Tabs>
+                    </Box>
+                    
+                    <Grid container spacing={2}>
+                        <Grid item xs={12}>
+                            <FormControl fullWidth>
+                                <InputLabel>Chọn Field *</InputLabel>
+                                <Select
+                                    value={recordForm.fieldId}
+                                    onChange={(e) => setRecordForm(prev => ({ ...prev, fieldId: e.target.value }))}
+                                    label="Chọn Field *"
+                                    disabled={submitting}
+                                >
+                                    {fields.map(field => (
+                                        <MenuItem key={field.id} value={field.id}>
+                                            {field.name} ({field.area || 'N/A'})
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                        
+                        {recordType === 'irrigation' ? (
+                            <>
+                                <Grid item xs={12} sm={6}>
+                                    <TextField
+                                        fullWidth
+                                        label="Lượng nước (lít) *"
+                                        type="number"
+                                        value={recordForm.amount}
+                                        onChange={(e) => setRecordForm(prev => ({ ...prev, amount: e.target.value }))}
+                                        InputProps={{
+                                            endAdornment: <InputAdornment position="end">lít</InputAdornment>
+                                        }}
+                                        disabled={submitting}
+                                    />
+                                </Grid>
+                                <Grid item xs={12} sm={6}>
+                                    <TextField
+                                        fullWidth
+                                        label="Thời gian tưới (phút) *"
+                                        type="number"
+                                        value={recordForm.duration}
+                                        onChange={(e) => setRecordForm(prev => ({ ...prev, duration: e.target.value }))}
+                                        InputProps={{
+                                            endAdornment: <InputAdornment position="end">phút</InputAdornment>
+                                        }}
+                                        disabled={submitting}
+                                    />
+                                </Grid>
+                                <Grid item xs={12}>
+                                    <FormControl fullWidth>
+                                        <InputLabel>Phương pháp</InputLabel>
+                                        <Select
+                                            value={recordForm.method}
+                                            onChange={(e) => setRecordForm(prev => ({ ...prev, method: e.target.value }))}
+                                            label="Phương pháp"
+                                            disabled={submitting}
+                                        >
+                                            <MenuItem value="Tưới phun mưa">Tưới phun mưa</MenuItem>
+                                            <MenuItem value="Tưới nhỏ giọt">Tưới nhỏ giọt</MenuItem>
+                                            <MenuItem value="Tưới rãnh">Tưới rãnh</MenuItem>
+                                            <MenuItem value="Tưới thủ công">Tưới thủ công</MenuItem>
+                                        </Select>
+                                    </FormControl>
+                                </Grid>
+                            </>
+                        ) : (
+                            <>
+                                <Grid item xs={12} sm={6}>
+                                    <TextField
+                                        fullWidth
+                                        label="Loại phân *"
+                                        value={recordForm.fertilizer}
+                                        onChange={(e) => setRecordForm(prev => ({ ...prev, fertilizer: e.target.value }))}
+                                        placeholder="VD: NPK 16-16-8, Phân hữu cơ..."
+                                        disabled={submitting}
+                                    />
+                                </Grid>
+                                <Grid item xs={12} sm={3}>
+                                    <TextField
+                                        fullWidth
+                                        label="Lượng phân *"
+                                        type="number"
+                                        value={recordForm.amount}
+                                        onChange={(e) => setRecordForm(prev => ({ ...prev, amount: e.target.value }))}
+                                        disabled={submitting}
+                                    />
+                                </Grid>
+                                <Grid item xs={12} sm={3}>
+                                    <FormControl fullWidth>
+                                        <InputLabel>Đơn vị</InputLabel>
+                                        <Select
+                                            value={recordForm.unit}
+                                            onChange={(e) => setRecordForm(prev => ({ ...prev, unit: e.target.value }))}
+                                            label="Đơn vị"
+                                            disabled={submitting}
+                                        >
+                                            <MenuItem value="kg">kg</MenuItem>
+                                            <MenuItem value="g">g</MenuItem>
+                                        </Select>
+                                    </FormControl>
+                                </Grid>
+                                <Grid item xs={12}>
+                                    <FormControl fullWidth>
+                                        <InputLabel>Phương pháp</InputLabel>
+                                        <Select
+                                            value={recordForm.method}
+                                            onChange={(e) => setRecordForm(prev => ({ ...prev, method: e.target.value }))}
+                                            label="Phương pháp"
+                                            disabled={submitting}
+                                        >
+                                            <MenuItem value="Rải đều">Rải đều</MenuItem>
+                                            <MenuItem value="Bón gốc">Bón gốc</MenuItem>
+                                            <MenuItem value="Phun lá">Phun lá</MenuItem>
+                                            <MenuItem value="Bón thủ công">Bón thủ công</MenuItem>
+                                        </Select>
+                                    </FormControl>
+                                </Grid>
+                            </>
+                        )}
+                    </Grid>
+                    
+                    {recordError && (
+                        <Alert severity="error" sx={{ mt: 2 }}>
+                            {recordError}
+                        </Alert>
+                    )}
+                    
+                    <Alert severity="info" sx={{ mt: 2 }}>
+                        <Typography variant="body2">
+                            <strong>💡 Lưu ý:</strong> 
+                            {recordType === 'irrigation' 
+                                ? ' Khi tưới tự động qua IoT, hệ thống sẽ tự động ghi nhận vào lịch sử.'
+                                : ' Khi bón phân tự động qua thiết bị, hệ thống sẽ tự động ghi nhận vào lịch sử.'}
+                        </Typography>
+                    </Alert>
+                </DialogContent>
+                
+                <DialogActions sx={{ p: 3, background: '#F8FAFC' }}>
+                    <Button 
+                        onClick={() => setOpenRecordDialog(false)}
+                        disabled={submitting}
+                        sx={{ color: '#64748B' }}
+                    >
+                        Hủy
+                    </Button>
+                    <Button
+                        variant="contained"
+                        onClick={handleRecordSubmit}
+                        disabled={submitting}
+                        startIcon={submitting ? <CircularProgress size={20} /> : <AddIcon />}
+                        sx={{
+                            background: recordType === 'irrigation'
+                                ? 'linear-gradient(135deg, #0EA5E9, #06B6D4)'
+                                : 'linear-gradient(135deg, #10B981, #059669)',
+                            color: 'white',
+                            '&:hover': {
+                                background: recordType === 'irrigation'
+                                    ? 'linear-gradient(135deg, #0284C7, #0369A1)'
+                                    : 'linear-gradient(135deg, #059669, #047857)'
+                            }
+                        }}
+                    >
+                        {submitting ? 'Đang lưu...' : 'Ghi nhận'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Box>
     );
 };

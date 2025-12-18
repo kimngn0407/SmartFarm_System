@@ -1,5 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import cropService from '../../services/cropService';
+import fieldService from '../../services/fieldService';
+import farmService from '../../services/farmService';
+import axios from 'axios';
+import { API_BASE_URL } from '../../config/api.config';
 import {
     Table,
     TableBody,
@@ -23,7 +27,14 @@ import {
     MenuItem,
     Grid,
     Avatar,
-    Chip
+    Chip,
+    Card,
+    CardContent,
+    LinearProgress,
+    Tabs,
+    Tab,
+    Stack,
+    Divider
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -37,12 +48,27 @@ import {
     LocalFlorist as LocalFloristIcon,
     Schedule as ScheduleIcon,
     Nature as NatureIcon,
-    Grass as GrassIcon
+    Grass as GrassIcon,
+    Agriculture as AgricultureIcon,
+    LocationOn as LocationOnIcon,
+    CalendarToday as CalendarTodayIcon,
+    TrendingUp as TrendingUpIcon,
+    CheckCircle as CheckCircleIcon,
+    Warning as WarningIcon
 } from '@mui/icons-material';
 import RoleGuard from '../../components/Auth/RoleGuard';
 
 const CropManager = () => {
     const [crops, setCrops] = useState([]);
+    const [cropSeasons, setCropSeasons] = useState([]); // Thêm state cho crop seasons
+    const [fields, setFields] = useState([]); // Thêm state cho fields
+    const [farms, setFarms] = useState([]); // Thêm state cho farms
+    const [stats, setStats] = useState({
+        totalCrops: 0,
+        activeSeasons: 0,
+        totalArea: 0,
+        upcomingHarvest: 0
+    });
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(5);
     const [searchTerm, setSearchTerm] = useState('');
@@ -50,6 +76,7 @@ const CropManager = () => {
     const [toDate, setToDate] = useState('');
     const [openDialog, setOpenDialog] = useState(false);
     const [selectedCrop, setSelectedCrop] = useState(null);
+    const [activeTab, setActiveTab] = useState(0); // 0: Đang canh tác, 1: Giai đoạn phát triển
     const [form, setForm] = useState({
         name: '',
         stageName: '',
@@ -58,6 +85,7 @@ const CropManager = () => {
         description: ''
     });
     const [formError, setFormError] = useState('');
+    const [loading, setLoading] = useState(true);
     
     // Thêm state cho bộ lọc nâng cao
     const [filters, setFilters] = useState({
@@ -71,24 +99,203 @@ const CropManager = () => {
     const [uniquePlants, setUniquePlants] = useState([]);
     const [uniqueSeasons, setUniqueSeasons] = useState([]);
     const [uniqueStages, setUniqueStages] = useState([]);
+    const [plantsList, setPlantsList] = useState([]); // Thêm state để lưu danh sách plants
 
     useEffect(() => {
-        fetchCrops();
+        fetchAllData();
     }, []);
+
+    const getAuthHeader = () => {
+        const token = localStorage.getItem('token');
+        return token ? { Authorization: `Bearer ${token}` } : {};
+    };
+
+    const fetchAllData = async () => {
+        setLoading(true);
+        try {
+            // Fetch crops first để có danh sách plants
+            await fetchCrops();
+            // Sau đó fetch các data khác
+            await Promise.all([
+                fetchCropSeasons(),
+                fetchFields(),
+                fetchFarms()
+            ]);
+        } catch (error) {
+            console.error('Error fetching data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchCropSeasons = async () => {
+        try {
+            const response = await axios.get(`${API_BASE_URL}/api/seasons/all`, { headers: getAuthHeader() });
+            setCropSeasons(response.data || []);
+            calculateStats(response.data || []);
+        } catch (error) {
+            console.error('Error fetching crop seasons:', error);
+            setCropSeasons([]);
+        }
+    };
+
+    const fetchFields = async () => {
+        try {
+            const response = await fieldService.getAllFields();
+            setFields(response.data || []);
+        } catch (error) {
+            console.error('Error fetching fields:', error);
+            setFields([]);
+        }
+    };
+
+    const fetchFarms = async () => {
+        try {
+            const response = await farmService.getFarms();
+            setFarms(response.data || []);
+        } catch (error) {
+            console.error('Error fetching farms:', error);
+            setFarms([]);
+        }
+    };
+
+    const calculateStats = (seasons) => {
+        if (!seasons || seasons.length === 0) {
+            setStats({
+                totalCrops: 0,
+                activeSeasons: 0,
+                totalArea: 0,
+                upcomingHarvest: 0
+            });
+            return;
+        }
+
+        const now = new Date();
+        const activeSeasons = seasons.filter(s => {
+            if (!s || !s.plantingDate) return false;
+            try {
+                const plantingDate = new Date(s.plantingDate);
+                const harvestDate = s.actualHarvestDate ? new Date(s.actualHarvestDate) : 
+                                  (s.expectedHarvestDate ? new Date(s.expectedHarvestDate) : null);
+                return plantingDate <= now && (!harvestDate || harvestDate >= now);
+            } catch (e) {
+                return false;
+            }
+        });
+
+        const upcomingHarvest = seasons.filter(s => {
+            if (!s || !s.expectedHarvestDate) return false;
+            try {
+                const harvestDate = new Date(s.expectedHarvestDate);
+                const daysUntilHarvest = Math.ceil((harvestDate - now) / (1000 * 60 * 60 * 24));
+                return !s.actualHarvestDate && daysUntilHarvest > 0 && daysUntilHarvest <= 30;
+            } catch (e) {
+                return false;
+            }
+        });
+
+        let totalArea = 0;
+        activeSeasons.forEach(season => {
+            if (season && season.fieldId) {
+                const field = fields.find(f => f && f.id === season.fieldId);
+                if (field && field.area) {
+                    totalArea += parseFloat(field.area) || 0;
+                }
+            }
+        });
+
+        const uniquePlantIds = [...new Set(seasons.filter(s => s && s.plantId).map(s => s.plantId))];
+        setStats({
+            totalCrops: uniquePlantIds.length,
+            activeSeasons: activeSeasons.length,
+            totalArea: totalArea,
+            upcomingHarvest: upcomingHarvest.length
+        });
+    };
+
+    useEffect(() => {
+        if (cropSeasons.length > 0 && fields.length > 0) {
+            calculateStats(cropSeasons);
+        } else if (cropSeasons.length === 0) {
+            setStats({
+                totalCrops: 0,
+                activeSeasons: 0,
+                totalArea: 0,
+                upcomingHarvest: 0
+            });
+        }
+    }, [cropSeasons, fields]);
+
+    // Lấy tên cây từ plantId
+    const getPlantName = (plantId) => {
+        if (!plantId) return 'N/A';
+        
+        // Tìm trong danh sách plants
+        const plant = plantsList.find(p => p && p.id === plantId);
+        if (plant) {
+            return plant.plantName || plant.name || `Plant ${plantId}`;
+        }
+        
+        // Tìm trong crops (đã có plantName)
+        const crop = crops.find(c => c && c.id === plantId);
+        if (crop && crop.name) return crop.name;
+        
+        // Nếu không tìm thấy, trả về plantId
+        return `Plant ${plantId}`;
+    };
+
+    // Lấy thông tin field và farm cho crop season
+    const getFieldAndFarmInfo = (fieldId) => {
+        if (!fieldId) return { fieldName: 'N/A', farmName: 'N/A', area: 0 };
+        
+        const field = fields.find(f => f && f.id === fieldId);
+        if (!field) return { fieldName: 'N/A', farmName: 'N/A', area: 0 };
+        
+        const farmId = field.farmId || field.farm?.id;
+        const farm = farms.find(f => f && f.id === farmId);
+        
+        return {
+            fieldName: field.fieldName || 'N/A',
+            farmName: farm ? (farm.farmName || 'N/A') : 'N/A',
+            area: field.area ? parseFloat(field.area) : 0
+        };
+    };
+
+    // Tính toán filtered seasons để dùng cho cả table và pagination
+    const filteredSeasons = useMemo(() => {
+        if (!Array.isArray(cropSeasons) || cropSeasons.length === 0) return [];
+        
+        return cropSeasons
+            .filter(season => {
+                if (!season) return false;
+                const fieldInfo = getFieldAndFarmInfo(season.fieldId);
+                const plantName = getPlantName(season.plantId);
+                const searchLower = (searchTerm || '').toLowerCase();
+                return !searchTerm || 
+                    (season.seasonName && season.seasonName.toLowerCase().includes(searchLower)) ||
+                    (plantName && plantName.toLowerCase().includes(searchLower)) ||
+                    (fieldInfo.fieldName && fieldInfo.fieldName.toLowerCase().includes(searchLower)) ||
+                    (fieldInfo.farmName && fieldInfo.farmName.toLowerCase().includes(searchLower));
+            })
+            .filter(Boolean);
+    }, [cropSeasons, searchTerm, fields, farms, crops, plantsList]);
 
     const fetchCrops = () => {
         // Get all plants first, then get flat stages for each plant
         cropService.getCropsByField()
             .then(response => {
-                const plants = response.data;
+                const plants = Array.isArray(response.data) ? response.data : [];
                 console.log('All plants:', plants);
+                
+                // Lưu danh sách plants để dùng sau
+                setPlantsList(plants);
                 
                 // Get flat stages for all plants
                 const promises = plants.map(plant => 
                     cropService.getFlatStagesByPlantId(plant.id)
                         .then(stagesResponse => ({
                             plant: plant,
-                            stages: stagesResponse.data
+                            stages: Array.isArray(stagesResponse.data) ? stagesResponse.data : []
                         }))
                         .catch(error => {
                             console.warn(`No stages found for plant ${plant.id}:`, error);
@@ -104,7 +311,7 @@ const CropManager = () => {
                         const allCrops = results.flatMap(result => 
                             result.stages.length > 0 ? result.stages : [{
                                 id: result.plant.id,
-                                name: result.plant.plantName,
+                                name: result.plant.plantName || result.plant.name || `Plant ${result.plant.id}`,
                                 seasonName: 'No Season',
                                 stageName: 'No Stage',
                                 minDay: 0,
@@ -116,17 +323,24 @@ const CropManager = () => {
                         setCrops(allCrops);
                         
                         // Tính toán các giá trị unique cho bộ lọc
-                        const plants = [...new Set(allCrops.map(crop => crop.name))].sort();
-                        const seasons = [...new Set(allCrops.map(crop => crop.seasonName))].sort();
-                        const stages = [...new Set(allCrops.map(crop => crop.stageName))].sort();
+                        const uniquePlantNames = [...new Set(allCrops.map(crop => crop.name).filter(Boolean))].sort();
+                        const uniqueSeasonNames = [...new Set(allCrops.map(crop => crop.seasonName).filter(Boolean))].sort();
+                        const uniqueStageNames = [...new Set(allCrops.map(crop => crop.stageName).filter(Boolean))].sort();
                         
-                        setUniquePlants(plants);
-                        setUniqueSeasons(seasons);
-                        setUniqueStages(stages);
+                        setUniquePlants(uniquePlantNames);
+                        setUniqueSeasons(uniqueSeasonNames);
+                        setUniqueStages(uniqueStageNames);
                     })
-                    .catch(error => console.error('Error fetching all crops:', error));
+                    .catch(error => {
+                        console.error('Error fetching all crops:', error);
+                        setCrops([]);
+                    });
             })
-            .catch(error => console.error('Error fetching plants:', error));
+            .catch(error => {
+                console.error('Error fetching plants:', error);
+                setCrops([]);
+                setPlantsList([]);
+            });
     };
 
     const handleChangePage = (event, newPage) => {
@@ -291,11 +505,56 @@ const CropManager = () => {
         }
     };
 
+    // Tính toán tiến độ phát triển cho crop season
+    const calculateProgress = (season) => {
+        if (!season || !season.plantingDate) return 0;
+        try {
+            const now = new Date();
+            const plantingDate = new Date(season.plantingDate);
+            const harvestDate = season.actualHarvestDate ? new Date(season.actualHarvestDate) : 
+                              (season.expectedHarvestDate ? new Date(season.expectedHarvestDate) : null);
+            
+            if (!harvestDate || isNaN(harvestDate.getTime())) return 0;
+            
+            const totalDays = Math.ceil((harvestDate - plantingDate) / (1000 * 60 * 60 * 24));
+            const daysPassed = Math.ceil((now - plantingDate) / (1000 * 60 * 60 * 24));
+            
+            if (totalDays <= 0) return 100;
+            const progress = Math.min(100, Math.max(0, (daysPassed / totalDays) * 100));
+            return progress;
+        } catch (e) {
+            console.error('Error calculating progress:', e);
+            return 0;
+        }
+    };
+
+    // Tính toán giai đoạn phát triển hiện tại
+    const getCurrentStage = (season, plantStages) => {
+        if (!season || !season.plantingDate) return null;
+        try {
+            const now = new Date();
+            const plantingDate = new Date(season.plantingDate);
+            const daysPassed = Math.ceil((now - plantingDate) / (1000 * 60 * 60 * 24));
+            
+            if (!plantStages || plantStages.length === 0) return null;
+            
+            // Tìm stage phù hợp với số ngày đã trôi qua
+            const currentStage = plantStages.find(stage => 
+                daysPassed >= (stage.minDay || 0) && daysPassed <= (stage.maxDay || 9999)
+            );
+            
+            return currentStage || plantStages[plantStages.length - 1];
+        } catch (e) {
+            console.error('Error getting current stage:', e);
+            return null;
+        }
+    };
+
     return (
         <Box sx={{ p: 3 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Typography variant="h4" sx={{ fontWeight: 'bold', fontSize: 32, color: '#222', letterSpacing: 0.5 }}>
-                    Quản lý giai đoạn phát triển cây trồng
+                    Quản lý Cây trồng
                 </Typography>
                 {/* Chỉ Admin và Chủ nông trại được thêm cây trồng */}
                 <RoleGuard allowedRoles={['ADMIN', 'FARM_OWNER']}>
@@ -323,8 +582,359 @@ const CropManager = () => {
                 </RoleGuard>
             </Box>
 
-            {/* Search and Basic Filters */}
-            <Box sx={{ mb: 3, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+            {/* Dashboard Stats */}
+            <Grid container spacing={3} sx={{ mb: 3 }}>
+                <Grid item xs={12} sm={6} md={3}>
+                    <Card sx={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white' }}>
+                        <CardContent>
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <Box>
+                                    <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
+                                        {stats.totalCrops}
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                                        Tổng số loại cây
+                                    </Typography>
+                                </Box>
+                                <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 56, height: 56 }}>
+                                    <NatureIcon sx={{ fontSize: 32 }} />
+                                </Avatar>
+                            </Box>
+                        </CardContent>
+                    </Card>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                    <Card sx={{ background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', color: 'white' }}>
+                        <CardContent>
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <Box>
+                                    <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
+                                        {stats.activeSeasons}
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                                        Mùa vụ đang canh tác
+                                    </Typography>
+                                </Box>
+                                <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 56, height: 56 }}>
+                                    <AgricultureIcon sx={{ fontSize: 32 }} />
+                                </Avatar>
+                            </Box>
+                        </CardContent>
+                    </Card>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                    <Card sx={{ background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', color: 'white' }}>
+                        <CardContent>
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <Box>
+                                    <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
+                                        {stats.totalArea.toFixed(1)}
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                                        Diện tích (m²)
+                                    </Typography>
+                                </Box>
+                                <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 56, height: 56 }}>
+                                    <LocationOnIcon sx={{ fontSize: 32 }} />
+                                </Avatar>
+                            </Box>
+                        </CardContent>
+                    </Card>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                    <Card sx={{ background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)', color: 'white' }}>
+                        <CardContent>
+                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <Box>
+                                    <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1 }}>
+                                        {stats.upcomingHarvest}
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                                        Sắp thu hoạch (30 ngày)
+                                    </Typography>
+                                </Box>
+                                <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 56, height: 56 }}>
+                                    <CalendarTodayIcon sx={{ fontSize: 32 }} />
+                                </Avatar>
+                            </Box>
+                        </CardContent>
+                    </Card>
+                </Grid>
+            </Grid>
+
+            {/* Tabs */}
+            <Paper sx={{ mb: 3 }}>
+                <Tabs 
+                    value={activeTab} 
+                    onChange={(e, newValue) => setActiveTab(newValue)}
+                    sx={{ borderBottom: 1, borderColor: 'divider' }}
+                >
+                    <Tab 
+                        label={
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <AgricultureIcon />
+                                <Typography>Cây trồng đang canh tác</Typography>
+                            </Box>
+                        } 
+                    />
+                    <Tab 
+                        label={
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <LocalFloristIcon />
+                                <Typography>Giai đoạn phát triển</Typography>
+                            </Box>
+                        } 
+                    />
+                </Tabs>
+            </Paper>
+
+            {/* Tab Content: Cây trồng đang canh tác */}
+            {activeTab === 0 && (
+                <Box>
+                    {/* Search and Basic Filters */}
+                    <Box sx={{ mb: 3, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+                        <TextField
+                            fullWidth
+                            variant="outlined"
+                            placeholder="Tìm kiếm theo tên cây, field, mùa vụ..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            InputProps={{
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <SearchIcon />
+                                    </InputAdornment>
+                                ),
+                            }}
+                            sx={{ maxWidth: 400 }}
+                        />
+                    </Box>
+
+                    {/* Crop Seasons Table */}
+                    <TableContainer component={Paper} sx={{ boxShadow: 1, borderRadius: 2 }}>
+                        <Table>
+                            <TableHead>
+                                <TableRow sx={{ background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)' }}>
+                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Tên cây</TableCell>
+                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Field / Farm</TableCell>
+                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Mùa vụ</TableCell>
+                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Ngày gieo trồng</TableCell>
+                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Dự kiến thu hoạch</TableCell>
+                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Tiến độ</TableCell>
+                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Giai đoạn</TableCell>
+                                    <TableCell sx={{ color: 'white', fontWeight: 'bold' }}>Trạng thái</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {loading ? (
+                                    <TableRow>
+                                        <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                                            <Typography>Đang tải dữ liệu...</Typography>
+                                        </TableCell>
+                                    </TableRow>
+                                ) : filteredSeasons.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                                            <Box sx={{ textAlign: 'center' }}>
+                                                <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
+                                                    {cropSeasons.length === 0 ? 'Chưa có mùa vụ nào' : 'Không tìm thấy kết quả phù hợp'}
+                                                </Typography>
+                                                <Typography variant="body2" color="text.secondary">
+                                                    {cropSeasons.length === 0 
+                                                        ? 'Hãy tạo mùa vụ mới để bắt đầu canh tác'
+                                                        : 'Thử thay đổi từ khóa tìm kiếm'}
+                                                </Typography>
+                                            </Box>
+                                        </TableCell>
+                                    </TableRow>
+                                ) : filteredSeasons
+                                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                                    .map((season, index) => {
+                                        if (!season) return null;
+                                        
+                                        const fieldInfo = getFieldAndFarmInfo(season.fieldId);
+                                        const progress = calculateProgress(season);
+                                        const plantName = getPlantName(season.plantId);
+                                        const plantStages = crops.filter(c => c && c.id === season.plantId);
+                                        const currentStage = getCurrentStage(season, plantStages);
+                                        
+                                        let daysUntilHarvest = null;
+                                        try {
+                                            if (season.expectedHarvestDate) {
+                                                const now = new Date();
+                                                const harvestDate = new Date(season.expectedHarvestDate);
+                                                if (!isNaN(harvestDate.getTime())) {
+                                                    daysUntilHarvest = Math.ceil((harvestDate - now) / (1000 * 60 * 60 * 24));
+                                                }
+                                            }
+                                        } catch (e) {
+                                            console.error('Error calculating days until harvest:', e);
+                                        }
+                                        
+                                        return (
+                                            <TableRow 
+                                                key={season.id || `season-${index}`} 
+                                                hover 
+                                                sx={{ 
+                                                    backgroundColor: index % 2 === 0 ? '#fafafa' : 'white',
+                                                    '&:hover': { backgroundColor: '#f0f8ff' }
+                                                }}
+                                            >
+                                                <TableCell sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                        <NatureIcon color="primary" />
+                                                        {plantName}
+                                                    </Box>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Box>
+                                                        <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                                                            {fieldInfo.fieldName}
+                                                        </Typography>
+                                                        <Typography variant="caption" color="text.secondary">
+                                                            {fieldInfo.farmName}
+                                                        </Typography>
+                                                        {fieldInfo.area > 0 && (
+                                                            <Typography variant="caption" color="text.secondary" display="block">
+                                                                {fieldInfo.area} m²
+                                                            </Typography>
+                                                        )}
+                                                    </Box>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Chip 
+                                                        label={season.seasonName || 'N/A'} 
+                                                        size="small" 
+                                                        sx={{ backgroundColor: '#e3f2fd', color: '#1976d2' }}
+                                                    />
+                                                </TableCell>
+                                                <TableCell>
+                                                    {season.plantingDate ? (() => {
+                                                        try {
+                                                            return new Date(season.plantingDate).toLocaleDateString('vi-VN');
+                                                        } catch (e) {
+                                                            return season.plantingDate;
+                                                        }
+                                                    })() : 'N/A'}
+                                                </TableCell>
+                                                <TableCell>
+                                                    {season.expectedHarvestDate ? (
+                                                        <Box>
+                                                            <Typography variant="body2">
+                                                                {(() => {
+                                                                    try {
+                                                                        return new Date(season.expectedHarvestDate).toLocaleDateString('vi-VN');
+                                                                    } catch (e) {
+                                                                        return season.expectedHarvestDate;
+                                                                    }
+                                                                })()}
+                                                            </Typography>
+                                                            {daysUntilHarvest !== null && daysUntilHarvest > 0 && (
+                                                                <Typography variant="caption" color="text.secondary">
+                                                                    Còn {daysUntilHarvest} ngày
+                                                                </Typography>
+                                                            )}
+                                                        </Box>
+                                                    ) : 'N/A'}
+                                                </TableCell>
+                                                <TableCell sx={{ minWidth: 150 }}>
+                                                    <Box>
+                                                        <LinearProgress 
+                                                            variant="determinate" 
+                                                            value={progress} 
+                                                            sx={{ 
+                                                                height: 8, 
+                                                                borderRadius: 4,
+                                                                backgroundColor: '#e0e0e0',
+                                                                '& .MuiLinearProgress-bar': {
+                                                                    backgroundColor: progress >= 80 ? '#4caf50' : progress >= 50 ? '#ff9800' : '#2196f3'
+                                                                }
+                                                            }} 
+                                                        />
+                                                        <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                                                            {progress.toFixed(1)}%
+                                                        </Typography>
+                                                    </Box>
+                                                </TableCell>
+                                                <TableCell>
+                                                    {currentStage ? (
+                                                        <Chip 
+                                                            label={currentStage.stageName} 
+                                                            size="small" 
+                                                            sx={{ backgroundColor: '#f3e5f5', color: '#7b1fa2' }}
+                                                        />
+                                                    ) : (
+                                                        <Typography variant="caption" color="text.secondary">Chưa xác định</Typography>
+                                                    )}
+                                                </TableCell>
+                                                <TableCell>
+                                                    {season.actualHarvestDate ? (
+                                                        <Chip 
+                                                            icon={<CheckCircleIcon />}
+                                                            label="Đã thu hoạch" 
+                                                            size="small" 
+                                                            color="success"
+                                                        />
+                                                    ) : daysUntilHarvest !== null && daysUntilHarvest <= 7 && daysUntilHarvest > 0 ? (
+                                                        <Chip 
+                                                            icon={<WarningIcon />}
+                                                            label="Sắp thu hoạch" 
+                                                            size="small" 
+                                                            color="warning"
+                                                        />
+                                                    ) : progress > 0 ? (
+                                                        <Chip 
+                                                            icon={<TrendingUpIcon />}
+                                                            label="Đang phát triển" 
+                                                            size="small" 
+                                                            color="primary"
+                                                        />
+                                                    ) : (
+                                                        <Chip 
+                                                            label="Chưa bắt đầu" 
+                                                            size="small" 
+                                                            color="default"
+                                                        />
+                                                    )}
+                                                </TableCell>
+                                            </TableRow>
+                                        );
+                                    })}
+                                {!loading && cropSeasons.length === 0 && (
+                                    <TableRow>
+                                        <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                                            <Box sx={{ textAlign: 'center' }}>
+                                                <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
+                                                    Chưa có mùa vụ nào
+                                                </Typography>
+                                                <Typography variant="body2" color="text.secondary">
+                                                    Hãy tạo mùa vụ mới để bắt đầu canh tác
+                                                </Typography>
+                                            </Box>
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                        <TablePagination
+                            rowsPerPageOptions={[5, 10, 25]}
+                            component="div"
+                            count={filteredSeasons.length}
+                            rowsPerPage={rowsPerPage}
+                            page={page}
+                            onPageChange={handleChangePage}
+                            onRowsPerPageChange={handleChangeRowsPerPage}
+                            labelRowsPerPage="Số hàng mỗi trang:"
+                        />
+                    </TableContainer>
+                </Box>
+            )}
+
+            {/* Tab Content: Giai đoạn phát triển */}
+            {activeTab === 1 && (
+                <Box>
+                    {/* Search and Basic Filters */}
+                    <Box sx={{ mb: 3, display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
                 <TextField
                     fullWidth
                     variant="outlined"
@@ -469,20 +1079,20 @@ const CropManager = () => {
                 </Box>
             )}
 
-            {/* Results Summary */}
-            <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="body2" color="text.secondary">
-                    Hiển thị {filteredCrops.length} / {crops.length} kết quả
-                    {searchTerm && ` cho "${searchTerm}"`}
-                </Typography>
-                {(filters.plantType !== 'all' || filters.season !== 'all' || filters.stage !== 'all' || filters.minDays || filters.maxDays) && (
-                    <Typography variant="body2" color="primary">
-                        Đang áp dụng bộ lọc nâng cao
-                    </Typography>
-                )}
-            </Box>
+                    {/* Results Summary */}
+                    <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Typography variant="body2" color="text.secondary">
+                            Hiển thị {filteredCrops.length} / {crops.length} kết quả
+                            {searchTerm && ` cho "${searchTerm}"`}
+                        </Typography>
+                        {(filters.plantType !== 'all' || filters.season !== 'all' || filters.stage !== 'all' || filters.minDays || filters.maxDays) && (
+                            <Typography variant="body2" color="primary">
+                                Đang áp dụng bộ lọc nâng cao
+                            </Typography>
+                        )}
+                    </Box>
 
-            <TableContainer component={Paper} sx={{ boxShadow: 1, borderRadius: 2 }}>
+                    <TableContainer component={Paper} sx={{ boxShadow: 1, borderRadius: 2 }}>
                 <Table>
                     <TableHead>
                         <TableRow sx={{ background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)' }}>
@@ -588,7 +1198,9 @@ const CropManager = () => {
                     onRowsPerPageChange={handleChangeRowsPerPage}
                     labelRowsPerPage="Số hàng mỗi trang:"
                 />
-            </TableContainer>
+                    </TableContainer>
+                </Box>
+            )}
 
             {/* Dialog thêm/sửa chỉ cho phép Admin và Chủ nông trại */}
             <RoleGuard allowedRoles={['ADMIN', 'FARM_OWNER']}>

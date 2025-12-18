@@ -7,13 +7,39 @@ import { API_ENDPOINTS } from '../config/api.config';
 
 const API_BASE_URL = API_ENDPOINTS.PEST_DISEASE;
 
+/**
+ * Lấy Authorization header từ localStorage token
+ */
+const getAuthHeader = () => {
+  const token = localStorage.getItem('token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
 export const pestDiseaseService = {
   /**
    * Kiểm tra health của service
    */
   async checkHealth() {
     try {
-      const response = await fetch(API_BASE_URL.HEALTH);
+      const response = await fetch(API_BASE_URL.HEALTH, {
+        headers: {
+          ...getAuthHeader(),
+        },
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`HTTP error! status: ${response.status}, body: ${errorText}`);
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        console.error('Response is not JSON:', text);
+        throw new Error('Response is not JSON');
+      }
+      
       const data = await response.json();
       return data;
     } catch (error) {
@@ -27,7 +53,25 @@ export const pestDiseaseService = {
    */
   async getDiseaseClasses() {
     try {
-      const response = await fetch(API_BASE_URL.CLASSES);
+      const response = await fetch(API_BASE_URL.CLASSES, {
+        headers: {
+          ...getAuthHeader(),
+        },
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`HTTP error! status: ${response.status}, body: ${errorText}`);
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        console.error('Response is not JSON:', text);
+        throw new Error('Response is not JSON');
+      }
+      
       const data = await response.json();
       return data;
     } catch (error) {
@@ -67,7 +111,7 @@ export const pestDiseaseService = {
       const response = await fetch(API_BASE_URL.DETECT, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+          ...getAuthHeader(),
         },
         body: formData,
       });

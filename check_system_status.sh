@@ -92,3 +92,20 @@ echo "   cd ~/projects/SmartFarm"
 echo "   docker-compose ps"
 echo "   docker-compose logs -f"
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

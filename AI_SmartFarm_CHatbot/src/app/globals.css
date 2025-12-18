@@ -228,3 +228,20 @@
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--accent));
 }
+
+/* Ẩn Next.js dev server overlay/panel */
+[data-nextjs-toast],
+[data-nextjs-dialog],
+[data-nextjs-portal],
+div[data-nextjs-toast],
+div[data-nextjs-dialog] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Ẩn panel có chứa Route/Turbopack/Preferences - sử dụng JavaScript injection */
+script {
+  display: none !important;
+}

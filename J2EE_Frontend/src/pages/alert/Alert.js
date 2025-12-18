@@ -321,13 +321,26 @@ const AlertScreen = () => {
 
   const handleResolveAlert = async (alertId) => {
     try {
+      // Tìm alert để lấy fieldId trước khi resolve
+      const alertToResolve = alerts.find(a => a.id === alertId);
+      const fieldId = alertToResolve?.fieldId;
+      
       await alertService.resolveAlert(alertId);
       setSnackbar({
         open: true,
         message: 'Đã xử lý cảnh báo thành công!',
         severity: 'success'
       });
-      fetchAlerts(); // Refresh data
+      fetchAlerts(); // Refresh alerts data
+      
+      // Thông báo cho các component khác (như Field page) để refresh fields
+      if (fieldId) {
+        // Dispatch custom event để Field page có thể listen và refresh
+        window.dispatchEvent(new CustomEvent('fieldStatusUpdated', { 
+          detail: { fieldId } 
+        }));
+        console.log('🔄 Đã dispatch event fieldStatusUpdated cho field:', fieldId);
+      }
     } catch (error) {
       console.error('Error resolving alert:', error);
       setSnackbar({

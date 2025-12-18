@@ -1,0 +1,83 @@
+package com.example.demo.infrastructure.config;
+
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Contact;
+import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.info.License;
+import io.swagger.v3.oas.models.servers.Server;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+import java.util.List;
+
+/**
+ * Swagger/OpenAPI Configuration
+ * 
+ * Cấu hình API documentation cho Spring Boot
+ * 
+ * Truy cập: http://localhost:8080/swagger-ui.html
+ * 
+ * @author SmartFarm Team
+ */
+@Configuration
+public class SwaggerConfig {
+
+    @Bean
+    public OpenAPI smartFarmOpenAPI() {
+        Server devServer = new Server();
+        devServer.setUrl("http://localhost:8080");
+        devServer.setDescription("Development Server");
+
+        Server prodServer = new Server();
+        prodServer.setUrl("http://109.205.180.72:8080");
+        prodServer.setDescription("Production Server");
+
+        Contact contact = new Contact();
+        contact.setEmail("smartfarm@example.com");
+        contact.setName("SmartFarm Team");
+        contact.setUrl("https://github.com/kimngn0407/SmartFarm_System");
+
+        License license = new License()
+                .name("MIT License")
+                .url("https://opensource.org/licenses/MIT");
+
+        Info info = new Info()
+                .title("SmartFarm API")
+                .version("1.0.0")
+                .contact(contact)
+                .description("""
+                    API Documentation cho hệ thống SmartFarm
+                    
+                    ## Tính năng chính:
+                    - Quản lý nông trại, khu vực, cây trồng
+                    - Quản lý cảm biến và dữ liệu sensor
+                    - Hệ thống cảnh báo tự động
+                    - Gợi ý cây trồng (ML)
+                    - Nhận diện sâu bệnh (ML)
+                    - Quản lý thu hoạch và doanh thu
+                    - Tưới tiêu tự động
+                    
+                    ## Authentication:
+                    Sử dụng JWT token. Gửi token trong header:
+                    ```
+                    Authorization: Bearer <your-token>
+                    ```
+                    """)
+                .license(license);
+
+        return new OpenAPI()
+                .info(info)
+                .servers(List.of(devServer, prodServer));
+    }
+}
+
+
+
+
+
+
+
+
+
+
+

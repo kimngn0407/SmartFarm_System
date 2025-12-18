@@ -60,31 +60,12 @@ public class AccountController {
     @GetMapping("/profile")
     @PreAuthorize("hasAnyRole('ADMIN', 'FARM_OWNER', 'TECHNICIAN', 'FARMER')")
     public ResponseEntity<?> getProfile(@RequestParam String email) {
-        Optional<AccountEntity> accountOpt = accountService.getByEmail(email);
-
-        if (accountOpt.isEmpty()) {
+        try {
+            AccountDTO dto = accountService.getProfileByEmail(email);
+            return ResponseEntity.ok(dto);
+        } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
         }
-
-        AccountEntity account = accountOpt.get();
-
-        AccountDTO dto = new AccountDTO();
-        dto.setId(account.getId());
-        dto.setFullName(account.getFullName());
-        dto.setEmail(account.getEmail());
-        dto.setRoles(account.getRoles());
-
-        if (account.getFarm() != null) {
-            dto.setFarmId(account.getFarm().getId());
-            dto.setFarmName(account.getFarm().getFarmName());
-        }
-
-        if (account.getField() != null) {
-            dto.setFieldId(account.getField().getId());
-            dto.setFieldName(account.getField().getFieldName());
-        }
-
-        return ResponseEntity.ok(dto);
     }
 
     // Cập nhật hồ sơ cá nhân

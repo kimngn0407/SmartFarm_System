@@ -139,6 +139,8 @@ public class AccountService {
 
         AccountEntity account = accountOpt.get();
         if (dto.getFullName() != null) account.setFullName(dto.getFullName());
+        if (dto.getPhone() != null) account.setPhone(dto.getPhone());
+        if (dto.getAddress() != null) account.setAddress(dto.getAddress());
         if (dto.getPassword() != null) account.setPassword(passwordEncoder.encode(dto.getPassword()));
         if (dto.getRoles() != null) account.setRoles(dto.getRoles());
 
@@ -151,6 +153,8 @@ public class AccountService {
         dto.setId(account.getId());
         dto.setFullName(account.getFullName());
         dto.setEmail(account.getEmail());
+        dto.setPhone(account.getPhone());
+        dto.setAddress(account.getAddress());
         dto.setRoles(account.getRoles());
 
         if (account.getFarm() != null) {

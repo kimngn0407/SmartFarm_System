@@ -1,0 +1,31 @@
+SmartFarm System Backup
+=======================
+Backup Date: Thu Nov 20 12:07:44 CET 2025
+Backup Name: smartfarm_backup_20251120_120720
+VPS IP: 173.249.48.25
+
+Contents:
+- Database: database/smartfarm_db_20251120_120720.sql
+- Source Code: code/source_code_20251120_120720.tar.gz
+- Docker Volumes: docker/postgres_data_20251120_120720.tar.gz
+- Configuration: config/
+
+To Restore:
+1. Extract source code: tar -xzf code/source_code_20251120_120720.tar.gz
+2. Restore database: psql -U postgres SmartFarm1 < database/smartfarm_db_20251120_120720.sql
+3. Restore volumes: docker run --rm -v smartfarm_postgres_data:/data -v $(pwd)/docker:/backup alpine tar xzf /backup/postgres_data_20251120_120720.tar.gz -C /data
+
+Docker Compose Services:
+NAME                     IMAGE                    COMMAND                  SERVICE        CREATED          STATUS                    PORTS
+smartfarm-backend        smartfarm-backend        "java -jar app.jar"      backend        41 minutes ago   Up 41 minutes (healthy)   0.0.0.0:8080->8080/tcp, [::]:8080->8080/tcp
+smartfarm-chatbot        smartfarm-chatbot        "docker-entrypoint.s…"   chatbot        3 hours ago      Up 3 hours (healthy)      0.0.0.0:9002->9002/tcp, [::]:9002->9002/tcp
+smartfarm-crop-service   smartfarm-crop-service   "python crop_recomme…"   crop-service   3 hours ago      Up 3 hours (healthy)      0.0.0.0:5000->5000/tcp, [::]:5000->5000/tcp
+smartfarm-frontend       smartfarm-frontend       "/docker-entrypoint.…"   frontend       2 hours ago      Up 2 hours (healthy)      0.0.0.0:80->80/tcp, [::]:80->80/tcp
+smartfarm-nginx          nginx:alpine             "/docker-entrypoint.…"   nginx          3 hours ago      Up 3 hours                0.0.0.0:443->443/tcp, [::]:443->443/tcp, 80/tcp, 0.0.0.0:8443->8443/tcp, [::]:8443->8443/tcp
+smartfarm-pest-service   smartfarm-pest-service   "python pest_disease…"   pest-service   3 hours ago      Up 3 hours (healthy)      0.0.0.0:5001->5001/tcp, [::]:5001->5001/tcp
+smartfarm-postgres       postgres:15-alpine       "docker-entrypoint.s…"   postgres       3 hours ago      Up 3 hours (healthy)      0.0.0.0:5432->5432/tcp, [::]:5432->5432/tcp
+
+Git Status:
+ M backup_system.sh
+?? backups/
+

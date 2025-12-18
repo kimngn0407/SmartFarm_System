@@ -123,3 +123,20 @@ echo "   - Backup database có thể lớn, kiểm tra dung lượng trước kh
 echo "   - Nên tải file nén về local trước khi gia hạn VPS"
 echo "   - Giữ file backup ở nhiều nơi (local, cloud, USB)"
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
