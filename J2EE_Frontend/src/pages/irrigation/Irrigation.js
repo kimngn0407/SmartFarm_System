@@ -51,6 +51,7 @@ const IrrigationManager = () => {
     const [selectedField, setSelectedField] = useState(0); // 0 = all fields
     const [farms, setFarms] = useState([]);
     const [fields, setFields] = useState([]);
+    const [fieldsLoaded, setFieldsLoaded] = useState(false); // Track xem fields đã được load chưa
     const [loading, setLoading] = useState(true);
     const [apiError, setApiError] = useState(null);
     const [activeTab, setActiveTab] = useState('overview'); // overview, irrigation, fertilization, both, record, stats
@@ -78,24 +79,31 @@ const IrrigationManager = () => {
             console.log('Selected farm changed:', selectedFarm);
             // Reset selectedField về 0 (Tất cả fields) khi đổi farm
             setSelectedField(0);
-            // Clear fields trước khi load fields mới
+            // Clear fields và reset flag trước khi load fields mới
             setFields([]);
+            setFieldsLoaded(false);
             loadFieldsData();
         }
     }, [selectedFarm]);
 
     useEffect(() => {
+        if (selectedFarm) {
+            setFieldsLoaded(false); // Reset flag khi đổi farm
+        }
+    }, [selectedFarm]);
+    
+    useEffect(() => {
         // Chỉ load history khi:
         // 1. Đã chọn farm
-        // 2. Fields đã được load xong (fields.length > 0 hoặc đã cố gắng load nhưng không có fields)
-        // 3. Không đang trong quá trình load fields (tránh load nhiều lần)
-        if (selectedFarm) {
-            // Nếu fields.length === 0 và đang chờ load, không load history
-            // Nếu fields đã được load (có thể là 0 fields hoặc có fields), thì load history
-            console.log('Selected field changed or fields loaded:', selectedField, fields.length);
+        // 2. Fields đã được load xong (fieldsLoaded = true)
+        // 3. Hoặc đã có fields (fields.length > 0)
+        if (selectedFarm && (fieldsLoaded || fields.length > 0)) {
+            console.log('Loading history - Farm:', selectedFarm, 'Field:', selectedField, 'Fields loaded:', fieldsLoaded, 'Fields count:', fields.length);
             loadHistoryData();
+        } else if (selectedFarm && !fieldsLoaded && fields.length === 0) {
+            console.log('⏳ Chờ fields được load xong...');
         }
-    }, [selectedField, fields, selectedFarm]);
+    }, [selectedField, fields, selectedFarm, fieldsLoaded]);
 
     const loadFarmsData = async () => {
         try {
@@ -152,6 +160,9 @@ const IrrigationManager = () => {
             
             console.log(`✅ Loaded ${transformedFields.length} fields for farm ${selectedFarm}`);
             
+            // Đánh dấu fields đã được load xong
+            setFieldsLoaded(true);
+            
             // selectedField đã được reset về 0 trong useEffect khi đổi farm
             // Không cần kiểm tra lại ở đây
         } catch (error) {
@@ -177,6 +188,9 @@ const IrrigationManager = () => {
             const currentFields = mockFields[selectedFarm] || [];
             setFields(currentFields);
             
+            // Đánh dấu fields đã được load xong (kể cả khi dùng mock data)
+            setFieldsLoaded(true);
+            
             // selectedField đã được reset về 0 trong useEffect khi đổi farm
             // Không cần kiểm tra lại ở đây
         }
@@ -189,7 +203,8 @@ const IrrigationManager = () => {
             selectedFarm, 
             selectedField, 
             fieldsLength: fields.length,
-            fields: fields.map(f => f.id)
+            fields: fields.map(f => f.id),
+            fieldsLoaded
         });
         
         // ✅ KIỂM TRA ĐIỀU KIỆN LOAD DỮ LIỆU
@@ -200,7 +215,7 @@ const IrrigationManager = () => {
         }
         
         // ✅ NẾU selectedField = 0 (Tất cả fields) NHƯNG CHƯA CÓ FIELDS, CHỜ LOAD XONG
-        if (selectedField === 0 && fields.length === 0) {
+        if (selectedField === 0 && !fieldsLoaded && fields.length === 0) {
             console.log('⏳ Chờ fields được load xong để hiển thị tất cả...');
             setLoading(false);
             return;
@@ -219,54 +234,49 @@ const IrrigationManager = () => {
             // Thử gọi API thực tế trước
             let irrigationData = [];
             let fertilizationData = [];
+            let hasApiError = false;
+            let apiErrorMessage = null;
             
             // Cách 1: Sử dụng endpoint by farm
             try {
                 const fieldIdParam = selectedField > 0 ? selectedField : null;
                 
-                const [irrigationResponse, fertilizationResponse] = await Promise.all([
+                // Thêm timeout để tránh loading vô hạn (10 giây)
+                const timeoutPromise = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Request timeout')), 10000)
+                );
+                
+                const apiPromise = Promise.all([
                     irrigationService.getIrrigationHistoryByFarm(selectedFarm, fieldIdParam),
                     irrigationService.getFertilizationHistoryByFarm(selectedFarm, fieldIdParam)
+                ]);
+                
+                const [irrigationResponse, fertilizationResponse] = await Promise.race([
+                    apiPromise,
+                    timeoutPromise
                 ]);
                 
                 irrigationData = irrigationResponse.data || [];
                 fertilizationData = fertilizationResponse.data || [];
                 
-                console.log('API Response - Irrigation:', irrigationData);
-                console.log('API Response - Fertilization:', fertilizationData);
+                console.log('API Response - Irrigation:', irrigationData.length, 'records');
+                console.log('API Response - Fertilization:', fertilizationData.length, 'records');
                 
             } catch (apiError) {
-                console.warn('Specific API failed, trying general endpoint:', apiError);
+                console.warn('API call failed:', apiError);
+                hasApiError = true;
+                // Không có fallback endpoint khác vì backend yêu cầu fieldId
+                // Nếu API thất bại, sẽ hiển thị empty state
+                irrigationData = [];
+                fertilizationData = [];
                 
-                // Cách 2: Lấy tất cả dữ liệu và filter phía client
-                try {
-                    const [allIrrigationResponse, allFertilizationResponse] = await Promise.all([
-                        irrigationService.getIrrigationHistoryAll(),
-                        irrigationService.getFertilizationHistoryAll()
-                    ]);
-                    
-                    const allIrrigationData = allIrrigationResponse.data || [];
-                    const allFertilizationData = allFertilizationResponse.data || [];
-                    
-                    // Filter dữ liệu dựa trên selectedFarm và selectedField
-                    irrigationData = allIrrigationData.filter(item => {
-                        const farmMatch = !selectedFarm || item.farmId === selectedFarm || item.farm_id === selectedFarm;
-                        const fieldMatch = selectedField === 0 || item.fieldId === selectedField || item.field_id === selectedField;
-                        return farmMatch && fieldMatch;
-                    });
-                    
-                    fertilizationData = allFertilizationData.filter(item => {
-                        const farmMatch = !selectedFarm || item.farmId === selectedFarm || item.farm_id === selectedFarm;
-                        const fieldMatch = selectedField === 0 || item.fieldId === selectedField || item.field_id === selectedField;
-                        return farmMatch && fieldMatch;
-                    });
-                    
-                    console.log('All API Data - Irrigation:', allIrrigationData);
-                    console.log('Filtered Data - Irrigation:', irrigationData);
-                    
-                } catch (generalApiError) {
-                    console.error('All API calls failed:', generalApiError);
-                    throw generalApiError;
+                // Nếu là timeout, hiển thị error message
+                if (apiError.message === 'Request timeout') {
+                    console.error('⏱️ Request timeout - Server không phản hồi trong 10 giây');
+                    apiErrorMessage = 'Kết nối server quá lâu. Vui lòng kiểm tra kết nối mạng.';
+                } else {
+                    console.error('❌ API Error:', apiError.response?.status, apiError.message);
+                    apiErrorMessage = 'Không thể tải dữ liệu từ server.';
                 }
             }
             
@@ -276,13 +286,29 @@ const IrrigationManager = () => {
             
             setIrrigationHistory(transformedIrrigation);
             setFertilizationHistory(transformedFertilization);
-            setApiError(null);
             
-            console.log('Final Transformed Data - Irrigation:', transformedIrrigation);
-            console.log('Final Transformed Data - Fertilization:', transformedFertilization);
+            // Set error message nếu có, hoặc clear nếu không có lỗi và có data
+            if (hasApiError && apiErrorMessage) {
+                setApiError(apiErrorMessage);
+            } else if (irrigationData.length === 0 && fertilizationData.length === 0) {
+                // Không có data nhưng không có lỗi API (có thể là chưa có dữ liệu)
+                setApiError(null);
+            } else {
+                // Có data, clear error
+                setApiError(null);
+            }
+            
+            console.log('Final Transformed Data - Irrigation:', transformedIrrigation.length, 'records');
+            console.log('Final Transformed Data - Fertilization:', transformedFertilization.length, 'records');
+            
+            // ✅ QUAN TRỌNG: Luôn set loading = false khi hoàn thành
+            setLoading(false);
             
         } catch (error) {
             console.error('Error fetching history:', error);
+            
+            // ✅ QUAN TRỌNG: Luôn set loading = false khi có lỗi
+            setLoading(false);
             
             // ✅ KIỂM TRA XEM FARM CÓ FIELDS TRƯỚC KHI HIỂN THỊ MOCK DATA
             if (fields.length === 0) {
@@ -290,132 +316,16 @@ const IrrigationManager = () => {
                 setIrrigationHistory([]);
                 setFertilizationHistory([]);
                 setApiError('Farm này chưa có fields nào. Vui lòng thêm fields trước khi xem lịch sử tưới tiêu và bón phân.');
-                setLoading(false);
                 return;
             }
             
-            console.log('⚠️ API thất bại, sử dụng mock data cho farm có fields');
-            setApiError('Không thể kết nối với server. Đang sử dụng dữ liệu mẫu.');
-            
-            // Fallback to mock data chỉ khi farm CÓ fields
-            const allMockIrrigationData = [
-                {
-                    id: 1,
-                    fieldId: 1,
-                    fieldName: 'Field 1',
-                    farmId: 1,
-                    farmName: 'Farm Demo1',
-                    farmerName: 'farmer1',
-                    timestamp: '2025-08-06T08:30:00',
-                    amount: 150,
-                    duration: 45,
-                    method: 'Tưới phun mưa'
-                },
-                {
-                    id: 2,
-                    fieldId: 2,
-                    fieldName: 'Field 2',
-                    farmId: 1,
-                    farmName: 'Farm Demo1',
-                    farmerName: 'farmer1',
-                    timestamp: '2025-08-05T15:20:00',
-                    amount: 200,
-                    duration: 60,
-                    method: 'Tưới nhỏ giọt'
-                },
-                {
-                    id: 3,
-                    fieldId: 4,
-                    fieldName: 'Field 1',
-                    farmId: 2,
-                    farmName: 'Green Farm',
-                    farmerName: 'farmer2',
-                    timestamp: '2025-08-04T06:45:00',
-                    amount: 180,
-                    duration: 50,
-                    method: 'Tưới phun mưa'
-                },
-                {
-                    id: 4,
-                    fieldId: 3,
-                    fieldName: 'Field 3',
-                    farmId: 1,
-                    farmName: 'Farm Demo1',
-                    farmerName: 'farmer1',
-                    timestamp: '2025-08-03T14:15:00',
-                    amount: 120,
-                    duration: 30,
-                    method: 'Tưới rãnh'
-                }
-            ];
-
-            const allMockFertilizationData = [
-                {
-                    id: 1,
-                    fieldId: 2,
-                    fieldName: 'Field 2',
-                    farmId: 1,
-                    farmName: 'Farm Demo1',
-                    farmerName: 'farmer1',
-                    timestamp: '2025-08-06T07:00:00',
-                    fertilizer: 'NPK 16-16-8',
-                    amount: 25,
-                    unit: 'kg',
-                    method: 'Rải đều'
-                },
-                {
-                    id: 2,
-                    fieldId: 1,
-                    fieldName: 'Field 1',
-                    farmId: 1,
-                    farmName: 'Farm Demo1',
-                    farmerName: 'farmer2',
-                    timestamp: '2025-08-03T14:30:00',
-                    fertilizer: 'Phân hữu cơ',
-                    amount: 50,
-                    unit: 'kg',
-                    method: 'Bón gốc'
-                },
-                {
-                    id: 3,
-                    fieldId: 4,
-                    fieldName: 'Field 1',
-                    farmId: 2,
-                    farmName: 'Green Farm',
-                    farmerName: 'farmer2',
-                    timestamp: '2025-08-02T09:20:00',
-                    fertilizer: 'Đạm Urê',
-                    amount: 30,
-                    unit: 'kg',
-                    method: 'Rải đều'
-                }
-            ];
-
-            // ✅ LỌC VÀ HIỂN THỊ MOCK DATA THEO selectedField
-            // Nếu chọn field cụ thể, chỉ hiển thị data của field đó
-            // Nếu chọn "Tất cả fields", hiển thị tất cả data của farm
-            const filteredIrrigation = allMockIrrigationData.filter(item => {
-                const farmMatch = item.farmId === selectedFarm;
-                const fieldMatch = selectedField === 0 || item.fieldId === selectedField;
-                return farmMatch && fieldMatch;
-            });
-
-            const filteredFertilization = allMockFertilizationData.filter(item => {
-                const farmMatch = item.farmId === selectedFarm;
-                const fieldMatch = selectedField === 0 || item.fieldId === selectedField;
-                return farmMatch && fieldMatch;
-            });
-
-            console.log('Mock Data Filter Results:');
-            console.log('- Selected Farm:', selectedFarm);
-            console.log('- Selected Field:', selectedField);
-            console.log('- Filtered Irrigation:', filteredIrrigation);
-            console.log('- Filtered Fertilization:', filteredFertilization);
-
-            setIrrigationHistory(filteredIrrigation);
-            setFertilizationHistory(filteredFertilization);
+            // Nếu không có data từ API, hiển thị empty state (không dùng mock data)
+            console.log('⚠️ Không có dữ liệu từ API, hiển thị empty state');
+            setIrrigationHistory([]);
+            setFertilizationHistory([]);
+            setApiError('Không thể tải dữ liệu từ server. Vui lòng kiểm tra kết nối.');
+            return;
         }
-        setLoading(false);
     };
 
     const formatDateTime = (timestamp) => {
