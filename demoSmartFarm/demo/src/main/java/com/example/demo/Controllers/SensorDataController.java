@@ -23,6 +23,15 @@ public class SensorDataController {
         return sensorDataService.saveSensorData(dto);
     }
 
+    /**
+     * Public endpoint cho IoT devices - không cần authentication
+     * Sử dụng endpoint này để gửi dữ liệu từ Arduino/ESP32
+     */
+    @PostMapping("/iot")
+    public SensorDataDTO saveSensorDataFromIoT(@RequestBody SensorDataDTO dto) {
+        return sensorDataService.saveSensorData(dto);
+    }
+
     @GetMapping
     public List<SensorDataDTO> getSensorData(
             @RequestParam Long sensorId,

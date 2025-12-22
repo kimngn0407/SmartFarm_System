@@ -42,6 +42,7 @@ public class SecurityConfig {
                         // Public endpoints - không cần authentication
                         .requestMatchers("/api/auth/**", "/api/accounts/login", "/api/accounts/register").permitAll()
                         .requestMatchers("/api/email/test/**").permitAll()
+                        .requestMatchers("/api/sensor-data/iot").permitAll() // Public endpoint cho IoT devices
                         .requestMatchers("/ws/**", "/app/**", "/topic/**").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
                         // Tất cả các endpoints khác cần authentication
