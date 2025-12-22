@@ -217,8 +217,16 @@ function getFlow() {
             const errorMsg = error?.message || '';
             const errorStr = JSON.stringify(error || {});
             
+            // Kiểm tra lỗi API key bị leaked
+            if (errorMsg.includes('leaked') || errorMsg.includes('403') || errorStr.includes('leaked')) {
+              const leakedError = new Error('API key đã bị Google đánh dấu là leaked. Vui lòng tạo API key mới từ https://aistudio.google.com/ và cập nhật trong file .env');
+              (leakedError as any).digest = 'API_KEY_LEAKED';
+              throw leakedError;
+            }
+            
+            // Kiểm tra lỗi API key chưa được cấu hình
             if (errorMsg.includes('API key') || errorMsg.includes('GOOGLE') || errorStr.includes('API key') || errorStr.includes('GOOGLE')) {
-              const apiError = new Error('API key chưa được cấu hình. Vui lòng liên hệ quản trị viên để cấu hình GOOGLE_GENAI_API_KEY.');
+              const apiError = new Error('API key chưa được cấu hình hoặc không hợp lệ. Vui lòng liên hệ quản trị viên để cấu hình GOOGLE_GENAI_API_KEY.');
               (apiError as any).digest = 'API_KEY_NOT_CONFIGURED';
               throw apiError;
             }
