@@ -124,7 +124,10 @@ const generateInsightsFromExcelFlow = ai.defineFlow(
       const apiKey = process.env.GOOGLE_GENAI_API_KEY || process.env.GOOGLE_API_KEY;
       if (!apiKey || apiKey === 'your-api-key' || apiKey.trim() === '') {
         console.error('❌ GOOGLE_GENAI_API_KEY chưa được cấu hình!');
-        throw new Error('API key chưa được cấu hình. Vui lòng liên hệ quản trị viên để cấu hình GOOGLE_GENAI_API_KEY.');
+        const error = new Error('API key chưa được cấu hình. Vui lòng liên hệ quản trị viên để cấu hình GOOGLE_GENAI_API_KEY.');
+        // Thêm digest để Next.js có thể hiển thị error message tốt hơn
+        (error as any).digest = 'API_KEY_NOT_CONFIGURED';
+        throw error;
       }
       
       // ===== BƯỚC 1: ĐỌC FILE EXCEL =====
