@@ -60,9 +60,28 @@ export default function RootLayout({
                 setTimeout(hideOverlay, 500);
                 setTimeout(hideOverlay, 1000);
                 
-                // Observer để theo dõi thay đổi DOM
-                const observer = new MutationObserver(hideOverlay);
-                observer.observe(document.body, { childList: true, subtree: true });
+                // Observer để theo dõi thay đổi DOM - chỉ observe khi body đã sẵn sàng
+                function setupObserver() {
+                  if (document.body && document.body instanceof Node) {
+                    try {
+                      const observer = new MutationObserver(hideOverlay);
+                      observer.observe(document.body, { childList: true, subtree: true });
+                    } catch (e) {
+                      // Ignore observer errors
+                      console.warn('Could not setup MutationObserver:', e);
+                    }
+                  } else {
+                    // Retry after a short delay if body is not ready
+                    setTimeout(setupObserver, 100);
+                  }
+                }
+                
+                // Setup observer after DOM is ready
+                if (document.readyState === 'loading') {
+                  document.addEventListener('DOMContentLoaded', setupObserver);
+                } else {
+                  setupObserver();
+                }
               })();
             `,
           }}

@@ -77,8 +77,9 @@ export type GenerateInsightsFromExcelOutput = z.infer<typeof GenerateInsightsFro
 export async function generateInsightsFromExcel(
   input: GenerateInsightsFromExcelInput
 ): Promise<GenerateInsightsFromExcelOutput> {
-  // Gọi flow xử lý chính và trả về kết quả
-  return generateInsightsFromExcelFlow(input);
+  // Gọi flow xử lý chính và trả về kết quả (lazy load)
+  const flow = getFlow();
+  return flow(input);
 }
 
 // ===== ĐỊNH NGHĨA PROMPT CHO AI =====
@@ -86,14 +87,20 @@ export async function generateInsightsFromExcel(
 /**
  * Đây là "kịch bản" dạy AI cách trả lời
  * Giống như viết hướng dẫn cho nhân viên tư vấn
+ * Lazy load để tránh lỗi khi import module
  */
-const prompt = ai.definePrompt({
-  name: 'generateInsightsFromExcelPrompt',
-  input: {schema: GenerateInsightsFromExcelInternalInputSchema},
-  output: {schema: GenerateInsightsFromExcelOutputSchema},
+let prompt: any = null;
 
-  // PROMPT NGẮN GỌN: TRẢ VỀ TRỰC TIẾP KHÔNG IN TIÊU ĐỀ
-  prompt: `Bạn là Smart Farm Bot — trợ lý AI cho nông nghiệp thông minh tại Việt Nam.
+function getPrompt() {
+  if (!prompt) {
+    try {
+      prompt = ai.definePrompt({
+        name: 'generateInsightsFromExcelPrompt',
+        input: {schema: GenerateInsightsFromExcelInternalInputSchema},
+        output: {schema: GenerateInsightsFromExcelOutputSchema},
+
+        // PROMPT NGẮN GỌN: TRẢ VỀ TRỰC TIẾP KHÔNG IN TIÊU ĐỀ
+        prompt: `Bạn là Smart Farm Bot — trợ lý AI cho nông nghiệp thông minh tại Việt Nam.
 
 Nguyên tắc trả lời (rút gọn):
 - Trả lời trực tiếp bằng tiếng Việt, ngắn gọn và hữu dụng. KHÔNG in các tiêu đề như "Trả lời:", "Nguồn dữ liệu:", "Khuyến nghị:", "Độ tin cậy:" hay "Giả định:".
@@ -104,114 +111,140 @@ Nguyên tắc trả lời (rút gọn):
 Dữ liệu đầu vào: {{{excelDataJson}}} (mảng JSON; cột chuẩn: STT, CÂU HỎI, CÂU TRẢ LỜI). Ngữ cảnh cuộc trò chuyện: {{{conversationHistory}}}. Câu hỏi: {{{query}}}.
 
 Ghi chú: Trả về đúng một chuỗi văn bản (output.answer). Tránh in dữ liệu thô, tránh in nhiều mục tiêu đề; ưu tiên câu trả lời ngắn và các bước hành động dễ hiểu cho nông dân hoặc kỹ sư nông nghiệp.`,
-});
+      });
+    } catch (error) {
+      console.error('❌ Lỗi khi định nghĩa prompt:', error);
+      throw new Error('Không thể khởi tạo AI prompt. Vui lòng kiểm tra cấu hình API key.');
+    }
+  }
+  return prompt;
+}
 
 // ===== FLOW XỬ LÝ CHÍNH =====
 
 /**
  * Đây là "nhà máy xử lý" chính của chatbot
  * Quy trình: Nhận input → Đọc Excel → Gửi AI → Trả kết quả
+ * Lazy load để tránh lỗi khi import module
  */
-const generateInsightsFromExcelFlow = ai.defineFlow(
-  {
-    name: 'generateInsightsFromExcelFlow',              // Tên flow
-    inputSchema: GenerateInsightsFromExcelInputSchema,  // Schema đầu vào
-    outputSchema: GenerateInsightsFromExcelOutputSchema, // Schema đầu ra
-  },
-  async input => {
+let generateInsightsFromExcelFlow: any = null;
+
+function getFlow() {
+  if (!generateInsightsFromExcelFlow) {
     try {
-      // ===== KIỂM TRA API KEY TRƯỚC KHI XỬ LÝ =====
-      const apiKey = process.env.GOOGLE_GENAI_API_KEY || process.env.GOOGLE_API_KEY;
-      if (!apiKey || apiKey === 'your-api-key' || apiKey.trim() === '') {
-        console.error('❌ GOOGLE_GENAI_API_KEY chưa được cấu hình!');
-        const error = new Error('API key chưa được cấu hình. Vui lòng liên hệ quản trị viên để cấu hình GOOGLE_GENAI_API_KEY.');
-        // Thêm digest để Next.js có thể hiển thị error message tốt hơn
-        (error as any).digest = 'API_KEY_NOT_CONFIGURED';
-        throw error;
-      }
-      
-      // ===== BƯỚC 1: ĐỌC FILE EXCEL =====
-      let buffer: Buffer; // Biến chứa dữ liệu file Excel
+      generateInsightsFromExcelFlow = ai.defineFlow(
+        {
+          name: 'generateInsightsFromExcelFlow',              // Tên flow
+          inputSchema: GenerateInsightsFromExcelInputSchema,  // Schema đầu vào
+          outputSchema: GenerateInsightsFromExcelOutputSchema, // Schema đầu ra
+        },
+        async input => {
+          try {
+            // ===== KIỂM TRA API KEY TRƯỚC KHI XỬ LÝ =====
+            const apiKey = process.env.GOOGLE_GENAI_API_KEY || process.env.GOOGLE_API_KEY;
+            if (!apiKey || apiKey === 'your-api-key' || apiKey.trim() === '') {
+              console.error('❌ GOOGLE_GENAI_API_KEY chưa được cấu hình!');
+              const error = new Error('API key chưa được cấu hình. Vui lòng liên hệ quản trị viên để cấu hình GOOGLE_GENAI_API_KEY.');
+              // Thêm digest để Next.js có thể hiển thị error message tốt hơn
+              (error as any).digest = 'API_KEY_NOT_CONFIGURED';
+              throw error;
+            }
+            
+            // ===== BƯỚC 1: ĐỌC FILE EXCEL =====
+            let buffer: Buffer; // Biến chứa dữ liệu file Excel
 
-      // Kiểm tra xem có file Excel được upload không
-      if (input.excelDataUri) {
-        // Nếu có file upload, decode từ base64
-        const base64Data = input.excelDataUri.split(',')[1]; // Tách phần base64
-        buffer = Buffer.from(base64Data, 'base64');          // Convert thành buffer
-      } else {
-        // Nếu không có file upload, dùng file mặc định
-        const filePath = path.join(process.cwd(), 'src', 'data', 'sample-data.xlsx');
-        
-        // Kiểm tra file có tồn tại không
-        if (!fs.existsSync(filePath)) {
-          // Nếu không có file, dùng dữ liệu mặc định
-          const defaultData = [
-            { STT: 1, 'CÂU HỎI': 'Cách trồng lúa?', 'CÂU TRẢ LỜI': 'Trồng lúa cần đất phù sa, nước đầy đủ, và chăm sóc thường xuyên.' },
-            { STT: 2, 'CÂU HỎI': 'Cách bón phân cho cây?', 'CÂU TRẢ LỜI': 'Bón phân đúng liều lượng, đúng thời điểm, và tưới nước sau khi bón.' }
-          ];
-          const excelDataJson = defaultData;
-          
-          // Gửi cho AI xử lý với dữ liệu mặc định
-          const {output} = await prompt({
-            excelDataJson: JSON.stringify(excelDataJson),
-            query: input.query,
-            conversationHistory: input.conversationHistory || '',
-          });
-          
-          return output!;
+            // Kiểm tra xem có file Excel được upload không
+            if (input.excelDataUri) {
+              // Nếu có file upload, decode từ base64
+              const base64Data = input.excelDataUri.split(',')[1]; // Tách phần base64
+              buffer = Buffer.from(base64Data, 'base64');          // Convert thành buffer
+            } else {
+              // Nếu không có file upload, dùng file mặc định
+              const filePath = path.join(process.cwd(), 'src', 'data', 'sample-data.xlsx');
+              
+              // Kiểm tra file có tồn tại không
+              if (!fs.existsSync(filePath)) {
+                // Nếu không có file, dùng dữ liệu mặc định
+                const defaultData = [
+                  { STT: 1, 'CÂU HỎI': 'Cách trồng lúa?', 'CÂU TRẢ LỜI': 'Trồng lúa cần đất phù sa, nước đầy đủ, và chăm sóc thường xuyên.' },
+                  { STT: 2, 'CÂU HỎI': 'Cách bón phân cho cây?', 'CÂU TRẢ LỜI': 'Bón phân đúng liều lượng, đúng thời điểm, và tưới nước sau khi bón.' }
+                ];
+                const excelDataJson = defaultData;
+                
+                // Gửi cho AI xử lý với dữ liệu mặc định
+                const promptInstance = getPrompt();
+                const {output} = await promptInstance({
+                  excelDataJson: JSON.stringify(excelDataJson),
+                  query: input.query,
+                  conversationHistory: input.conversationHistory || '',
+                });
+                
+                return output!;
+              }
+              
+              buffer = fs.readFileSync(filePath); // Đọc file từ hệ thống
+            }
+            
+            // ===== BƯỚC 2: XỬ LÝ DỮ LIỆU EXCEL =====
+            const workbook = xlsx.read(buffer, { type: 'buffer' }); // Đọc workbook
+            const sheetName = workbook.SheetNames[0];               // Lấy sheet đầu tiên
+            const worksheet = workbook.Sheets[sheetName];           // Lấy dữ liệu sheet
+            const excelDataJson = xlsx.utils.sheet_to_json(worksheet); // Convert sang JSON
+
+            // ===== BƯỚC 3: GỬI CHO AI XỬ LÝ =====
+            const promptInstance = getPrompt();
+            const {output} = await promptInstance({
+                excelDataJson: JSON.stringify(excelDataJson),    // Dữ liệu Excel dạng JSON
+                query: input.query,                              // Câu hỏi của user
+                conversationHistory: input.conversationHistory || '', // Lịch sử chat (nếu có)
+            });
+            
+            // ===== BƯỚC 4: TRẢ KẾT QUẢ =====
+            return output!; // Trả về câu trả lời từ AI
+          } catch (error: any) {
+            // Xử lý lỗi và trả về thông báo thân thiện
+            console.error('Error in generateInsightsFromExcelFlow:', error);
+            console.error('Error details:', {
+              message: error?.message,
+              digest: error?.digest,
+              stack: error?.stack,
+              code: error?.code,
+              cause: error?.cause,
+              name: error?.name
+            });
+            
+            // Kiểm tra lỗi API key
+            const errorMsg = error?.message || '';
+            const errorStr = JSON.stringify(error || {});
+            
+            if (errorMsg.includes('API key') || errorMsg.includes('GOOGLE') || errorStr.includes('API key') || errorStr.includes('GOOGLE')) {
+              const apiError = new Error('API key chưa được cấu hình. Vui lòng liên hệ quản trị viên để cấu hình GOOGLE_GENAI_API_KEY.');
+              (apiError as any).digest = 'API_KEY_NOT_CONFIGURED';
+              throw apiError;
+            }
+            
+            // Kiểm tra lỗi file
+            if (error?.code === 'ENOENT') {
+              throw new Error('Không tìm thấy file dữ liệu. Đang sử dụng dữ liệu mặc định.');
+            }
+            
+            // Kiểm tra lỗi network/connection
+            if (errorMsg.includes('fetch') || errorMsg.includes('network') || errorMsg.includes('ECONNREFUSED')) {
+              throw new Error('Không thể kết nối đến AI service. Vui lòng kiểm tra kết nối mạng.');
+            }
+            
+            // Lỗi khác - trả về message chi tiết hơn
+            const detailedError = error?.message || error?.digest || 'Unknown error';
+            const genericError = new Error(`Có lỗi xảy ra khi xử lý câu hỏi: ${detailedError}. Vui lòng thử lại sau.`);
+            (genericError as any).digest = error?.digest || 'UNKNOWN_ERROR';
+            throw genericError;
+          }
         }
-        
-        buffer = fs.readFileSync(filePath); // Đọc file từ hệ thống
-      }
-      
-      // ===== BƯỚC 2: XỬ LÝ DỮ LIỆU EXCEL =====
-      const workbook = xlsx.read(buffer, { type: 'buffer' }); // Đọc workbook
-      const sheetName = workbook.SheetNames[0];               // Lấy sheet đầu tiên
-      const worksheet = workbook.Sheets[sheetName];           // Lấy dữ liệu sheet
-      const excelDataJson = xlsx.utils.sheet_to_json(worksheet); // Convert sang JSON
-
-      // ===== BƯỚC 3: GỬI CHO AI XỬ LÝ =====
-      const {output} = await prompt({
-          excelDataJson: JSON.stringify(excelDataJson),    // Dữ liệu Excel dạng JSON
-          query: input.query,                              // Câu hỏi của user
-          conversationHistory: input.conversationHistory || '', // Lịch sử chat (nếu có)
-      });
-      
-      // ===== BƯỚC 4: TRẢ KẾT QUẢ =====
-      return output!; // Trả về câu trả lời từ AI
-    } catch (error: any) {
-      // Xử lý lỗi và trả về thông báo thân thiện
-      console.error('Error in generateInsightsFromExcelFlow:', error);
-      console.error('Error details:', {
-        message: error?.message,
-        digest: error?.digest,
-        stack: error?.stack,
-        code: error?.code,
-        cause: error?.cause,
-        name: error?.name
-      });
-      
-      // Kiểm tra lỗi API key
-      const errorMsg = error?.message || '';
-      const errorStr = JSON.stringify(error || {});
-      
-      if (errorMsg.includes('API key') || errorMsg.includes('GOOGLE') || errorStr.includes('API key') || errorStr.includes('GOOGLE')) {
-        throw new Error('API key chưa được cấu hình. Vui lòng liên hệ quản trị viên để cấu hình GOOGLE_GENAI_API_KEY.');
-      }
-      
-      // Kiểm tra lỗi file
-      if (error?.code === 'ENOENT') {
-        throw new Error('Không tìm thấy file dữ liệu. Đang sử dụng dữ liệu mặc định.');
-      }
-      
-      // Kiểm tra lỗi network/connection
-      if (errorMsg.includes('fetch') || errorMsg.includes('network') || errorMsg.includes('ECONNREFUSED')) {
-        throw new Error('Không thể kết nối đến AI service. Vui lòng kiểm tra kết nối mạng.');
-      }
-      
-      // Lỗi khác - trả về message chi tiết hơn
-      const detailedError = error?.message || error?.digest || 'Unknown error';
-      throw new Error(`Có lỗi xảy ra khi xử lý câu hỏi: ${detailedError}. Vui lòng thử lại sau.`);
+      );
+    } catch (error) {
+      console.error('❌ Lỗi khi định nghĩa flow:', error);
+      throw new Error('Không thể khởi tạo AI flow. Vui lòng kiểm tra cấu hình API key.');
     }
   }
-);
+  return generateInsightsFromExcelFlow;
+}
