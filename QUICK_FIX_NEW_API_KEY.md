@@ -1,9 +1,11 @@
 # 🚀 Quick Fix - API Key Mới
 
-## API Key mới đã được cung cấp:
-```
-AIzaSyA9cEW7vY0GKdUd1K4J0Fsj7QLoW47WMaU
-```
+## ⚠️ QUAN TRỌNG: API Key đã bị leak trên Git!
+
+**API key trong file này đã bị GitHub phát hiện và đánh dấu là leaked.**
+**Cần tạo API key MỚI và KHÔNG commit lên Git!**
+
+## Các bước fix:
 
 ## Các bước fix:
 
@@ -15,11 +17,12 @@ cd /opt/SmartFarm
 # Kiểm tra
 cat .env | grep GOOGLE_GENAI_API_KEY
 
-# Phải thấy: GOOGLE_GENAI_API_KEY=AIzaSyA9cEW7vY0GKdUd1K4J0Fsj7QLoW47WMaU
+# Phải thấy: GOOGLE_GENAI_API_KEY=YOUR_NEW_API_KEY_HERE
 
 # Nếu chưa có, cập nhật:
 nano .env
-# Tìm và sửa: GOOGLE_GENAI_API_KEY=AIzaSyA9cEW7vY0GKdUd1K4J0Fsj7QLoW47WMaU
+# Tìm và sửa: GOOGLE_GENAI_API_KEY=YOUR_NEW_API_KEY_HERE
+# ⚠️ KHÔNG dùng API key cũ - đã bị leak!
 # Lưu: Ctrl+O, Enter, Ctrl+X
 ```
 
@@ -48,7 +51,7 @@ docker compose up -d chatbot
 # Kiểm tra API key có trong container không
 docker exec smartfarm-chatbot printenv | grep GOOGLE_GENAI_API_KEY
 
-# Phải thấy: GOOGLE_GENAI_API_KEY=AIzaSyA9cEW7vY0GKdUd1K4J0Fsj7QLoW47WMaU
+# Phải thấy: GOOGLE_GENAI_API_KEY=YOUR_NEW_API_KEY_HERE
 ```
 
 ### Bước 5: Kiểm tra logs
