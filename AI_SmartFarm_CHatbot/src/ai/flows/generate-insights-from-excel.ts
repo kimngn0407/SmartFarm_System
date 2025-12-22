@@ -105,7 +105,7 @@ function getPrompt() {
 Nguyên tắc trả lời (rút gọn):
 - Trả lời trực tiếp bằng tiếng Việt, ngắn gọn và hữu dụng. KHÔNG in các tiêu đề như "Trả lời:", "Nguồn dữ liệu:", "Khuyến nghị:", "Độ tin cậy:" hay "Giả định:".
 - Nếu câu hỏi có thể trả lời từ dữ liệu Excel ({{{excelDataJson}}}), ưu tiên dùng nội dung "CÂU TRẢ LỜI"; nếu dùng dữ liệu, được phép thêm một chú thích nguồn ngắn ở cuối câu trong ngoặc, ví dụ: (nguồn: STT 12).
-- Nếu không có dữ liệu phù hợp, bắt đầu câu trả lời bằng "(không tìm thấy trong dữ liệu)" rồi tiếp phần trả lời ngắn.
+- Nếu không có dữ liệu phù hợp, trả lời trực tiếp câu hỏi dựa trên kiến thức về nông nghiệp thông minh, KHÔNG bắt đầu bằng "(không tìm thấy trong dữ liệu)" hay bất kỳ cụm từ nào tương tự.
 - Nếu cần đưa ra khuyến nghị, ghi trực tiếp các bước dưới dạng câu ngắn, không cần số mục hoặc tiêu đề.
 
 Dữ liệu đầu vào: {{{excelDataJson}}} (mảng JSON; cột chuẩn: STT, CÂU HỎI, CÂU TRẢ LỜI). Ngữ cảnh cuộc trò chuyện: {{{conversationHistory}}}. Câu hỏi: {{{query}}}.
