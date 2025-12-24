@@ -34,28 +34,30 @@ const long SENSOR_ID_SOIL = 3;         // Thay bằng ID thực tế của senso
 const long SENSOR_ID_LIGHT = 4;        // Thay bằng ID thực tế của sensor ánh sáng
 
 // ================== Cấu hình cảm biến & chân ==================
-#define DHTPIN   4        // Chân DATA của DHT11 nối vào D4
+// ESP32 Pin Configuration
+#define DHTPIN   4        // Chân DATA của DHT11 (GPIO4)
 #define DHTTYPE  DHT11    // Loại cảm biến: DHT11
 
-#define SOIL_PIN   A0     // Cảm biến độ ẩm đất (analog)
-#define LIGHT_PIN  A1     // Cảm biến ánh sáng LDR (analog)
+// ESP32 Analog Pins (ADC1: GPIO32-39, ADC2: GPIO0,2,4,12-15)
+#define SOIL_PIN   32     // Cảm biến độ ẩm đất (GPIO32 - ADC1_CH4)
+#define LIGHT_PIN  33     // Cảm biến ánh sáng LDR (GPIO33 - ADC1_CH5)
 
-// LED báo trạng thái
+// LED báo trạng thái (ESP32 thường dùng GPIO2)
 #ifndef LED_BUILTIN
-  #define LED_BUILTIN 13
+  #define LED_BUILTIN 2   // ESP32 built-in LED thường ở GPIO2
 #endif
 #define LEDPIN LED_BUILTIN
 
 // ========== Tham số đọc mẫu & hiệu chỉnh ==========
 const uint8_t AVG_SAMPLES = 5;
 
-// Hiệu chuẩn Soil
-int SOIL_RAW_DRY  = 1023;  // Đất khô
-int SOIL_RAW_WET  = 800;   // Đất ướt
+// Hiệu chuẩn Soil (ESP32 có ADC 12-bit: 0-4095)
+int SOIL_RAW_DRY  = 4095;  // Đất khô (ESP32: 12-bit ADC)
+int SOIL_RAW_WET  = 2000;  // Đất ướt (ESP32: 12-bit ADC)
 
-// Hiệu chuẩn LDR
-int LDR_RAW_DARK   = 100;  // Tối
-int LDR_RAW_BRIGHT = 900;  // Sáng
+// Hiệu chuẩn LDR (ESP32 có ADC 12-bit: 0-4095)
+int LDR_RAW_DARK   = 100;   // Tối
+int LDR_RAW_BRIGHT = 3500;  // Sáng (ESP32: 12-bit ADC)
 
 // ================== Biến toàn cục ==================
 DHT dht(DHTPIN, DHTTYPE);
@@ -196,9 +198,10 @@ void setup() {
   pinMode(SOIL_PIN, INPUT);
   pinMode(LIGHT_PIN, INPUT);
 
-  // Cấu hình NTP để lấy thời gian
-  configTime(0, 0, "pool.ntp.org", "time.nist.gov");
-  Serial.println("⏰ Đang sync thời gian từ NTP...");
+  // Cấu hình NTP để lấy thời gian (ESP32 cần timezone)
+  // GMT+7 (Vietnam): 7 * 3600 = 25200 seconds
+  configTime(25200, 0, "pool.ntp.org", "time.nist.gov", "time.google.com");
+  Serial.println("⏰ Đang sync thời gian từ NTP (GMT+7)...");
   delay(2000);
 
   Serial.println("=== Bắt đầu đọc và gửi dữ liệu ===");
