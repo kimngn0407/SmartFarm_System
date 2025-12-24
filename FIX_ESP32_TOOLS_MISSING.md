@@ -47,37 +47,33 @@ ESP32 cần **2 phần**:
 6. **Click "INSTALL"** cho version 3.3.5
 7. **Đợi download tools** (có thể mất 5-10 phút)
 
-### Giải pháp 3: Download Tools Manual
+### Giải pháp 3: Download Tools Manual (Nếu cách 1, 2 vẫn timeout)
 
-#### Bước 1: Tải Tools
+**⚠️ LƯU Ý:** Tools thường được Arduino IDE tự động download khi compile. Chỉ làm manual nếu thực sự cần.
+
+#### Bước 1: Kiểm tra Tools cần thiết
+
+1. **Mở file platform.txt:**
+   ```
+   C:\Users\ASUS\AppData\Local\Arduino15\packages\esp32\hardware\esp32\3.3.5\platform.txt
+   ```
+
+2. **Tìm các dòng `runtime.tools.*.path`:**
+   - Sẽ cho biết tools nào cần và version
+
+#### Bước 2: Tải Tools từ GitHub
 
 1. **Truy cập:** https://github.com/espressif/arduino-esp32/releases/tag/3.3.5
-2. **Tải các file tools:**
-   - `xtensa-esp32-elf-gcc8_4_0-esp-2021r2-patch3-win64.zip`
-   - `esptool_py-4.5.1.zip`
-   - `mkspiffs-0.2.3-arduino-esp32-win64.zip`
-   - `mklittlefs-3.0.0-gnu12-i686-w64-mingw32.zip`
-   - `partitions-0.0.0.zip`
+2. **Tools thường được đóng gói trong file `esp32-3.3.5.zip`** (đã có)
+3. **Hoặc tải riêng từ:** https://github.com/espressif/arduino-esp32/releases (tìm các file tools riêng lẻ)
 
-#### Bước 2: Giải nén Tools
+#### Bước 3: Giải nén Tools
 
-Giải nén mỗi file vào thư mục tương ứng:
+**Cách đơn giản nhất:** Để Arduino IDE tự động download tools khi compile lần đầu.
 
-```
-C:\Users\ASUS\AppData\Local\Arduino15\packages\esp32\tools\
-  ├── xtensa-esp32-elf-gcc\
-  │   └── 8.4.0-esp-2021r2-patch3\
-  ├── esptool_py\
-  │   └── 4.5.1\
-  ├── mkspiffs\
-  │   └── 0.2.3-arduino-esp32\
-  ├── mklittlefs\
-  │   └── 3.0.0-gnu12-i686-w64-mingw32\
-  └── partitions\
-      └── 0.0.0\
-```
-
-**Lưu ý:** Tên thư mục và version phải đúng như trong `platform.txt`
+**Nếu muốn manual:**
+- Tools thường nằm trong thư mục `tools/` của file `esp32-3.3.5.zip`
+- Giải nén vào: `C:\Users\ASUS\AppData\Local\Arduino15\packages\esp32\tools\`
 
 ### Giải pháp 4: Dùng Script Tự động Download Tools
 
