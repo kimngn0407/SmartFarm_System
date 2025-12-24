@@ -19,7 +19,7 @@ cat .env | grep GOOGLE_GENAI_API_KEY
 
 **Phải thấy:**
 ```
-GOOGLE_GENAI_API_KEY=AIzaSyCHb8mRHJow08wv-uLJ40DkAXI_eIqennw
+GOOGLE_GENAI_API_KEY=YOUR_API_KEY_HERE
 ```
 
 **Nếu không có hoặc là `your-api-key`**, cần cập nhật:
@@ -27,7 +27,7 @@ GOOGLE_GENAI_API_KEY=AIzaSyCHb8mRHJow08wv-uLJ40DkAXI_eIqennw
 ```bash
 nano .env
 # Tìm và sửa:
-GOOGLE_GENAI_API_KEY=AIzaSyCHb8mRHJow08wv-uLJ40DkAXI_eIqennw
+GOOGLE_GENAI_API_KEY=YOUR_API_KEY_HERE
 # Lưu: Ctrl+O, Enter, Ctrl+X
 ```
 
@@ -141,3 +141,5 @@ docker compose restart chatbot
 # 3. Kiểm tra
 docker compose logs chatbot --tail=20 | grep -i "genkit\|api"
 ```
+
+
