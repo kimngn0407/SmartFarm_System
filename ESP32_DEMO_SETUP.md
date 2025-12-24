@@ -36,13 +36,22 @@ GPIO33  -----> LDR + 10kΩ (điểm giữa phân áp)
 ```
 ESP32          Component
 -----          ---------
-5V      -----> Relay VCC
-GND     -----> Relay GND
-GPIO25  -----> Relay IN (Signal)
+5V      -----> Relay 1 VCC (Máy bơm)
+5V      -----> Relay 2 VCC (Đèn)
+GND     -----> Relay 1 GND
+GND     -----> Relay 2 GND
+GPIO25  -----> Relay 1 IN (Signal - Máy bơm)
+GPIO19  -----> Relay 2 IN (Signal - Đèn)
 
-Relay NO -----> Máy bơm + (dương)
-Relay COM -----> 5V (từ nguồn riêng cho máy bơm)
-Máy bơm - -----> GND
+Relay 1 (Máy bơm):
+  NO -----> Máy bơm + (dương)
+  COM -----> 5V (từ nguồn riêng cho máy bơm)
+  Máy bơm - -----> GND
+
+Relay 2 (Đèn):
+  NO -----> Đèn + (dương)
+  COM -----> 220V AC (hoặc 12V DC tùy đèn)
+  Đèn - -----> GND (hoặc Nếu AC thì nối vào dây trung tính)
 
 GPIO26  -----> LED Xanh (qua 220Ω) -----> GND
 GPIO27  -----> LED Vàng (qua 220Ω) -----> GND
@@ -54,15 +63,36 @@ GPIO14  -----> LED Đỏ (qua 220Ω) -----> GND
 ```
 Nguồn 5V (USB hoặc adapter)
   |
-  +---> Relay COM
+  +---> Relay 1 COM (Máy bơm)
   |
-  +---> Máy bơm + (qua Relay NO khi relay ON)
+  +---> Máy bơm + (qua Relay 1 NO khi relay ON)
 
-Relay NO (Normally Open) -----> Máy bơm +
+Relay 1 NO (Normally Open) -----> Máy bơm +
 Máy bơm - -----> GND
 
-Khi GPIO25 = HIGH: Relay ON → Máy bơm chạy
-Khi GPIO25 = LOW: Relay OFF → Máy bơm tắt
+Khi GPIO25 = HIGH: Relay 1 ON → Máy bơm chạy
+Khi GPIO25 = LOW: Relay 1 OFF → Máy bơm tắt
+```
+
+### Chi tiết kết nối Relay và Đèn:
+
+```
+Nguồn (220V AC hoặc 12V DC tùy đèn)
+  |
+  +---> Relay 2 COM (Đèn)
+  |
+  +---> Đèn + (qua Relay 2 NO khi relay ON)
+
+Relay 2 NO (Normally Open) -----> Đèn +
+Đèn - -----> GND (hoặc dây trung tính nếu AC)
+
+Khi GPIO19 = HIGH: Relay 2 ON → Đèn sáng
+Khi GPIO19 = LOW: Relay 2 OFF → Đèn tắt
+
+⚠️ LƯU Ý AN TOÀN:
+- Nếu dùng đèn 220V AC: Cần relay chịu được 220V AC
+- Đảm bảo cách ly điện đúng cách
+- Nếu không chắc, dùng đèn 12V DC an toàn hơn
 ```
 
 ### Chi tiết kết nối LED:
@@ -84,10 +114,11 @@ Lưu ý: LED có cực dương (+), cực âm (-)
 | DHT11 DATA | GPIO4 | Digital input |
 | Soil Sensor | GPIO32 | Analog input (ADC1_CH4) |
 | LDR | GPIO33 | Analog input (ADC1_CH5) |
-| Relay | GPIO25 | Digital output (điều khiển máy bơm) |
-| LED Xanh | GPIO26 | Digital output |
-| LED Vàng | GPIO27 | Digital output |
-| LED Đỏ | GPIO14 | Digital output |
+| Relay Máy bơm | GPIO25 | Digital output (điều khiển máy bơm) |
+| Relay Đèn | GPIO19 | Digital output (điều khiển đèn) |
+| LED Xanh | GPIO26 | Digital output (báo trạng thái) |
+| LED Vàng | GPIO27 | Digital output (báo trạng thái) |
+| LED Đỏ | GPIO14 | Digital output (báo trạng thái) |
 
 ## ⚙️ Cấu hình Code
 
@@ -107,11 +138,18 @@ Lưu ý: LED có cực dương (+), cực âm (-)
    const long SENSOR_ID_LIGHT = 4;
    ```
 
-4. **Tùy chỉnh ngưỡng tự động tưới** (nếu cần):
+4. **Tùy chỉnh ngưỡng tự động** (nếu cần):
    ```cpp
+   // Máy bơm (độ ẩm đất)
    const int SOIL_THRESHOLD_DRY = 30;   // Bắt đầu tưới khi < 30%
    const int SOIL_THRESHOLD_WET = 70;   // Đất đủ ẩm khi > 70%
    const unsigned long PUMP_DURATION = 5000;  // Bơm 5 giây mỗi lần
+   
+   // Đèn (ánh sáng, nhiệt độ, độ ẩm không khí)
+   const int LIGHT_THRESHOLD_DARK = 30;    // Bật đèn khi < 30%
+   const int LIGHT_THRESHOLD_BRIGHT = 50;  // Tắt đèn khi > 50%
+   const float TEMP_THRESHOLD_LOW = 15.0;  // Bật đèn sưởi khi < 15°C
+   const float HUMIDITY_THRESHOLD_HIGH = 80.0; // Bật đèn khi độ ẩm > 80%
    ```
 
 ## 🚀 Upload Code
@@ -160,6 +198,14 @@ Lưu ý: LED có cực dương (+), cực âm (-)
 - Khi đất < 30%: Máy bơm tự động bật trong 5 giây
 - Sau khi tưới: Chờ 1 phút trước khi có thể tưới lại (cooldown)
 
+### 4. Kiểm tra đèn:
+
+- **Bật đèn khi:**
+  - Trời tối (< 30% ánh sáng)
+  - Nhiệt độ thấp (< 15°C) và trời tối
+  - Độ ẩm không khí cao (> 80%) và trời tối
+- **Tắt đèn khi:** Đủ sáng (> 50% ánh sáng)
+
 ### 4. Kiểm tra dữ liệu trên VPS:
 
 ```bash
@@ -190,7 +236,23 @@ docker compose exec postgres psql -U postgres -d SmartFarm1 -c "SELECT * FROM se
    - Máy bơm không bật
    - Serial Monitor: Soil > 70%
 
-### Scenario 3: Gửi dữ liệu lên VPS
+### Scenario 3: Tự động bật đèn khi tối
+
+1. **Che cảm biến ánh sáng** (hoặc đợi tối)
+2. **Quan sát:**
+   - Serial Monitor: Light < 30%
+   - Đèn tự động bật
+   - Serial Monitor: "💡 Bật đèn - Lý do: Trời tối"
+
+### Scenario 4: Tự động bật đèn khi nhiệt độ thấp
+
+1. **Đặt cảm biến ở nơi lạnh** (< 15°C) và trời tối
+2. **Quan sát:**
+   - Serial Monitor: T < 15°C và Light < 50%
+   - Đèn tự động bật
+   - Serial Monitor: "💡 Bật đèn - Lý do: Nhiệt độ thấp (14.5°C)"
+
+### Scenario 5: Gửi dữ liệu lên VPS
 
 1. **Đợi 60 giây** (SEND_PERIOD)
 2. **Quan sát Serial Monitor:**
@@ -214,6 +276,25 @@ docker compose exec postgres psql -U postgres -d SmartFarm1 -c "SELECT * FROM se
 3. **Kiểm tra code:**
    - Serial Monitor có hiện "💧 Máy bơm BẬT" không?
    - Nếu không, kiểm tra logic `autoWatering()`
+
+### Đèn không sáng:
+
+1. **Kiểm tra relay đèn:**
+   - Relay có đèn báo không? (phải sáng khi GPIO19 = HIGH)
+   - Kiểm tra nguồn cho relay
+
+2. **Kiểm tra đèn:**
+   - Đèn có nguồn riêng không? (220V AC hoặc 12V DC)
+   - Kết nối đúng cực
+
+3. **Kiểm tra code:**
+   - Serial Monitor có hiện "💡 Bật đèn" không?
+   - Kiểm tra điều kiện: ánh sáng, nhiệt độ, độ ẩm
+
+4. **Kiểm tra ngưỡng:**
+   - Ánh sáng có < 30% không?
+   - Nhiệt độ có < 15°C không?
+   - Độ ẩm có > 80% không?
 
 ### LED không sáng:
 
@@ -253,9 +334,13 @@ docker compose exec postgres psql -U postgres -d SmartFarm1 -c "SELECT * FROM se
 - **ESP32:** USB 5V hoặc adapter
 - **Relay:** 5V từ ESP32 hoặc nguồn riêng
 - **Máy bơm:** 5V từ nguồn riêng (qua relay)
+- **Đèn:** 220V AC hoặc 12V DC từ nguồn riêng (qua relay)
 - **LED:** 3.3V từ ESP32 (qua điện trở 220Ω)
 
-**Lưu ý:** Máy bơm có thể tiêu thụ nhiều dòng (~200-500mA), nên dùng nguồn riêng cho máy bơm, không lấy từ ESP32.
+**Lưu ý:**
+- Máy bơm có thể tiêu thụ nhiều dòng (~200-500mA), nên dùng nguồn riêng
+- Đèn 220V AC cần relay chịu được 220V AC (thường là relay SSR hoặc relay module 220V)
+- Nếu không chắc, dùng đèn 12V DC an toàn hơn
 
 ## 🎬 Video Demo Checklist
 

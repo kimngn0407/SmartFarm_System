@@ -44,16 +44,30 @@ const long SENSOR_ID_LIGHT = 4;
 #define LIGHT_PIN    33       // LDR analog (GPIO33 - ADC1_CH5)
 
 // Actuators
-#define RELAY_PIN    25       // Relay điều khiển máy bơm (GPIO25)
+#define RELAY_PUMP   25       // Relay điều khiển máy bơm (GPIO25)
+#define RELAY_LIGHT  19       // Relay điều khiển đèn (GPIO19)
 #define LED_GREEN    26       // LED xanh - Trạng thái OK (GPIO26)
 #define LED_YELLOW   27       // LED vàng - Cảnh báo (GPIO27)
 #define LED_RED      14       // LED đỏ - Cần tưới (GPIO14)
 
 // ================== Cấu hình Tự động hóa ==================
+// Độ ẩm đất - Máy bơm
 const int SOIL_THRESHOLD_DRY = 30;      // Ngưỡng đất khô (%)
 const int SOIL_THRESHOLD_WET = 70;      // Ngưỡng đất đủ ẩm (%)
 const unsigned long PUMP_DURATION = 5000;  // Thời gian bơm nước (ms) - 5 giây
 const unsigned long PUMP_COOLDOWN = 60000; // Thời gian chờ giữa các lần bơm (ms) - 1 phút
+
+// Ánh sáng - Đèn
+const int LIGHT_THRESHOLD_DARK = 30;    // Ngưỡng tối - Bật đèn khi < 30%
+const int LIGHT_THRESHOLD_BRIGHT = 50;  // Ngưỡng sáng - Tắt đèn khi > 50%
+
+// Nhiệt độ - Đèn (bật khi quá lạnh hoặc quá tối)
+const float TEMP_THRESHOLD_LOW = 15.0;  // Nhiệt độ thấp - Bật đèn sưởi (°C)
+const float TEMP_THRESHOLD_HIGH = 35.0; // Nhiệt độ cao - Cảnh báo (°C)
+
+// Độ ẩm không khí - Đèn (bật khi quá ẩm hoặc quá tối)
+const float HUMIDITY_THRESHOLD_HIGH = 80.0; // Độ ẩm cao - Cảnh báo (%)
+const float HUMIDITY_THRESHOLD_LOW = 40.0;  // Độ ẩm thấp - Cảnh báo (%)
 
 // ================== Hiệu chuẩn Sensors ==================
 const uint8_t AVG_SAMPLES = 5;
@@ -73,6 +87,7 @@ const unsigned long SEND_PERIOD = 60000;    // Gửi dữ liệu mỗi 60 giây
 
 bool pumpRunning = false;
 unsigned long pumpStartTime = 0;
+bool lightOn = false;
 
 // ================== Hàm tiện ích ==================
 
@@ -156,14 +171,26 @@ bool sendSensorDataToServer(long sensorId, float value) {
  */
 void setPump(bool on) {
   if (on) {
-    digitalWrite(RELAY_PIN, HIGH);  // Relay ON = Bơm chạy
+    digitalWrite(RELAY_PUMP, HIGH);  // Relay ON = Bơm chạy
     pumpRunning = true;
     pumpStartTime = millis();
     Serial.println("💧 Máy bơm BẬT");
   } else {
-    digitalWrite(RELAY_PIN, LOW);   // Relay OFF = Bơm tắt
+    digitalWrite(RELAY_PUMP, LOW);   // Relay OFF = Bơm tắt
     pumpRunning = false;
     Serial.println("💧 Máy bơm TẮT");
+  }
+}
+
+/**
+ * Bật/tắt đèn
+ */
+void setLight(bool on) {
+  if (on != lightOn) {
+    lightOn = on;
+    digitalWrite(RELAY_LIGHT, on ? HIGH : LOW);
+    Serial.print("💡 Đèn ");
+    Serial.println(on ? "BẬT" : "TẮT");
   }
 }
 
@@ -195,7 +222,7 @@ void updateStatusLED(int soilPercent) {
 }
 
 /**
- * Logic tự động tưới nước
+ * Logic tự động tưới nước (dựa trên độ ẩm đất)
  */
 void autoWatering(int soilPercent) {
   unsigned long now = millis();
@@ -223,6 +250,48 @@ void autoWatering(int soilPercent) {
   }
 }
 
+/**
+ * Logic tự động điều khiển đèn
+ * Dựa trên: Ánh sáng, Nhiệt độ, Độ ẩm không khí
+ */
+void autoLighting(float temperature, float humidity, int lightPercent) {
+  bool shouldTurnOn = false;
+  String reason = "";
+
+  // 1. Kiểm tra ánh sáng - Bật đèn khi tối
+  if (lightPercent < LIGHT_THRESHOLD_DARK) {
+    shouldTurnOn = true;
+    reason = "Trời tối";
+  }
+  // Tắt đèn khi đủ sáng
+  else if (lightPercent > LIGHT_THRESHOLD_BRIGHT && lightOn) {
+    shouldTurnOn = false;
+    reason = "Đủ sáng";
+  }
+
+  // 2. Kiểm tra nhiệt độ - Bật đèn sưởi khi quá lạnh (và trời tối)
+  if (temperature < TEMP_THRESHOLD_LOW && lightPercent < LIGHT_THRESHOLD_BRIGHT) {
+    shouldTurnOn = true;
+    reason = "Nhiệt độ thấp (" + String(temperature, 1) + "°C)";
+  }
+
+  // 3. Kiểm tra độ ẩm không khí - Bật đèn khi quá ẩm (và trời tối)
+  // (Có thể dùng đèn để giảm độ ẩm)
+  if (humidity > HUMIDITY_THRESHOLD_HIGH && lightPercent < LIGHT_THRESHOLD_BRIGHT) {
+    shouldTurnOn = true;
+    reason = "Độ ẩm cao (" + String(humidity, 1) + "%)";
+  }
+
+  // Áp dụng điều khiển đèn
+  if (shouldTurnOn != lightOn) {
+    setLight(shouldTurnOn);
+    if (shouldTurnOn) {
+      Serial.print("💡 Bật đèn - Lý do: ");
+      Serial.println(reason);
+    }
+  }
+}
+
 // ================== Setup ==================
 void setup() {
   Serial.begin(115200);
@@ -231,7 +300,8 @@ void setup() {
   Serial.println("=== SmartFarm Demo - Hệ thống Tự động hóa ===");
 
   // Cấu hình pin
-  pinMode(RELAY_PIN, OUTPUT);
+  pinMode(RELAY_PUMP, OUTPUT);
+  pinMode(RELAY_LIGHT, OUTPUT);
   pinMode(LED_GREEN, OUTPUT);
   pinMode(LED_YELLOW, OUTPUT);
   pinMode(LED_RED, OUTPUT);
@@ -239,7 +309,8 @@ void setup() {
   pinMode(LIGHT_PIN, INPUT);
 
   // Tắt tất cả ban đầu
-  digitalWrite(RELAY_PIN, LOW);
+  digitalWrite(RELAY_PUMP, LOW);
+  digitalWrite(RELAY_LIGHT, LOW);
   digitalWrite(LED_GREEN, LOW);
   digitalWrite(LED_YELLOW, LOW);
   digitalWrite(LED_RED, LOW);
@@ -268,7 +339,11 @@ void setup() {
   Serial.println("💡 LED Xanh: Đất đủ ẩm");
   Serial.println("💡 LED Vàng: Đất hơi khô");
   Serial.println("💡 LED Đỏ: Đất khô hoặc đang tưới");
-  Serial.println("💧 Máy bơm tự động khi đất < 30%");
+  Serial.println("💧 Máy bơm: Tự động khi đất < 30%");
+  Serial.println("💡 Đèn: Tự động bật khi:");
+  Serial.println("   - Trời tối (< 30%)");
+  Serial.println("   - Nhiệt độ thấp (< 15°C)");
+  Serial.println("   - Độ ẩm cao (> 80%)");
 }
 
 // ================== Loop ==================
@@ -314,10 +389,20 @@ void loop() {
     Serial.print(lightPct);
     Serial.print("% | Pump: ");
     Serial.print(pumpRunning ? "ON" : "OFF");
+    Serial.print(" | Light: ");
+    Serial.print(lightOn ? "ON" : "OFF");
     Serial.println();
 
-    // Tự động tưới nước
+    // Tự động tưới nước (dựa trên độ ẩm đất)
     autoWatering(soilPct);
+
+    // Tự động điều khiển đèn (dựa trên ánh sáng, nhiệt độ, độ ẩm không khí)
+    if (!dhtFail) {
+      autoLighting(t, h, lightPct);
+    } else {
+      // Nếu DHT fail, chỉ dựa vào ánh sáng
+      autoLighting(25.0, 60.0, lightPct);
+    }
 
     // Cập nhật LED báo trạng thái
     updateStatusLED(soilPct);
