@@ -17,23 +17,6 @@ const SmartFarmChatbot = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [chatbotUrl, setChatbotUrl] = useState(null);
   const [iframeError, setIframeError] = useState(false);
-  // Load position from localStorage hoặc dùng giá trị mặc định
-  const getInitialPosition = () => {
-    try {
-      const saved = localStorage.getItem('chatbotPosition');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        return { x: parsed.x || 20, y: parsed.y || 20 };
-      }
-    } catch (e) {
-      console.warn('Could not load saved chatbot position:', e);
-    }
-    return { x: 20, y: 20 };
-  };
-
-  const [position, setPosition] = useState(getInitialPosition);
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const chatbotRef = React.useRef(null);
   
   // URL của chatbot - Auto-detect localhost hoặc VPS
