@@ -84,70 +84,7 @@ const SmartFarmChatbot = () => {
     setIsMinimized(!isMinimized);
   };
 
-  // Lưu position vào localStorage khi thay đổi
-  useEffect(() => {
-    if (isOpen && !isDragging) {
-      try {
-        localStorage.setItem('chatbotPosition', JSON.stringify(position));
-      } catch (e) {
-        console.warn('Could not save chatbot position:', e);
-      }
-    }
-  }, [position, isOpen, isDragging]);
-
-  // Handle drag start
-  const handleMouseDown = (e) => {
-    // Chỉ cho phép kéo từ header, không phải từ các button
-    const header = e.target.closest('.chatbot-header');
-    const isButton = e.target.closest('button') || e.target.closest('[role="button"]');
-    
-    if (header && !isButton) {
-      e.preventDefault();
-      setIsDragging(true);
-      const rect = chatbotRef.current?.getBoundingClientRect();
-      if (rect) {
-        setDragOffset({
-          x: e.clientX - rect.left,
-          y: e.clientY - rect.top,
-        });
-      }
-    }
-  };
-
-  // Handle drag
-  useEffect(() => {
-    if (!isDragging) return;
-
-    const handleMouseMove = (e) => {
-      const newX = e.clientX - dragOffset.x;
-      const newY = e.clientY - dragOffset.y;
-      
-      // Constrain to viewport
-      const chatbotWidth = isMobile ? window.innerWidth : isMinimized ? 200 : 700;
-      const chatbotHeight = isMobile ? window.innerHeight : isMinimized ? 60 : 900;
-      const maxX = window.innerWidth - chatbotWidth;
-      const maxY = window.innerHeight - chatbotHeight;
-      
-      setPosition({
-        x: Math.max(0, Math.min(newX, maxX)),
-        y: Math.max(0, Math.min(newY, maxY)),
-      });
-    };
-
-    const handleMouseUp = () => {
-      setIsDragging(false);
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-    window.addEventListener('mouseup', handleMouseUp);
-
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isDragging, dragOffset, isMobile, isMinimized]);
-
-  // Responsive dimensions with draggable position
+  // Responsive dimensions - Fixed position ở góc phải màn hình
   const chatbotStyle = {
     // Desktop - Tăng kích thước để dễ đọc hơn
     width: isMobile ? '100vw' : isMinimized ? '200px' : '700px',
@@ -155,12 +92,12 @@ const SmartFarmChatbot = () => {
     maxWidth: isMobile ? '100vw' : 'calc(100vw - 40px)',
     maxHeight: isMobile ? '100vh' : 'calc(100vh - 40px)',
     
-    // Position - draggable
+    // Position - Fixed ở góc phải màn hình
     position: 'fixed',
-    left: isMobile ? 0 : `${position.x}px`,
-    bottom: isMobile ? 0 : 'auto',
-    top: isMobile ? 0 : `${position.y}px`,
-    right: isMobile ? 0 : 'auto',
+    right: isMobile ? 0 : '24px',
+    bottom: isMobile ? 0 : '24px',
+    left: 'auto',
+    top: 'auto',
     
     // Style
     borderRadius: isMobile ? 0 : '16px',
@@ -168,10 +105,10 @@ const SmartFarmChatbot = () => {
     zIndex: 9999,
     overflow: 'hidden',
     background: 'white',
-    cursor: isDragging ? 'grabbing' : 'default',
+    cursor: 'default',
     
     // Animation
-    transition: isDragging ? 'none' : 'all 0.3s ease-in-out',
+    transition: 'all 0.3s ease-in-out',
   };
 
   return (
