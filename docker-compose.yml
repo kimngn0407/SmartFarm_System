@@ -35,7 +35,7 @@ services:
       JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
       CROP_RECOMMENDATION_URL: http://crop-service:5000
       PEST_DISEASE_URL: http://pest-service:5001
-      FRONTEND_ORIGINS: ${FRONTEND_ORIGINS:-http://109.205.180.72,http://109.205.180.72:80,http://localhost:3000,http://localhost:80}
+      FRONTEND_ORIGINS: ${FRONTEND_ORIGINS:-https://smartfarm.kimngn.cfd,https://smartfarm.codex.io.vn,http://localhost:3000,http://localhost:80}
       # Email Configuration (Optional - uncomment and set values to enable email alerts)
       # MAIL_HOST: ${MAIL_HOST:-}
       # MAIL_PORT: ${MAIL_PORT:-587}
@@ -109,10 +109,10 @@ services:
       context: ./J2EE_Frontend
       dockerfile: Dockerfile
       args:
-        - REACT_APP_API_URL=${REACT_APP_API_URL:-https://smartfarm.codex.io.vn/api}
+        - REACT_APP_API_URL=${REACT_APP_API_URL:-https://smartfarm.kimngn.cfd/api}
     container_name: smartfarm-frontend
     environment:
-      - REACT_APP_API_URL=${REACT_APP_API_URL:-https://smartfarm.codex.io.vn/api}
+      - REACT_APP_API_URL=${REACT_APP_API_URL:-https://smartfarm.kimngn.cfd/api}
     ports:
       - "80:80"
     depends_on:
@@ -136,7 +136,7 @@ services:
     environment:
       PORT: 9002
       NODE_ENV: production
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://smartfarm.codex.io.vn/api}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://smartfarm.kimngn.cfd/api}
       GOOGLE_GENAI_API_KEY: ${GOOGLE_GENAI_API_KEY:-your-api-key}
     ports:
       - "9002:9002"

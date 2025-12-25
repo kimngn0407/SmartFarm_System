@@ -5,7 +5,7 @@
 
 set -e
 
-DOMAIN="smartfarm.codex.io.vn"
+DOMAIN="smartfarm.kimngn.cfd"
 EMAIL="your-email@example.com"  # Thay bằng email của bạn
 PROJECT_DIR="/opt/SmartFarm"
 
