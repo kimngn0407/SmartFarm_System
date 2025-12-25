@@ -18,7 +18,8 @@ const char* ssid = "Wifi miễn phí";
 const char* password = "kimngan0407";
 
 // ================== Cấu hình Backend ==================
-const char* serverUrl = "http://109.205.180.72:8080/api/sensor-data/iot";
+// Lưu ý: ESP32 dùng HTTP (không HTTPS) vì HTTPS cần nhiều memory
+const char* serverUrl = "http://smartfarm.codex.io.vn/api/sensor-data/iot";
 
 // ================== Cấu hình Sensor IDs ==================
 const long SENSOR_ID_TEMPERATURE = 1;
