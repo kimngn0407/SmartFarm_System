@@ -43,6 +43,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**", "/api/accounts/login", "/api/accounts/register").permitAll()
                         .requestMatchers("/api/email/test/**").permitAll()
                         .requestMatchers("/api/sensor-data/iot").permitAll() // Public endpoint cho IoT devices
+                        .requestMatchers("/api/health", "/health").permitAll() // Health check endpoints
                         .requestMatchers("/ws/**", "/app/**", "/topic/**").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
                         // Tất cả các endpoints khác cần authentication
@@ -106,3 +107,4 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 }
+
