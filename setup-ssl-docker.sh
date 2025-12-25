@@ -14,6 +14,28 @@ echo "========================================================="
 
 cd $PROJECT_DIR
 
+# Kiểm tra DNS trước
+echo "🔍 Checking DNS configuration..."
+DNS_IP=$(dig +short $DOMAIN A | head -n1)
+if [ -z "$DNS_IP" ]; then
+    echo "❌ ERROR: No A record found for $DOMAIN"
+    echo "   Please add A record: smartfarm → 109.205.180.72"
+    echo "   And disable Cloudflare Proxy (if using Cloudflare)"
+    exit 1
+fi
+
+echo "✅ DNS A record found: $DOMAIN → $DNS_IP"
+
+if [ "$DNS_IP" != "109.205.180.72" ]; then
+    echo "⚠️  WARNING: DNS points to $DNS_IP, expected 109.205.180.72"
+    echo "   Please verify DNS configuration"
+    read -p "Continue anyway? (y/n) " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        exit 1
+    fi
+fi
+
 # Tạo thư mục cho certbot
 mkdir -p certbot/conf
 mkdir -p certbot/www
