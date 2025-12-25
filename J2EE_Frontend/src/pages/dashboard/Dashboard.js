@@ -367,19 +367,19 @@ const Dashboard = () => {
         console.log(`📋 Total sensors: ${allSensors.length}`);
         console.log('📋 Sensor types:', allSensors.map(s => ({ id: s.id, type: s.type, name: s.sensorName })));
         
-        // Flask API lưu dữ liệu IoT vào PostgreSQL với sensor_id cố định:
-        // TEMP_SENSOR_ID = 7, HUMID_SENSOR_ID = 8, SOIL_SENSOR_ID = 9, LIGHT_SENSOR_ID = 10
+        // ESP32 gửi dữ liệu IoT vào PostgreSQL với sensor_id:
+        // Temperature = 1, Humidity = 2, Soil = 3, Light = 4
         // Dùng trực tiếp các ID này để lấy dữ liệu từ database
-        const tempSensorIds = [7]; // TEMP_SENSOR_ID từ Flask API
-        const humSensorIds = [8]; // HUMID_SENSOR_ID từ Flask API
-        const soilSensorIds = [9]; // SOIL_SENSOR_ID từ Flask API
-        const lightSensorIds = [10]; // LIGHT_SENSOR_ID từ Flask API
+        const tempSensorIds = [1]; // Temperature sensor ID từ ESP32
+        const humSensorIds = [2]; // Humidity sensor ID từ ESP32
+        const soilSensorIds = [3]; // Soil sensor ID từ ESP32
+        const lightSensorIds = [4]; // Light sensor ID từ ESP32
         
-        console.log(`📡 Using Flask API sensor IDs for IoT data:`);
-        console.log(`🌡️ Temperature: sensor_id = 7`);
-        console.log(`💧 Humidity: sensor_id = 8`);
-        console.log(`🌱 Soil: sensor_id = 9`);
-        console.log(`💡 Light: sensor_id = 10`);
+        console.log(`📡 Using ESP32 sensor IDs for IoT data:`);
+        console.log(`🌡️ Temperature: sensor_id = 1`);
+        console.log(`💧 Humidity: sensor_id = 2`);
+        console.log(`🌱 Soil: sensor_id = 3`);
+        console.log(`💡 Light: sensor_id = 4`);
         
         const [tempData, humData, soilData, lightData] = await Promise.all([
           tempSensorIds.length > 0 ? fetchRealSensorData(tempSensorIds, 6) : Promise.resolve([]),
