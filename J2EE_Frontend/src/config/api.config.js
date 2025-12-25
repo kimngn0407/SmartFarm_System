@@ -24,9 +24,9 @@ const getApiBaseUrl = () => {
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
       return 'http://localhost:8080';
     }
-    // Nếu không phải localhost, dùng hostname hiện tại với port 8080 (cho VPS)
+    // Nếu không phải localhost, dùng hostname hiện tại với /api (cho VPS với Nginx)
       const protocol = window.location.protocol; // http: hoặc https:
-      return `${protocol}//${hostname}:8080`;
+      return `${protocol}//${hostname}/api`;
   }
   
   // Priority 4: Default for local development
