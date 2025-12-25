@@ -38,7 +38,35 @@ fi
 
 # Tạo thư mục cho certbot
 mkdir -p certbot/conf
-mkdir -p certbot/www
+mkdir -p certbot/www/.well-known/acme-challenge
+
+# Đảm bảo Nginx đang chạy và đã reload config
+echo "🔄 Ensuring Nginx is running and ready..."
+docker-compose up -d nginx
+sleep 3
+
+# Test ACME challenge path
+echo "🧪 Testing ACME challenge path..."
+echo "test" > certbot/www/.well-known/acme-challenge/test.txt
+sleep 2
+
+# Test từ bên ngoài
+TEST_RESULT=$(curl -s -o /dev/null -w "%{http_code}" http://$DOMAIN/.well-known/acme-challenge/test.txt || echo "000")
+if [ "$TEST_RESULT" != "200" ]; then
+    echo "⚠️  WARNING: Cannot access ACME challenge path (HTTP $TEST_RESULT)"
+    echo "   This might be due to:"
+    echo "   1. Nginx not running or not reloaded"
+    echo "   2. Firewall blocking port 80"
+    echo "   3. DNS not fully propagated"
+    echo ""
+    read -p "Continue anyway? (y/n) " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        exit 1
+    fi
+else
+    echo "✅ ACME challenge path is accessible"
+fi
 
 # Chạy certbot trong Docker để lấy certificate
 echo "🔒 Requesting SSL certificate from Let's Encrypt..."
