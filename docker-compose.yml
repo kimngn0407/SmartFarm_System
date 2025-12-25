@@ -113,8 +113,9 @@ services:
     container_name: smartfarm-frontend
     environment:
       - REACT_APP_API_URL=${REACT_APP_API_URL:-https://smartfarm.kimngn.cfd/api}
-    ports:
-      - "80:80"
+    # Không expose port 80 - Nginx sẽ proxy đến frontend
+    # ports:
+    #   - "80:80"
     depends_on:
       - backend
     healthcheck:
