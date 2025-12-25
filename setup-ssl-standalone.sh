@@ -54,10 +54,37 @@ echo "📦 Using: $DOCKER_COMPOSE"
 
 # Dừng Nginx tạm thời để certbot dùng port 80
 echo "🛑 Stopping Nginx temporarily..."
-$DOCKER_COMPOSE stop nginx
+
+# Kiểm tra port 80 đang được dùng bởi process nào
+PORT80_PID=$(lsof -ti :80 2>/dev/null || echo "")
+if [ -n "$PORT80_PID" ]; then
+    echo "⚠️  Port 80 is in use by PID: $PORT80_PID"
+    echo "   Stopping Nginx and killing process..."
+    $DOCKER_COMPOSE stop nginx 2>/dev/null || true
+    sleep 3
+    
+    # Kill process nếu vẫn còn
+    if lsof -ti :80 > /dev/null 2>&1; then
+        echo "🔪 Killing process on port 80..."
+        kill -9 $(lsof -ti :80) 2>/dev/null || true
+        sleep 2
+    fi
+else
+    $DOCKER_COMPOSE stop nginx 2>/dev/null || true
+fi
 
 # Đợi Nginx dừng hoàn toàn
 sleep 3
+
+# Kiểm tra lại port 80
+if lsof -ti :80 > /dev/null 2>&1; then
+    echo "❌ ERROR: Port 80 is still in use!"
+    echo "   Please manually stop the process:"
+    lsof -i :80 || netstat -tulpn | grep :80
+    exit 1
+fi
+
+echo "✅ Port 80 is free"
 
 # Chạy certbot trong Docker với standalone mode
 echo "🔒 Requesting SSL certificate from Let's Encrypt (Standalone mode)..."
