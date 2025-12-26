@@ -40,12 +40,13 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints - không cần authentication
-                        .requestMatchers("/api/auth/**", "/api/accounts/login", "/api/accounts/register").permitAll()
-                        .requestMatchers("/api/email/test/**").permitAll()
-                        .requestMatchers("/api/sensor-data/iot").permitAll() // Public endpoint cho IoT devices
+                        // Lưu ý: Nginx strip /api/ khi proxy, nên cần cả 2 patterns
+                        .requestMatchers("/api/auth/**", "/auth/**", "/api/accounts/login", "/api/accounts/register", "/accounts/login", "/accounts/register").permitAll()
+                        .requestMatchers("/api/email/test/**", "/email/test/**").permitAll()
+                        .requestMatchers("/api/sensor-data/iot", "/sensor-data/iot").permitAll() // Public endpoint cho IoT devices
                         .requestMatchers("/api/health", "/health").permitAll() // Health check endpoints
-                        .requestMatchers("/api/pest-disease/**").permitAll() // Public endpoints cho pest-disease detection
-                        .requestMatchers("/api/crop/**").permitAll() // Public endpoints cho crop recommendation
+                        .requestMatchers("/api/pest-disease/**", "/pest-disease/**").permitAll() // Public endpoints cho pest-disease detection (cả với và không có /api/)
+                        .requestMatchers("/api/crop/**", "/crop/**").permitAll() // Public endpoints cho crop recommendation (cả với và không có /api/)
                         .requestMatchers("/ws/**", "/app/**", "/topic/**").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
                         // Tất cả các endpoints khác cần authentication
