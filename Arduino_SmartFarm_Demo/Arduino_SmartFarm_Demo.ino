@@ -132,11 +132,10 @@ bool sendSensorDataToServer(long sensorId, float value) {
 // ================== Hàm điều khiển ==================
 
 void setPump(bool on) {
-  // LƯU Ý: Nếu dùng chân NC (Normally Closed) của relay:
-  // - LOW = Relay OFF → NC đóng → Máy bơm CHẠY
-  // - HIGH = Relay ON → NC mở → Máy bơm TẮT
-  // Cần đảo logic: on ? LOW : HIGH
-  digitalWrite(RELAY_PUMP, on ? LOW : HIGH);  // Đảo logic cho chân NC
+  // Logic bình thường cho chân NO (Normally Open):
+  // - HIGH = Relay ON → NO đóng → Máy bơm CHẠY
+  // - LOW = Relay OFF → NO mở → Máy bơm TẮT
+  digitalWrite(RELAY_PUMP, on ? HIGH : LOW);
   pumpRunning = on;
   if (on) {
     pumpStartTime = millis();
@@ -244,8 +243,8 @@ void setup() {
   pinMode(LIGHT_PIN, INPUT_PULLUP);
 
   // Tắt tất cả ban đầu
-  // LƯU Ý: Nếu dùng chân NC, LOW = máy bơm chạy, HIGH = máy bơm tắt
-  digitalWrite(RELAY_PUMP, HIGH);  // HIGH để tắt máy bơm (NC mở)
+  // Logic bình thường cho chân NO: LOW = tắt máy bơm
+  digitalWrite(RELAY_PUMP, LOW);  // LOW để tắt máy bơm (NO mở)
   digitalWrite(LED_GREEN, LOW);
   digitalWrite(LED_YELLOW, LOW);
   digitalWrite(LED_RED, LOW);
