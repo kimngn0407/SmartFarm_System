@@ -303,12 +303,27 @@ void loop() {
 
     // Đọc độ ẩm đất
     int soilRaw = analogReadAvg(SOIL_PIN, 5);
-    // DEBUG: In giá trị thô để hiệu chuẩn
+    
+    // DEBUG: Đọc tất cả pin analog để tìm pin đúng
     Serial.print("DEBUG - Soil Raw: ");
     Serial.print(soilRaw);
+    Serial.print(" | GPIO2: ");
+    Serial.print(analogRead(2));
+    Serial.print(" | GPIO32: ");
+    Serial.print(analogRead(32));
+    Serial.print(" | GPIO33: ");
+    Serial.print(analogRead(33));
+    Serial.print(" | GPIO34: ");
+    Serial.print(analogRead(34));
+    Serial.print(" | GPIO35: ");
+    Serial.print(analogRead(35));
     
-    // Kiểm tra nếu giá trị ngoài phạm vi hiệu chuẩn
-    if (soilRaw > SOIL_RAW_DRY) {
+    // Kiểm tra nếu sensor không hoạt động (giá trị = 0 hoặc quá thấp)
+    if (soilRaw == 0 || soilRaw < 10) {
+      Serial.print(" ⚠️ Sensor có thể chưa nối đúng!");
+      // Không clamp về SOIL_RAW_WET nếu giá trị = 0 (có thể là lỗi)
+      soilRaw = SOIL_RAW_WET;  // Tạm thời set về giá trị ướt
+    } else if (soilRaw > SOIL_RAW_DRY) {
       soilRaw = SOIL_RAW_DRY;  // Giới hạn tối đa
     } else if (soilRaw < SOIL_RAW_WET) {
       soilRaw = SOIL_RAW_WET;  // Giới hạn tối thiểu
