@@ -39,18 +39,9 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // Public endpoints - không cần authentication
-                        // Lưu ý: Nginx strip /api/ khi proxy, nên cần cả 2 patterns
-                        .requestMatchers("/api/auth/**", "/auth/**", "/api/accounts/login", "/api/accounts/register", "/accounts/login", "/accounts/register").permitAll()
-                        .requestMatchers("/api/email/test/**", "/email/test/**").permitAll()
-                        .requestMatchers("/api/sensor-data/iot", "/sensor-data/iot").permitAll() // Public endpoint cho IoT devices
-                        .requestMatchers("/api/health", "/health").permitAll() // Health check endpoints
-                        .requestMatchers("/api/pest-disease/**", "/pest-disease/**").permitAll() // Public endpoints cho pest-disease detection (cả với và không có /api/)
-                        .requestMatchers("/api/crop/**", "/crop/**").permitAll() // Public endpoints cho crop recommendation (cả với và không có /api/)
-                        .requestMatchers("/ws/**", "/app/**", "/topic/**").permitAll()
-                        .requestMatchers("/actuator/**").permitAll()
-                        // Tất cả các endpoints khác cần authentication
-                        .anyRequest().authenticated()
+                        // TẠM THỜI: Cho phép tất cả requests không cần authentication (để test)
+                        // TODO: Bật lại authentication sau khi test xong
+                        .anyRequest().permitAll()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
