@@ -84,6 +84,13 @@ const SmartFarmChatbot = () => {
     setIsMinimized(!isMinimized);
   };
 
+  // Handle mouse down for drag functionality (if needed in future)
+  const handleMouseDown = (e) => {
+    // Prevent default to avoid any unwanted behavior
+    e.preventDefault();
+    // Can be extended for drag functionality later
+  };
+
   // Responsive dimensions - Fixed position ở góc phải màn hình
   const chatbotStyle = {
     // Desktop - Tăng kích thước để dễ đọc hơn
@@ -169,7 +176,7 @@ const SmartFarmChatbot = () => {
       {/* Chatbot container với animation */}
       <Slide direction="up" in={isOpen} mountOnEnter unmountOnExit>
         <div ref={chatbotRef} style={chatbotStyle}>
-          {/* Header bar - draggable */}
+          {/* Header bar - Fixed position */}
           <Box
             className="chatbot-header"
             onMouseDown={handleMouseDown}
@@ -181,7 +188,7 @@ const SmartFarmChatbot = () => {
               background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
               color: 'white',
               borderRadius: isMobile ? 0 : '16px 16px 0 0',
-              cursor: isDragging ? 'grabbing' : 'grab',
+              cursor: 'default',
               userSelect: 'none',
             }}
           >
