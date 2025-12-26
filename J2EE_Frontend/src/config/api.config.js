@@ -40,67 +40,68 @@ export const API_BASE_URL = getApiBaseUrl();
 export const WS_BASE_URL = API_BASE_URL.replace('https://', 'wss://').replace('http://', 'ws://');
 
 // Export API endpoints
+// Note: API_BASE_URL already includes /api, so we don't add it again
 export const API_ENDPOINTS = {
   // Authentication
   AUTH: {
-    LOGIN: `${API_BASE_URL}/api/auth/login`,
-    REGISTER: `${API_BASE_URL}/api/auth/register`,
-    LOGOUT: `${API_BASE_URL}/api/auth/logout`,
-    HEALTH: `${API_BASE_URL}/api/auth/health`,
+    LOGIN: `${API_BASE_URL}/auth/login`,
+    REGISTER: `${API_BASE_URL}/auth/register`,
+    LOGOUT: `${API_BASE_URL}/auth/logout`,
+    HEALTH: `${API_BASE_URL}/auth/health`,
   },
   
   // Accounts
   ACCOUNTS: {
-    BASE: `${API_BASE_URL}/api/accounts`,
-    REGISTER: `${API_BASE_URL}/api/accounts/register`,
-    LOGIN: `${API_BASE_URL}/api/accounts/login`,
-    PROFILE: `${API_BASE_URL}/api/accounts/profile`,
-    UPDATE_PROFILE: `${API_BASE_URL}/api/accounts/updateprofile`,
+    BASE: `${API_BASE_URL}/accounts`,
+    REGISTER: `${API_BASE_URL}/accounts/register`,
+    LOGIN: `${API_BASE_URL}/accounts/login`,
+    PROFILE: `${API_BASE_URL}/accounts/profile`,
+    UPDATE_PROFILE: `${API_BASE_URL}/accounts/updateprofile`,
   },
   
   // Sensors
   SENSORS: {
-    BASE: `${API_BASE_URL}/api/sensors`,
-    DATA: `${API_BASE_URL}/api/sensors/data`,
+    BASE: `${API_BASE_URL}/sensors`,
+    DATA: `${API_BASE_URL}/sensors/data`,
   },
   
   // Pest & Disease Detection
   PEST_DISEASE: {
-    DETECT: `${API_BASE_URL}/api/pest-disease/detect`,
-    CLASSES: `${API_BASE_URL}/api/pest-disease/classes`,
-    HEALTH: `${API_BASE_URL}/api/pest-disease/health`,
-    HISTORY: `${API_BASE_URL}/api/pest-disease/history`,
+    DETECT: `${API_BASE_URL}/pest-disease/detect`,
+    CLASSES: `${API_BASE_URL}/pest-disease/classes`,
+    HEALTH: `${API_BASE_URL}/pest-disease/health`,
+    HISTORY: `${API_BASE_URL}/pest-disease/history`,
   },
   
   // Crop Recommendation
   CROP: {
-    RECOMMEND: `${API_BASE_URL}/api/crop/recommend`,
-    HEALTH: `${API_BASE_URL}/api/crop/health`,
+    RECOMMEND: `${API_BASE_URL}/crop/recommend`,
+    HEALTH: `${API_BASE_URL}/crop/health`,
   },
   
   // Alerts
   ALERTS: {
-    BASE: `${API_BASE_URL}/api/alerts`,
+    BASE: `${API_BASE_URL}/alerts`,
   },
   
   // Farms
   FARMS: {
-    BASE: `${API_BASE_URL}/api/farms`,
+    BASE: `${API_BASE_URL}/farms`,
   },
   
   // Fields
   FIELDS: {
-    BASE: `${API_BASE_URL}/api/fields`,
+    BASE: `${API_BASE_URL}/fields`,
   },
   
   // Harvest
   HARVEST: {
-    BASE: `${API_BASE_URL}/api/harvest`,
+    BASE: `${API_BASE_URL}/harvest`,
   },
   
   // Irrigation
   IRRIGATION: {
-    BASE: `${API_BASE_URL}/api/irrigation`,
+    BASE: `${API_BASE_URL}/irrigation`,
   },
 };
 
