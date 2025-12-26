@@ -44,6 +44,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/email/test/**").permitAll()
                         .requestMatchers("/api/sensor-data/iot").permitAll() // Public endpoint cho IoT devices
                         .requestMatchers("/api/health", "/health").permitAll() // Health check endpoints
+                        .requestMatchers("/api/pest-disease/**").permitAll() // Public endpoints cho pest-disease detection
+                        .requestMatchers("/api/crop/**").permitAll() // Public endpoints cho crop recommendation
                         .requestMatchers("/ws/**", "/app/**", "/topic/**").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
                         // Tất cả các endpoints khác cần authentication
