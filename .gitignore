@@ -70,6 +70,11 @@ TEST_CROP_API.bat
 # Backup files
 *.backup
 
+# Database and SSL files
+certbot/
+db_smart.sql
+db_sm_ver1.sql
+
 # TypeScript build info
 tsconfig.tsbuildinfo
 
