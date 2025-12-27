@@ -52,8 +52,9 @@ const long SENSOR_ID_LIGHT = 4;        // Thay bằng ID thực tế của senso
 const uint8_t AVG_SAMPLES = 5;
 
 // Hiệu chuẩn Soil (ESP32 có ADC 12-bit: 0-4095)
-int SOIL_RAW_DRY  = 4095;  // Đất khô (ESP32: 12-bit ADC)
-int SOIL_RAW_WET  = 2000;  // Đất ướt (ESP32: 12-bit ADC)
+// Dựa vào giá trị thực tế: Dry ~800-1000, Wet ~200-300
+int SOIL_RAW_DRY  = 1000;  // Đất khô (giá trị cao khi khô)
+int SOIL_RAW_WET  = 200;   // Đất ướt (giá trị thấp khi ướt)
 
 // Hiệu chuẩn LDR (ESP32 có ADC 12-bit: 0-4095)
 int LDR_RAW_DARK   = 100;   // Tối
@@ -239,6 +240,20 @@ void loop() {
     // --------- Đọc độ ẩm đất ---------
     int soilRaw = analogReadAvg(SOIL_PIN, AVG_SAMPLES);
     int soilPct = mapClamp(soilRaw, SOIL_RAW_DRY, SOIL_RAW_WET, 0, 100);
+
+    // DEBUG: Đọc tất cả pin analog để tìm pin đúng
+    Serial.print("🔍 DEBUG RAW - GPIO32: ");
+    Serial.print(analogRead(32));
+    Serial.print(" | GPIO33: ");
+    Serial.print(analogRead(33));
+    Serial.print(" | GPIO34: ");
+    Serial.print(analogRead(34));
+    Serial.print(" | GPIO35: ");
+    Serial.print(analogRead(35));
+    Serial.print(" | SOIL_PIN(");
+    Serial.print(SOIL_PIN);
+    Serial.print("): ");
+    Serial.println(soilRaw);
 
     // --------- In ra Serial để debug ---------
     Serial.print("📊 DHT: ");

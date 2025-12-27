@@ -32,13 +32,26 @@
 1. Click nút **Add** (hoặc **Save**)
 2. Đợi 5-15 phút để DNS propagate
 3. Kiểm tra:
+
+   **Nếu DNS server nội bộ timeout, dùng Google DNS:**
    ```powershell
-   nslookup smartfarm.kimngn.cfd
+   nslookup smartfarm.kimngn.cfd 8.8.8.8
    ```
+   
+   **Hoặc Cloudflare DNS:**
+   ```powershell
+   nslookup smartfarm.kimngn.cfd 1.1.1.1
+   ```
+   
    **Kết quả mong đợi:**
    ```
+   Name:    smartfarm.kimngn.cfd
    Address: 109.205.180.72
    ```
+   
+   **Hoặc kiểm tra online (không phụ thuộc DNS server):**
+   - https://dnschecker.org/#A/smartfarm.kimngn.cfd
+   - https://www.whatsmydns.net/#A/smartfarm.kimngn.cfd
 
 ---
 

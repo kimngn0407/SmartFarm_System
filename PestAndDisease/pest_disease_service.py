@@ -168,12 +168,14 @@ def process_image(image_file):
 @app.route('/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
+    model_ready = model is not None
+    status = 'healthy' if model_ready else 'unhealthy'
     return jsonify({
-        'status': 'healthy',
-        'model_loaded': model is not None,
+        'status': status,
+        'model_loaded': model_ready,
         'device': str(device),
         'classes': len(CLASS_NAMES)
-    }), 200
+    }), 200 if model_ready else 503
 
 @app.route('/api/detect', methods=['POST'])
 def detect_disease():

@@ -14,6 +14,9 @@ COPY requirements.txt .
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Copy model file explicitly (before copying other files)
+COPY RandomForest_RecomentTree.pkl ./
+
 # Copy application files
 COPY . .
 
@@ -34,5 +37,8 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:5000/health || exit 1
 
 # Run the application
+CMD ["python", "crop_recommendation_service.py"]
+
+
 CMD ["python", "crop_recommendation_service.py"]
 

@@ -59,18 +59,33 @@ echo "🛑 Stopping Nginx temporarily..."
 PORT80_PID=$(lsof -ti :80 2>/dev/null || echo "")
 if [ -n "$PORT80_PID" ]; then
     echo "⚠️  Port 80 is in use by PID: $PORT80_PID"
-    echo "   Stopping Nginx and killing process..."
-    $DOCKER_COMPOSE stop nginx 2>/dev/null || true
-    sleep 3
+    echo "   Stopping services..."
     
-    # Kill process nếu vẫn còn
+    # Dừng Nginx container
+    $DOCKER_COMPOSE stop nginx 2>/dev/null || true
+    
+    # Dừng Nginx trên host (nếu có)
+    if systemctl is-active --quiet nginx 2>/dev/null; then
+        echo "   Stopping Nginx service on host..."
+        systemctl stop nginx 2>/dev/null || true
+    fi
+    
+    # Kill tất cả process nginx
+    if pgrep nginx > /dev/null 2>&1; then
+        echo "   Killing all nginx processes..."
+        killall nginx 2>/dev/null || true
+        sleep 2
+    fi
+    
+    # Kill process trên port 80 nếu vẫn còn
     if lsof -ti :80 > /dev/null 2>&1; then
-        echo "🔪 Killing process on port 80..."
+        echo "🔪 Killing remaining processes on port 80..."
         kill -9 $(lsof -ti :80) 2>/dev/null || true
         sleep 2
     fi
 else
     $DOCKER_COMPOSE stop nginx 2>/dev/null || true
+    systemctl stop nginx 2>/dev/null || true
 fi
 
 # Đợi Nginx dừng hoàn toàn

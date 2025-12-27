@@ -24,7 +24,7 @@ public class PestDiseaseService {
 
     private final RestTemplate restTemplate;
 
-    @Value("${pest.disease.service.url:http://pest-service:5001}")
+    @Value("${pest.disease.service.url:http://localhost:5001}")
     private String pestDiseaseApiUrl;
 
     public PestDiseaseService() {
