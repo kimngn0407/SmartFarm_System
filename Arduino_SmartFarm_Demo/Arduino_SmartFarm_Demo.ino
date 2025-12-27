@@ -51,8 +51,13 @@ const unsigned long PUMP_DURATION = 5000;   // Thời gian bơm (ms)
 const unsigned long PUMP_COOLDOWN = 60000;   // Thời gian chờ (ms)
 
 // ================== Hiệu chuẩn ==================
-int SOIL_RAW_DRY = 4095;
-int SOIL_RAW_WET = 2000;
+// ⚠️ CẦN HIỆU CHỈNH DỰA TRÊN GIÁ TRỊ THỰC TẾ
+// - Đất khô: Giá trị cao (gần 4095)
+// - Đất ướt: Giá trị thấp (gần 0)
+// Để tìm giá trị: Đọc raw value khi đất khô và ướt
+int SOIL_RAW_DRY = 4095;   // Giá trị khi đất khô (cao)
+int SOIL_RAW_WET = 2000;   // Giá trị khi đất ướt (thấp)
+// Nếu sensor đọc ngược (khô = thấp, ướt = cao), đổi 2 giá trị này
 
 // ================== Biến toàn cục ==================
 DHT dht(DHTPIN, DHTTYPE);
@@ -318,18 +323,27 @@ void loop() {
     Serial.print(" | GPIO35: ");
     Serial.print(analogRead(35));
     
-    // Kiểm tra nếu sensor không hoạt động (giá trị = 0 hoặc quá thấp)
+    // Kiểm tra nếu sensor không hoạt động
+    int soilPct;
     if (soilRaw == 0 || soilRaw < 10) {
       Serial.print(" ⚠️ Sensor có thể chưa nối đúng!");
-      // Không clamp về SOIL_RAW_WET nếu giá trị = 0 (có thể là lỗi)
-      soilRaw = SOIL_RAW_WET;  // Tạm thời set về giá trị ướt
-    } else if (soilRaw > SOIL_RAW_DRY) {
-      soilRaw = SOIL_RAW_DRY;  // Giới hạn tối đa
-    } else if (soilRaw < SOIL_RAW_WET) {
-      soilRaw = SOIL_RAW_WET;  // Giới hạn tối thiểu
+      soilPct = 50;  // Set giá trị trung bình thay vì 100
+    } else {
+      // Clamp giá trị raw vào phạm vi hợp lệ
+      if (soilRaw > SOIL_RAW_DRY) {
+        soilRaw = SOIL_RAW_DRY;  // Giới hạn tối đa
+      } else if (soilRaw < SOIL_RAW_WET) {
+        soilRaw = SOIL_RAW_WET;  // Giới hạn tối thiểu
+      }
+      
+      // Map từ raw value sang phần trăm
+      soilPct = mapClamp(soilRaw, SOIL_RAW_DRY, SOIL_RAW_WET, 0, 100);
+      
+      // Debug: In giá trị sau khi map
+      Serial.print(" | Mapped: ");
+      Serial.print(soilPct);
+      Serial.print("%");
     }
-    
-    int soilPct = mapClamp(soilRaw, SOIL_RAW_DRY, SOIL_RAW_WET, 0, 100);
 
     // Đọc ánh sáng (LDR Module - Digital)
     // Thử cả 2 logic: HIGH = Sáng hoặc HIGH = Tối
