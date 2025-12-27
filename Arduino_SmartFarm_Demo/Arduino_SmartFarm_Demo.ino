@@ -22,10 +22,10 @@ const char* password = "kimngan0407";
 const char* serverUrl = "http://smartfarm.kimngn.cfd/api/sensor-data/iot";
 
 // ================== Cấu hình Sensor IDs ==================
-const long SENSOR_ID_TEMPERATURE = 1;
-const long SENSOR_ID_HUMIDITY = 2;
-const long SENSOR_ID_SOIL = 3;
-const long SENSOR_ID_LIGHT = 4;
+const long SENSOR_ID_TEMPERATURE = 7;  // Match với frontend sensor ID
+const long SENSOR_ID_HUMIDITY = 8;     // Match với frontend sensor ID
+const long SENSOR_ID_SOIL = 9;         // Match với frontend sensor ID
+const long SENSOR_ID_LIGHT = 10;       // Match với frontend sensor ID
 
 // ================== Cấu hình Pin ==================
 #define DHTPIN       4        // DHT11 DATA (GPIO4 = D4)

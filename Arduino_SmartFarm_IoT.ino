@@ -28,10 +28,10 @@ const char* serverUrl = "http://109.205.180.72:8080/api/sensor-data/iot";
 // ================== Cấu hình Sensor IDs (từ database) ==================
 // ⚠️ QUAN TRỌNG: Cần kiểm tra sensor IDs trong database trước!
 // Chạy: docker compose exec postgres psql -U postgres -d SmartFarm1 -c "SELECT id, sensor_name, type FROM sensor;"
-const long SENSOR_ID_TEMPERATURE = 1;  // Thay bằng ID thực tế của sensor nhiệt độ
-const long SENSOR_ID_HUMIDITY = 2;      // Thay bằng ID thực tế của sensor độ ẩm không khí
-const long SENSOR_ID_SOIL = 3;         // Thay bằng ID thực tế của sensor độ ẩm đất
-const long SENSOR_ID_LIGHT = 4;        // Thay bằng ID thực tế của sensor ánh sáng
+const long SENSOR_ID_TEMPERATURE = 7;  // Match với frontend sensor ID
+const long SENSOR_ID_HUMIDITY = 8;      // Match với frontend sensor ID
+const long SENSOR_ID_SOIL = 9;         // Match với frontend sensor ID
+const long SENSOR_ID_LIGHT = 10;       // Match với frontend sensor ID
 
 // ================== Cấu hình cảm biến & chân ==================
 // ESP32 Pin Configuration
