@@ -48,12 +48,3 @@ public class SensorDataController {
     }
 
 }
-
-
-    @GetMapping("/latest/{sensorId}")
-    public ResponseEntity<List<SensorDataDTO>> getLatestSensorData(@PathVariable Long sensorId) {
-        List<SensorDataDTO> latestData = sensorDataService.getLatestDataBySensorId(sensorId);
-        return ResponseEntity.ok(latestData);
-    }
-
-}
