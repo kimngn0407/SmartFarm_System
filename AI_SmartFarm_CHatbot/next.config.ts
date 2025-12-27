@@ -2,6 +2,8 @@ import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
   /* config options here */
+  basePath: '/chatbot',  // Route prefix để match Nginx location /chatbot/
+  assetPrefix: '/chatbot', // Đảm bảo static assets có prefix đúng
   output: 'standalone', // Cần thiết cho Docker deployment
   typescript: {
     ignoreBuildErrors: true,

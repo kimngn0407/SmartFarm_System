@@ -170,7 +170,7 @@ class ProfileService {
   // Get fields for a specific farm
   async getFields(farmId) {
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/fields/farm/${farmId}`);
+      const response = await axios.get(`${API_BASE_URL}/api/fields/${farmId}/field`, { headers: getAuthHeader() });
       return response.data;
     } catch (error) {
       console.error('Error fetching fields:', error);
