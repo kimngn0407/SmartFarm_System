@@ -34,13 +34,16 @@ const SmartFarmChatbot = () => {
     // Priority 3: Auto-detect from browser location
     if (typeof window !== 'undefined') {
       const hostname = window.location.hostname;
+      const protocol = window.location.protocol;
+      
       // Nếu đang chạy trên localhost, dùng localhost:9002
       if (hostname === 'localhost' || hostname === '127.0.0.1') {
         return 'http://localhost:9002';
       }
-      // Nếu không phải localhost, dùng hostname hiện tại với port 9002 (cho VPS)
-      const protocol = window.location.protocol;
-      return `${protocol}//${hostname}:9002`;
+      
+      // Nếu không phải localhost, dùng /chatbot path qua Nginx (cho VPS)
+      // Không dùng port 9002 trực tiếp vì Nginx đã proxy /chatbot
+      return `${protocol}//${hostname}/chatbot`;
     }
     
     // Priority 4: Default for local development

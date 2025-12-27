@@ -5,9 +5,11 @@ WORKDIR /app
 
 # Build arguments cho environment variables
 ARG REACT_APP_API_URL=https://smartfarm.kimngn.cfd
+ARG REACT_APP_CHATBOT_URL=https://smartfarm.kimngn.cfd/chatbot
 
 # Set environment variables từ build args
 ENV REACT_APP_API_URL=${REACT_APP_API_URL}
+ENV REACT_APP_CHATBOT_URL=${REACT_APP_CHATBOT_URL}
 
 # Copy package files
 COPY package*.json ./
