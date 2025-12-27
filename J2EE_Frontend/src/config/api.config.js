@@ -24,9 +24,10 @@ const getApiBaseUrl = () => {
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
       return 'http://localhost:8080';
     }
-    // Nếu không phải localhost, dùng hostname hiện tại với /api (cho VPS với Nginx)
+    // Nếu không phải localhost, dùng hostname hiện tại (cho VPS với Nginx)
+    // Note: Không thêm /api ở đây vì các service files đã thêm /api vào endpoint rồi
       const protocol = window.location.protocol; // http: hoặc https:
-      return `${protocol}//${hostname}/api`;
+      return `${protocol}//${hostname}`;
   }
   
   // Priority 4: Default for local development
@@ -40,68 +41,68 @@ export const API_BASE_URL = getApiBaseUrl();
 export const WS_BASE_URL = API_BASE_URL.replace('https://', 'wss://').replace('http://', 'ws://');
 
 // Export API endpoints
-// Note: API_BASE_URL already includes /api, so we don't add it again
+// Note: API_BASE_URL does NOT include /api, so we add /api to each endpoint here
 export const API_ENDPOINTS = {
   // Authentication
   AUTH: {
-    LOGIN: `${API_BASE_URL}/auth/login`,
-    REGISTER: `${API_BASE_URL}/auth/register`,
-    LOGOUT: `${API_BASE_URL}/auth/logout`,
-    HEALTH: `${API_BASE_URL}/auth/health`,
+    LOGIN: `${API_BASE_URL}/api/auth/login`,
+    REGISTER: `${API_BASE_URL}/api/auth/register`,
+    LOGOUT: `${API_BASE_URL}/api/auth/logout`,
+    HEALTH: `${API_BASE_URL}/api/auth/health`,
   },
   
   // Accounts
   ACCOUNTS: {
-    BASE: `${API_BASE_URL}/accounts`,
-    REGISTER: `${API_BASE_URL}/accounts/register`,
-    LOGIN: `${API_BASE_URL}/accounts/login`,
-    PROFILE: `${API_BASE_URL}/accounts/profile`,
-    UPDATE_PROFILE: `${API_BASE_URL}/accounts/updateprofile`,
+    BASE: `${API_BASE_URL}/api/accounts`,
+    REGISTER: `${API_BASE_URL}/api/accounts/register`,
+    LOGIN: `${API_BASE_URL}/api/accounts/login`,
+    PROFILE: `${API_BASE_URL}/api/accounts/profile`,
+    UPDATE_PROFILE: `${API_BASE_URL}/api/accounts/updateprofile`,
   },
   
   // Sensors
   SENSORS: {
-    BASE: `${API_BASE_URL}/sensors`,
-    DATA: `${API_BASE_URL}/sensors/data`,
+    BASE: `${API_BASE_URL}/api/sensors`,
+    DATA: `${API_BASE_URL}/api/sensors/data`,
   },
   
   // Pest & Disease Detection
   PEST_DISEASE: {
-    DETECT: `${API_BASE_URL}/pest-disease/detect`,
-    CLASSES: `${API_BASE_URL}/pest-disease/classes`,
-    HEALTH: `${API_BASE_URL}/pest-disease/health`,
-    HISTORY: `${API_BASE_URL}/pest-disease/history`,
+    DETECT: `${API_BASE_URL}/api/pest-disease/detect`,
+    CLASSES: `${API_BASE_URL}/api/pest-disease/classes`,
+    HEALTH: `${API_BASE_URL}/api/pest-disease/health`,
+    HISTORY: `${API_BASE_URL}/api/pest-disease/history`,
   },
   
   // Crop Recommendation
   CROP: {
-    RECOMMEND: `${API_BASE_URL}/crop/recommend`,
-    HEALTH: `${API_BASE_URL}/crop/health`,
+    RECOMMEND: `${API_BASE_URL}/api/crop/recommend`,
+    HEALTH: `${API_BASE_URL}/api/crop/health`,
   },
   
   // Alerts
   ALERTS: {
-    BASE: `${API_BASE_URL}/alerts`,
+    BASE: `${API_BASE_URL}/api/alerts`,
   },
   
   // Farms
   FARMS: {
-    BASE: `${API_BASE_URL}/farms`,
+    BASE: `${API_BASE_URL}/api/farms`,
   },
   
   // Fields
   FIELDS: {
-    BASE: `${API_BASE_URL}/fields`,
+    BASE: `${API_BASE_URL}/api/fields`,
   },
   
   // Harvest
   HARVEST: {
-    BASE: `${API_BASE_URL}/harvest`,
+    BASE: `${API_BASE_URL}/api/harvest`,
   },
   
   // Irrigation
   IRRIGATION: {
-    BASE: `${API_BASE_URL}/irrigation`,
+    BASE: `${API_BASE_URL}/api/irrigation`,
   },
 };
 

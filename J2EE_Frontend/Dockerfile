@@ -4,7 +4,7 @@ FROM node:18-alpine AS build
 WORKDIR /app
 
 # Build arguments cho environment variables
-ARG REACT_APP_API_URL=https://smartfarm.kimngn.cfd/api
+ARG REACT_APP_API_URL=https://smartfarm.kimngn.cfd
 
 # Set environment variables từ build args
 ENV REACT_APP_API_URL=${REACT_APP_API_URL}
