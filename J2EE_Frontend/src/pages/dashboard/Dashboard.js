@@ -368,7 +368,7 @@ const Dashboard = () => {
         console.log('📋 Sensor types:', allSensors.map(s => ({ id: s.id, type: s.type, name: s.sensorName })));
         
         // ESP32 gửi dữ liệu IoT vào PostgreSQL với sensor_id:
-        // Temperature = 1, Humidity = 2, Soil = 3, Light = 4
+        // Temperature = 7, Humidity = 8, Soil = 9, Light = 10
         // Dùng trực tiếp các ID này để lấy dữ liệu từ database
         const tempSensorIds = [7]; // Temperature sensor ID từ ESP32
         const humSensorIds = [8]; // Humidity sensor ID từ ESP32
