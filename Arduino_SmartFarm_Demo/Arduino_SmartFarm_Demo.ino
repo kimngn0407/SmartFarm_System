@@ -68,7 +68,10 @@ unsigned long lastPumpTime = 0;
 unsigned long pumpStartTime = 0;
 
 const unsigned long READ_PERIOD = 1000;     // Đọc mỗi 1 giây
-const unsigned long SEND_PERIOD = 60000;     // Gửi mỗi 60 giây
+const unsigned long SEND_PERIOD = 60000;     // Gửi mỗi 60 giây (1 phút)
+
+// Flag để đảm bảo test data chỉ gửi 1 lần khi khởi động
+bool testDataSent = false;
 
 bool pumpRunning = false;
 
@@ -325,23 +328,13 @@ void setup() {
   Serial.print("-");
   Serial.println(HUMIDITY_MAX);
   
-  // TEST: Gửi dữ liệu test ngay khi khởi động (sau 5 giây)
-  Serial.println("🧪 TEST: Sẽ gửi dữ liệu test sau 5 giây...");
-  delay(5000);
-  Serial.println("🧪 TEST: Bắt đầu gửi dữ liệu test...");
+  // Khởi tạo lastSend để tránh gửi ngay lập tức
+  lastSend = millis();
   
-  // Test gửi tất cả sensors
-  sendSensorDataToServer(SENSOR_ID_TEMPERATURE, 25.0);
-  delay(1000);
-  sendSensorDataToServer(SENSOR_ID_HUMIDITY, 50.0);
-  delay(1000);
-  sendSensorDataToServer(SENSOR_ID_SOIL, 50.0);
-  delay(1000);
-  sendSensorDataToServer(SENSOR_ID_LIGHT, 75.0);
-  delay(1000);
-  
-  Serial.println("🧪 TEST: Đã gửi xong dữ liệu test!");
   Serial.println("=== Bắt đầu vòng lặp chính ===");
+  Serial.print("⏰ Sẽ gửi dữ liệu đầu tiên sau ");
+  Serial.print(SEND_PERIOD / 1000);
+  Serial.println(" giây...");
 }
 
 // ================== Loop ==================
@@ -488,18 +481,32 @@ void loop() {
     }
 
     // Gửi dữ liệu lên server mỗi SEND_PERIOD
-    if (now - lastSend >= SEND_PERIOD) {
+    unsigned long timeSinceLastSend = now - lastSend;
+    if (timeSinceLastSend >= SEND_PERIOD) {
       lastSend = now;
-      Serial.println("🚀 Gửi dữ liệu lên server...");
+      
+      Serial.println("");
+      Serial.println("═══════════════════════════════════════");
+      Serial.println("🚀 GỬI DỮ LIỆU LÊN SERVER...");
+      Serial.print("⏰ Đã đợi: ");
+      Serial.print(timeSinceLastSend / 1000);
+      Serial.println(" giây");
+      Serial.println("═══════════════════════════════════════");
 
       // Gửi nhiệt độ
       if (!dhtFail) {
         Serial.println("📊 Gửi nhiệt độ...");
-        sendSensorDataToServer(SENSOR_ID_TEMPERATURE, t);
+        bool success = sendSensorDataToServer(SENSOR_ID_TEMPERATURE, t);
+        Serial.print(success ? "   ✅" : "   ❌");
+        Serial.print(" Sensor ");
+        Serial.println(SENSOR_ID_TEMPERATURE);
         delay(500);
         
         Serial.println("📊 Gửi độ ẩm không khí...");
-        sendSensorDataToServer(SENSOR_ID_HUMIDITY, h);
+        success = sendSensorDataToServer(SENSOR_ID_HUMIDITY, h);
+        Serial.print(success ? "   ✅" : "   ❌");
+        Serial.print(" Sensor ");
+        Serial.println(SENSOR_ID_HUMIDITY);
         delay(500);
       } else {
         Serial.println("⚠️ DHT fail - Bỏ qua nhiệt độ và độ ẩm");
@@ -507,15 +514,37 @@ void loop() {
       
       // Gửi độ ẩm đất
       Serial.println("📊 Gửi độ ẩm đất...");
-      sendSensorDataToServer(SENSOR_ID_SOIL, (float)soilPct);
+      bool success = sendSensorDataToServer(SENSOR_ID_SOIL, (float)soilPct);
+      Serial.print(success ? "   ✅" : "   ❌");
+      Serial.print(" Sensor ");
+      Serial.println(SENSOR_ID_SOIL);
       delay(500);
       
       // Gửi ánh sáng
       Serial.println("📊 Gửi ánh sáng...");
-      sendSensorDataToServer(SENSOR_ID_LIGHT, (float)lightPct);
+      success = sendSensorDataToServer(SENSOR_ID_LIGHT, (float)lightPct);
+      Serial.print(success ? "   ✅" : "   ❌");
+      Serial.print(" Sensor ");
+      Serial.println(SENSOR_ID_LIGHT);
       delay(500);
 
-      Serial.println("✅ Đã gửi xong tất cả sensors!");
+      Serial.println("═══════════════════════════════════════");
+      Serial.println("✅ ĐÃ GỬI XONG TẤT CẢ SENSORS!");
+      Serial.print("⏰ Lần gửi tiếp theo sau: ");
+      Serial.print(SEND_PERIOD / 1000);
+      Serial.println(" giây");
+      Serial.println("═══════════════════════════════════════");
+      Serial.println("");
+    } else {
+      // Debug: In thời gian còn lại mỗi 10 giây
+      static unsigned long lastDebug = 0;
+      if (now - lastDebug >= 10000) {
+        lastDebug = now;
+        unsigned long remaining = (SEND_PERIOD - timeSinceLastSend) / 1000;
+        Serial.print("⏰ Còn lại ");
+        Serial.print(remaining);
+        Serial.println(" giây nữa sẽ gửi dữ liệu...");
+      }
     }
   }
 
