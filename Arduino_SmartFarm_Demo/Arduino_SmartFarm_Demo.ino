@@ -112,6 +112,8 @@ String getCurrentTimeISO() {
 
 bool sendSensorDataToServer(long sensorId, float value) {
   if (WiFi.status() != WL_CONNECTED) {
+    Serial.print("❌ WiFi not connected for sensor ");
+    Serial.println(sensorId);
     return false;
   }
 
@@ -128,9 +130,29 @@ bool sendSensorDataToServer(long sensorId, float value) {
   String jsonPayload;
   serializeJson(doc, jsonPayload);
 
+  Serial.print("📤 Sending sensor ");
+  Serial.print(sensorId);
+  Serial.print(": ");
+  Serial.println(jsonPayload);
+
   int httpResponseCode = http.POST(jsonPayload);
-  http.end();
   
+  if (httpResponseCode > 0) {
+    Serial.print("✅ Sensor ");
+    Serial.print(sensorId);
+    Serial.print(" - HTTP ");
+    Serial.println(httpResponseCode);
+    String response = http.getString();
+    Serial.print("📥 Response: ");
+    Serial.println(response);
+  } else {
+    Serial.print("❌ Sensor ");
+    Serial.print(sensorId);
+    Serial.print(" - Error code: ");
+    Serial.println(httpResponseCode);
+  }
+  
+  http.end();
   return (httpResponseCode > 0);
 }
 
@@ -321,6 +343,20 @@ void loop() {
       t = dht.readTemperature();
     }
     bool dhtFail = isnan(h) || isnan(t);
+    
+    // Debug DHT
+    if (dhtFail) {
+      Serial.print("⚠️ DHT Fail - T: ");
+      Serial.print(t);
+      Serial.print(" H: ");
+      Serial.println(h);
+    } else {
+      Serial.print("✅ DHT OK - T: ");
+      Serial.print(t);
+      Serial.print("°C, H: ");
+      Serial.print(h);
+      Serial.println("%");
+    }
 
     // Đọc độ ẩm đất
     int soilRaw = analogReadAvg(SOIL_PIN, 5);
@@ -412,18 +448,30 @@ void loop() {
       lastSend = now;
       Serial.println("🚀 Gửi dữ liệu lên server...");
 
+      // Gửi nhiệt độ
       if (!dhtFail) {
+        Serial.println("📊 Gửi nhiệt độ...");
         sendSensorDataToServer(SENSOR_ID_TEMPERATURE, t);
-        delay(300);
+        delay(500);
+        
+        Serial.println("📊 Gửi độ ẩm không khí...");
         sendSensorDataToServer(SENSOR_ID_HUMIDITY, h);
-        delay(300);
+        delay(500);
+      } else {
+        Serial.println("⚠️ DHT fail - Bỏ qua nhiệt độ và độ ẩm");
       }
+      
+      // Gửi độ ẩm đất
+      Serial.println("📊 Gửi độ ẩm đất...");
       sendSensorDataToServer(SENSOR_ID_SOIL, (float)soilPct);
-      delay(300);
+      delay(500);
+      
+      // Gửi ánh sáng
+      Serial.println("📊 Gửi ánh sáng...");
       sendSensorDataToServer(SENSOR_ID_LIGHT, (float)lightPct);
-      delay(300);
+      delay(500);
 
-      Serial.println("✅ Đã gửi xong!");
+      Serial.println("✅ Đã gửi xong tất cả sensors!");
     }
   }
 
