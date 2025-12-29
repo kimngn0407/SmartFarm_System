@@ -389,13 +389,12 @@ void loop() {
       }
       
       // Map từ raw value sang phần trăm
-      // ⚠️ QUAN TRỌNG: Đảo logic vì giá trị CAO = đất KHÔ = độ ẩm THẤP
+      // ⚠️ QUAN TRỌNG: Đảo cả input và output range vì giá trị CAO = đất KHÔ
       // SOIL_RAW_DRY (4095) = đất khô = 0% độ ẩm
       // SOIL_RAW_WET (2000) = đất ướt = 100% độ ẩm
-      soilPct = mapClamp(soilRaw, SOIL_RAW_DRY, SOIL_RAW_WET, 0, 100);
-      
-      // Đảo giá trị vì sensor đọc ngược (cao = khô, thấp = ướt)
-      soilPct = 100 - soilPct;
+      // Logic: map từ (WET→DRY = 2000→4095) sang (100%→0%)
+      // Hoặc: map từ (DRY→WET = 4095→2000) sang (0%→100%)
+      soilPct = mapClamp(soilRaw, SOIL_RAW_WET, SOIL_RAW_DRY, 100, 0);
       
       // Debug: In giá trị sau khi map
       Serial.print(" | Mapped: ");
@@ -424,12 +423,17 @@ void loop() {
       Serial.print(" (Analog sensor)");
     } else {
       // Nếu là digital sensor
-      // Logic: HIGH = Sáng, LOW = Tối (hoặc ngược lại tùy sensor)
-      // Thử logic 1: HIGH = Sáng
-      lightPct = (lightDigital == HIGH) ? 100 : 0;
-      // Nếu logic trên không đúng, đổi thành:
-      // lightPct = (lightDigital == LOW) ? 100 : 0;
-      Serial.print(" (Digital sensor)");
+      // ⚠️ Lưu ý: Logic có thể ngược tùy sensor
+      // GPIO5 với INPUT_PULLUP: LOW = có tín hiệu (sáng), HIGH = không có tín hiệu (tối)
+      // Thử logic: LOW = Sáng (100%), HIGH = Tối (0%)
+      lightPct = (lightDigital == LOW) ? 100 : 0;
+      
+      // Nếu logic trên sai, đổi thành: (HIGH = Sáng)
+      // lightPct = (lightDigital == HIGH) ? 100 : 0;
+      
+      Serial.print(" (Digital sensor - ");
+      Serial.print(lightDigital == LOW ? "LOW=sáng" : "HIGH=sáng");
+      Serial.print(")");
     }
 
     // In ra Serial (giống style ví dụ)
