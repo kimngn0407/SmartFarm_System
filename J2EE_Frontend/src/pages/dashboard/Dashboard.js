@@ -954,12 +954,6 @@ const Dashboard = () => {
                     label="Dữ liệu IoT" 
                     sx={{ ml: 1 }}
                   />
-                ) : dataSource.temp === 'sample' || dataSource.hum === 'sample' || dataSource.soil === 'sample' || dataSource.light === 'sample' ? (
-                  <StatusBadge 
-                    status="warning" 
-                    label="Dữ liệu mẫu" 
-                    sx={{ ml: 1 }}
-                  />
                 ) : null}
               </Box>
             }
