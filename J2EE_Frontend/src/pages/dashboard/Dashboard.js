@@ -220,6 +220,64 @@ const Dashboard = () => {
     return { avg, min, max, values, times, mappedValues };
   };
 
+  // Tạo dữ liệu mẫu có biến động lên xuống
+  function generateSampleData(timeLabels, type = 'temp') {
+    const data = [];
+    let baseValue, minValue, maxValue;
+    
+    // Giá trị cơ bản cho từng loại sensor
+    switch(type) {
+      case 'temp':
+        baseValue = 30.0;
+        minValue = 28.0;
+        maxValue = 32.0;
+        break;
+      case 'hum':
+        baseValue = 60.0;
+        minValue = 45.0;
+        maxValue = 75.0;
+        break;
+      case 'soil':
+        baseValue = 50.0;
+        minValue = 30.0;
+        maxValue = 70.0;
+        break;
+      case 'light':
+        baseValue = 60.0;
+        minValue = 20.0;
+        maxValue = 100.0;
+        break;
+      default:
+        baseValue = 50.0;
+        minValue = 30.0;
+        maxValue = 70.0;
+    }
+    
+    // Tạo dữ liệu có biến động tự nhiên
+    for (let i = 0; i < timeLabels.length; i++) {
+      // Tạo sóng sin để có biến động mượt mà
+      const wave = Math.sin(i * Math.PI / 6) * 0.3; // Biến động ±30%
+      // Thêm nhiễu ngẫu nhiên nhỏ
+      const noise = (Math.random() - 0.5) * 0.1; // ±5%
+      // Tính giá trị
+      let value = baseValue * (1 + wave + noise);
+      
+      // Clamp vào phạm vi
+      value = Math.max(minValue, Math.min(maxValue, value));
+      
+      // Làm tròn
+      if (type === 'temp') {
+        value = Math.round(value * 10) / 10; // 1 chữ số thập phân
+      } else {
+        value = Math.round(value); // Số nguyên cho %, độ ẩm
+      }
+      
+      data.push(value);
+    }
+    
+    return data;
+  }
+
   // Tạo mốc giờ cho 6 tiếng, mỗi 15 phút một điểm (24 điểm)
   function getLast6HoursLabels() {
     const now = new Date();
@@ -504,16 +562,16 @@ const Dashboard = () => {
         let tempValues, humValues, soilValues, lightValues;
         const newDataSource = { ...dataSource };
         
-        // Dùng mappedValues nếu có, nếu không có data thì dùng null hoặc sample
+        // Dùng mappedValues nếu có, nếu không có data thì dùng sample data
         if (tempStats.mappedValues && tempStats.mappedValues.some(v => v !== null)) {
           tempValues = tempStats.mappedValues;
           newDataSource.temp = 'iot';
           const dataCount = tempStats.mappedValues.filter(v => v !== null).length;
           console.log('✅ 🌡️ Temperature chart: Using IoT data (' + dataCount + ' points mapped to ' + timeLabelsData.length + ' labels)');
         } else {
-          tempValues = timeLabelsData.map(() => null);
+          tempValues = generateSampleData(timeLabelsData, 'temp');
           newDataSource.temp = 'sample';
-          console.warn('⚠️ 🌡️ Temperature chart: No IoT data available');
+          console.log('📊 🌡️ Temperature chart: Using sample data (' + tempValues.length + ' points)');
         }
         
         if (humStats.mappedValues && humStats.mappedValues.some(v => v !== null)) {
@@ -522,9 +580,9 @@ const Dashboard = () => {
           const dataCount = humStats.mappedValues.filter(v => v !== null).length;
           console.log('✅ 💧 Humidity chart: Using IoT data (' + dataCount + ' points mapped to ' + timeLabelsData.length + ' labels)');
         } else {
-          humValues = timeLabelsData.map(() => null);
+          humValues = generateSampleData(timeLabelsData, 'hum');
           newDataSource.hum = 'sample';
-          console.warn('⚠️ 💧 Humidity chart: No IoT data available');
+          console.log('📊 💧 Humidity chart: Using sample data (' + humValues.length + ' points)');
         }
         
         if (soilStats.mappedValues && soilStats.mappedValues.some(v => v !== null)) {
@@ -533,9 +591,9 @@ const Dashboard = () => {
           const dataCount = soilStats.mappedValues.filter(v => v !== null).length;
           console.log('✅ 🌱 Soil moisture chart: Using IoT data (' + dataCount + ' points mapped to ' + timeLabelsData.length + ' labels)');
         } else {
-          soilValues = timeLabelsData.map(() => null);
+          soilValues = generateSampleData(timeLabelsData, 'soil');
           newDataSource.soil = 'sample';
-          console.warn('⚠️ 🌱 Soil moisture chart: No IoT data available');
+          console.log('📊 🌱 Soil moisture chart: Using sample data (' + soilValues.length + ' points)');
         }
         
         if (lightStats.mappedValues && lightStats.mappedValues.some(v => v !== null)) {
@@ -544,9 +602,9 @@ const Dashboard = () => {
           const dataCount = lightStats.mappedValues.filter(v => v !== null).length;
           console.log('✅ 💡 Light chart: Using IoT data (' + dataCount + ' points mapped to ' + timeLabelsData.length + ' labels)');
         } else {
-          lightValues = timeLabelsData.map(() => null);
+          lightValues = generateSampleData(timeLabelsData, 'light');
           newDataSource.light = 'sample';
-          console.warn('⚠️ 💡 Light chart: No IoT data available');
+          console.log('📊 💡 Light chart: Using sample data (' + lightValues.length + ' points)');
         }
         
         setDataSource(newDataSource);
@@ -952,6 +1010,12 @@ const Dashboard = () => {
                   <StatusBadge 
                     status="success" 
                     label="Dữ liệu IoT" 
+                    sx={{ ml: 1 }}
+                  />
+                ) : (dataSource.temp === 'sample' || dataSource.hum === 'sample' || dataSource.soil === 'sample' || dataSource.light === 'sample') ? (
+                  <StatusBadge 
+                    status="warning" 
+                    label="Dữ liệu mẫu" 
                     sx={{ ml: 1 }}
                   />
                 ) : null}
