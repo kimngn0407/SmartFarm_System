@@ -389,7 +389,13 @@ void loop() {
       }
       
       // Map từ raw value sang phần trăm
+      // ⚠️ QUAN TRỌNG: Đảo logic vì giá trị CAO = đất KHÔ = độ ẩm THẤP
+      // SOIL_RAW_DRY (4095) = đất khô = 0% độ ẩm
+      // SOIL_RAW_WET (2000) = đất ướt = 100% độ ẩm
       soilPct = mapClamp(soilRaw, SOIL_RAW_DRY, SOIL_RAW_WET, 0, 100);
+      
+      // Đảo giá trị vì sensor đọc ngược (cao = khô, thấp = ướt)
+      soilPct = 100 - soilPct;
       
       // Debug: In giá trị sau khi map
       Serial.print(" | Mapped: ");
@@ -397,18 +403,34 @@ void loop() {
       Serial.print("%");
     }
 
-    // Đọc ánh sáng (LDR Module - Digital)
-    // Thử cả 2 logic: HIGH = Sáng hoặc HIGH = Tối
-    int lightValue = digitalRead(LIGHT_PIN);
+    // Đọc ánh sáng (LDR Module - Digital hoặc Analog)
     int lightPct = 0;
     
-    // DEBUG: In giá trị digital
-    Serial.print(", Light Digital: ");
-    Serial.print(lightValue);
+    // Thử đọc cả analog và digital để xác định loại sensor
+    int lightAnalog = analogRead(LIGHT_PIN);
+    int lightDigital = digitalRead(LIGHT_PIN);
     
-    // Logic: Nếu HIGH = Sáng, LOW = Tối
-    // Nếu vẫn sai, đổi thành: lightPct = (lightValue == LOW) ? 100 : 0;
-    lightPct = (lightValue == HIGH) ? 100 : 0;
+    // DEBUG: In giá trị để xác định loại sensor
+    Serial.print(", Light Analog: ");
+    Serial.print(lightAnalog);
+    Serial.print(", Light Digital: ");
+    Serial.print(lightDigital);
+    
+    // Nếu là analog sensor (giá trị thay đổi từ 0-4095)
+    if (lightAnalog > 10 && lightAnalog < 4000) {
+      // Map analog value (0-4095) sang phần trăm (0-100)
+      // Giá trị CAO = sáng, giá trị THẤP = tối
+      lightPct = mapClamp(lightAnalog, 0, 4095, 0, 100);
+      Serial.print(" (Analog sensor)");
+    } else {
+      // Nếu là digital sensor
+      // Logic: HIGH = Sáng, LOW = Tối (hoặc ngược lại tùy sensor)
+      // Thử logic 1: HIGH = Sáng
+      lightPct = (lightDigital == HIGH) ? 100 : 0;
+      // Nếu logic trên không đúng, đổi thành:
+      // lightPct = (lightDigital == LOW) ? 100 : 0;
+      Serial.print(" (Digital sensor)");
+    }
 
     // In ra Serial (giống style ví dụ)
     Serial.print("{\"time\":");
