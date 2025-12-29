@@ -36,13 +36,12 @@ services:
       CROP_RECOMMENDATION_URL: http://crop-service:5000
       PEST_DISEASE_URL: http://pest-service:5001
       FRONTEND_ORIGINS: ${FRONTEND_ORIGINS:-https://smartfarm.kimngn.cfd,https://smartfarm.codex.io.vn,http://localhost:3000,http://localhost:80}
-      # Email Configuration (Optional - uncomment and set values to enable email alerts)
-      # Hoặc set trong file .env và dùng: ${MAIL_HOST}, ${MAIL_USERNAME}, etc.
-      # MAIL_HOST: ${MAIL_HOST:-smtp.gmail.com}
-      # MAIL_PORT: ${MAIL_PORT:-587}
-      # MAIL_USERNAME: ${MAIL_USERNAME:-}
-      # MAIL_PASSWORD: ${MAIL_PASSWORD:-}
-      # MAIL_FROM: ${MAIL_FROM:-alerts@smartfarm.com}
+      # Email Configuration - Đọc từ file .env
+      MAIL_HOST: ${MAIL_HOST:-}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-alerts@smartfarm.com}
     ports:
       - "8080:8080"
     depends_on:
