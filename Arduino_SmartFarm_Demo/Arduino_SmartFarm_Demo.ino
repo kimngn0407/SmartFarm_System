@@ -324,6 +324,24 @@ void setup() {
   Serial.print(HUMIDITY_MIN);
   Serial.print("-");
   Serial.println(HUMIDITY_MAX);
+  
+  // TEST: Gửi dữ liệu test ngay khi khởi động (sau 5 giây)
+  Serial.println("🧪 TEST: Sẽ gửi dữ liệu test sau 5 giây...");
+  delay(5000);
+  Serial.println("🧪 TEST: Bắt đầu gửi dữ liệu test...");
+  
+  // Test gửi tất cả sensors
+  sendSensorDataToServer(SENSOR_ID_TEMPERATURE, 25.0);
+  delay(1000);
+  sendSensorDataToServer(SENSOR_ID_HUMIDITY, 50.0);
+  delay(1000);
+  sendSensorDataToServer(SENSOR_ID_SOIL, 50.0);
+  delay(1000);
+  sendSensorDataToServer(SENSOR_ID_LIGHT, 75.0);
+  delay(1000);
+  
+  Serial.println("🧪 TEST: Đã gửi xong dữ liệu test!");
+  Serial.println("=== Bắt đầu vòng lặp chính ===");
 }
 
 // ================== Loop ==================
