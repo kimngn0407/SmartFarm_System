@@ -37,7 +37,8 @@ services:
       PEST_DISEASE_URL: http://pest-service:5001
       FRONTEND_ORIGINS: ${FRONTEND_ORIGINS:-https://smartfarm.kimngn.cfd,https://smartfarm.codex.io.vn,http://localhost:3000,http://localhost:80}
       # Email Configuration (Optional - uncomment and set values to enable email alerts)
-      # MAIL_HOST: ${MAIL_HOST:-}
+      # Hoặc set trong file .env và dùng: ${MAIL_HOST}, ${MAIL_USERNAME}, etc.
+      # MAIL_HOST: ${MAIL_HOST:-smtp.gmail.com}
       # MAIL_PORT: ${MAIL_PORT:-587}
       # MAIL_USERNAME: ${MAIL_USERNAME:-}
       # MAIL_PASSWORD: ${MAIL_PASSWORD:-}
