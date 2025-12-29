@@ -60,8 +60,8 @@ const Dashboard = () => {
   // Hàm lấy dữ liệu sensor thật từ API và filter mỗi 15 phút
   const fetchRealSensorData = async (sensorIds, hours = 6) => {
     const now = new Date();
-    // Query từ 30 ngày trước để đảm bảo có dữ liệu (vì có thể dữ liệu cũ)
-    const from = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    // Query từ 6 tháng trước để đảm bảo có dữ liệu (vì có thể dữ liệu cũ hoặc ESP32 không gửi liên tục)
+    const from = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000); // 180 ngày = ~6 tháng
     
     console.log(`🔍 Fetching sensor data for ${sensorIds.length} sensors, from ${from.toISOString()} to ${now.toISOString()}`);
     
