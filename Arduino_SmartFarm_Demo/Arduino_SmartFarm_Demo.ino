@@ -1,25 +1,19 @@
-/**
- * SmartFarm Demo - Đơn giản, dễ hiểu
- * Board: ESP32 30 chân (Type-C)
- * 
- * Logic DEMO:
- * - Độ ẩm đất: Nếu < SOIL_MIN hoặc > SOIL_MAX → Bật relay
- * - Nhiệt độ & Độ ẩm: Trong ngưỡng → LED Xanh, vượt 10% → Vàng, quá → Đỏ
- */
+
 
 #include "DHT.h"
-#include <WiFi.h>
+#include <WiFi.h> 
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 #include <time.h>
 
 // ================== Cấu hình WiFi ==================
-const char* ssid = "Wifi miễn phí";
-const char* password = "kimngan0407";
+const char* ssid = "Nha Ong Ba";
+const char* password = "nhaongba@";
 
 // ================== Cấu hình Backend ==================
 // Lưu ý: ESP32 dùng HTTP (không HTTPS) vì HTTPS cần nhiều memory
-const char* serverUrl = "http://smartfarm.kimngn.cfd/api/sensor-data/iot";
+// ⚠️ QUAN TRỌNG: Phải dùng IP và port 8080 trực tiếp để tránh Nginx redirect HTTP->HTTPS
+const char* serverUrl = "http://109.205.180.72:8080/api/sensor-data/iot";
 
 // ================== Cấu hình Sensor IDs ==================
 const long SENSOR_ID_TEMPERATURE = 7;  // Match với frontend sensor ID
@@ -30,12 +24,18 @@ const long SENSOR_ID_LIGHT = 10;       // Match với frontend sensor ID
 // ================== Cấu hình Pin ==================
 #define DHTPIN       4        // DHT11 DATA (GPIO4 = D4)
 #define DHTTYPE      DHT11
-#define SOIL_PIN     2        // Soil sensor analog (GPIO2 = D2)
+#define SOIL_PIN     34        // Soil sensor analog (GPIO2 = D2)
 #define LIGHT_PIN    5        // LDR Module digital (GPIO5 = D5)
 #define RELAY_PUMP   18       // Relay máy bơm (GPIO18 = D18)
 #define LED_GREEN    21       // LED xanh (GPIO21 = D21)
 #define LED_YELLOW   22       // LED vàng (GPIO22 = D22)
 #define LED_RED      23       // LED đỏ (GPIO23 = D23)
+
+// ================== Cấu hình Relay ==================
+// ⚠️ QUAN TRỌNG: Chọn loại chân relay đang dùng
+// - true = Dùng chân NO (Normally Open) - NO mở khi relay OFF (LOW)
+// - false = Dùng chân NC (Normally Closed) - NC đóng khi relay OFF (LOW)
+#define USE_RELAY_NO  true    // true = chân NO, false = chân NC
 
 // ================== Cấu hình Ngưỡng - DEMO ==================
 // ⚙️ CÓ THỂ THAY ĐỔI LINH HOẠT KHI DEMO
@@ -137,10 +137,20 @@ bool sendSensorDataToServer(long sensorId, float value) {
 // ================== Hàm điều khiển ==================
 
 void setPump(bool on) {
-  // Logic bình thường cho chân NO (Normally Open):
-  // - HIGH = Relay ON → NO đóng → Máy bơm CHẠY
-  // - LOW = Relay OFF → NO mở → Máy bơm TẮT
-  digitalWrite(RELAY_PUMP, on ? HIGH : LOW);
+  // Logic relay tùy thuộc vào loại chân (NC hoặc NO)
+  #if USE_RELAY_NO
+    // Chân NO (Normally Open):
+    // - HIGH = Relay ON → NO đóng → Máy bơm CHẠY
+    // - LOW = Relay OFF → NO mở → Máy bơm TẮT
+    digitalWrite(RELAY_PUMP, on ? HIGH : LOW);
+  #else
+    // Chân NC (Normally Closed):
+    // - LOW = Relay OFF → NC đóng → Máy bơm CHẠY
+    // - HIGH = Relay ON → NC mở → Máy bơm TẮT
+    // Cần đảo logic: on ? LOW : HIGH
+    digitalWrite(RELAY_PUMP, on ? LOW : HIGH);
+  #endif
+  
   pumpRunning = on;
   if (on) {
     pumpStartTime = millis();
@@ -213,22 +223,22 @@ void checkPump(int soilPercent) {
     return;
   }
 
-  // Logic: Nếu đất ngoài ngưỡng → Bật relay
-  if (soilPercent < SOIL_MIN || soilPercent > SOIL_MAX) {
-    if (soilPercent < SOIL_MIN) {
-      Serial.print("🌱 Đất khô (");
-      Serial.print(soilPercent);
-      Serial.print("% < ");
-      Serial.print(SOIL_MIN);
-      Serial.println("%) - Bật máy bơm");
-    } else {
-      Serial.print("💧 Đất quá ẩm (");
-      Serial.print(soilPercent);
-      Serial.print("% > ");
-      Serial.print(SOIL_MAX);
-      Serial.println("%) - Bật máy bơm");
-    }
+  // Logic: Chỉ bật máy bơm khi đất khô (không bật khi đất quá ẩm)
+  if (soilPercent < SOIL_MIN) {
+    Serial.print("🌱 Đất khô (");
+    Serial.print(soilPercent);
+    Serial.print("% < ");
+    Serial.print(SOIL_MIN);
+    Serial.println("%) - Bật máy bơm");
     setPump(true);
+  } else if (soilPercent > SOIL_MAX) {
+    // Đất quá ẩm - KHÔNG bật máy bơm (chỉ log để debug)
+    Serial.print("💧 Đất quá ẩm (");
+    Serial.print(soilPercent);
+    Serial.print("% > ");
+    Serial.print(SOIL_MAX);
+    Serial.println("%) - Không tưới");
+    // Không bật máy bơm khi đất quá ẩm
   }
 }
 
@@ -248,8 +258,14 @@ void setup() {
   pinMode(LIGHT_PIN, INPUT_PULLUP);
 
   // Tắt tất cả ban đầu
-  // Logic bình thường cho chân NO: LOW = tắt máy bơm
-  digitalWrite(RELAY_PUMP, LOW);  // LOW để tắt máy bơm (NO mở)
+  #if USE_RELAY_NO
+    // Chân NO: LOW để tắt máy bơm (NO mở)
+    digitalWrite(RELAY_PUMP, LOW);
+  #else
+    // Chân NC: HIGH để tắt máy bơm (NC mở)
+    digitalWrite(RELAY_PUMP, HIGH);
+  #endif
+  
   digitalWrite(LED_GREEN, LOW);
   digitalWrite(LED_YELLOW, LOW);
   digitalWrite(LED_RED, LOW);
